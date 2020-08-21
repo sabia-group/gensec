@@ -9,7 +9,7 @@ import numpy as np
 from ase.io.trajectory import Trajectory
 from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
 
-import genseek.precon as precon
+import gensec.precon as precon
 
 
 
