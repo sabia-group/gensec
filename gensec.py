@@ -31,7 +31,8 @@ blacklist = Blacklist(structure)
 calculator = Calculator(parameters)
 
 from ase.io import write
-
+# import random
+# random.seed(3)
 # estimate_mu
 # while workflow.trials < parameters["trials"]:
 # 	workflow.trials += 1
@@ -44,12 +45,20 @@ from ase.io import write
 # 		print(structure.mu)
 # 		break
 
-print(parameters["calculator"]["optimize"])
+
+# for i in [0,0.1, 0.2,0.3,0.5,0.7,1.0,2.0,3,4,5,7,10,12,13,20,25,50,100]:
 if parameters["calculator"]["optimize"] == "single":
-	print("Will make single relaxation with preconditioner")
 	dirs.create_directory()
+	structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
+	
+	# structure.mu = i
+	print(structure.mu)
 	calculator.relax(structure, fixed_frame, parameters, dirs.current_dir())
-	sys.exit(0)
+sys.exit(0)
+
+
+
+
 
 
 
@@ -65,18 +74,14 @@ while workflow.trials < parameters["trials"]:
 	# if blacklist.not_in_blacklist(configuration):
 	# 	blacklist.add_to_blacklist(configuration)
 	structure.apply_configuration(configuration)
-	print("Doing")
 	if all_right(structure, fixed_frame):
 		print("Structuers is ok")
-
 		dirs.create_directory()
 		ensemble = merge_together(structure, fixed_frame)
-
-		# calculator.relax(structure, fixed_frame, parameters, dirs.current_dir())
-
-		# sys.exit(0)
 		dirs.save_to_directory(ensemble, parameters)
-		# run the relaxation with ASE
+		# structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
+		# print(structure.mu)
+		# calculator.relax(structure, fixed_frame, parameters, dirs.current_dir())
 	else:
 		ensemble = merge_together(structure, fixed_frame)
 		write("bad_luck.xyz", ensemble, format="xyz")

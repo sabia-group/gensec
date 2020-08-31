@@ -38,27 +38,33 @@ class Calculator:
             "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"], 
         }
 
-        if precons_parameters["mol"]=="Exp":
-            if len(structure.molecules) > 1:
-                a0 = structure.molecules[0].copy()
-                for i in range(1, len(structure.molecules)):
-                    a0+=structure.molecules[i]
-            else:
-                a0 = structure.molecules[0]
+        # if precons_parameters["mol"]=="Exp":
+        #     if len(structure.molecules) > 1:
+        #         a0 = structure.molecules[0].copy()
+        #         for i in range(1, len(structure.molecules)):
+        #             a0+=structure.molecules[i]
+        #     else:
+        #         a0 = structure.molecules[0]
             
-            if precons_parameters["fixed_frame"]=="Exp":
-                all_atoms = a0 + fixed_frame.fixed_frame
-            else:
-                all_atoms = a0
+        #     if precons_parameters["fixed_frame"]=="Exp":
+        #         all_atoms = a0 + fixed_frame.fixed_frame
+        #     else:
+        #         all_atoms = a0
+        # else:
+        #     if precons_parameters["fixed_frame"]=="Exp":
+        #         all_atoms = fixed_frame.fixed_frame
+        #     else:
+        #         print("For nothing estimate mu")
+        #         sys.exit(0)
+        # with reaxff take all atoms for testing
+        if len(structure.molecules) > 1:
+            a0 = structure.molecules[0].copy()
+            for i in range(1, len(structure.molecules)):
+                a0+=structure.molecules[i]
         else:
-            if precons_parameters["fixed_frame"]=="Exp":
-                all_atoms = fixed_frame.fixed_frame
-            else:
-                print("For nothing estimate mu")
-                sys.exit(0)
-
-
-
+            a0 = structure.molecules[0]
+        all_atoms = a0 + fixed_frame.fixed_frame           
+        
         calculator = self.load_calculator(parameters).calculator  
         atoms = all_atoms.copy()
         atoms.set_calculator(calculator)
@@ -110,8 +116,7 @@ class Calculator:
         symbol = all_atoms.get_chemical_symbols()[0]  
         calculator = self.load_calculator(parameters).calculator  
         atoms = all_atoms.copy()
-        self.set_constrains(atoms, parameters)
-        preconditioned_hessian = precon.preconditioned_hessian(structure, fixed_frame, parameters)
+        self.set_constrains(atoms, parameters)      
         atoms.set_calculator(calculator)
 
         # Preconditioner part
@@ -127,7 +132,8 @@ class Calculator:
         opt = BFGS(atoms, trajectory=os.path.join(directory, "trajectory_ID.traj"),
                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=10000, 
                     structure=structure, fixed_frame=fixed_frame, parameters=parameters)
-        opt.run(fmax=2e-1, steps=1000)
+        opt.H0 = np.eye(3 * len(atoms)) * 70
+        opt.run(fmax=1e-3, steps=1000)
         write(os.path.join(directory, "final_configuration.in"), atoms,format="aims" )
 
 
@@ -135,22 +141,32 @@ class Calculator:
         atoms = all_atoms.copy()
         self.set_constrains(atoms, parameters)
         atoms.set_calculator(calculator)
-        opt = BFGS(atoms, trajectory=os.path.join(directory, "trajectory_ID.traj"),
+
+        # For now, should be redone
+        if not hasattr(structure, "mu"):
+            structure.mu = 1
+        if not hasattr(structure, "A"):
+            structure.A = 1
+        ###
+        
+  
+        opt = BFGS(atoms, trajectory=os.path.join(directory, "trajectory_precon_auto.traj"),
                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, mu=structure.mu, A=structure.mu)
-        opt.H0 = preconditioned_hessian
-        opt.run(fmax=2e-1, steps=1000)
+        opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, parameters)
+        np.savetxt(os.path.join(directory, "Hes_precon_{}.hes".format(str(structure.mu))), opt.H0)
+        opt.run(fmax=1e-3, steps=1000)
         write(os.path.join(directory, "final_configuration_precon.in"), atoms,format="aims" )
 
 
 
-        traj_ID = Trajectory(os.path.join(directory, "trajectory_ID.traj"))
-        traj_precon = Trajectory(os.path.join(directory, "trajectory_precon.traj"))
-        performace = len(traj_ID)/len(traj_precon)    
-        rmsd = precon.Kabsh_rmsd(traj_ID[-1], traj_precon[-1], molindixes, removeHs=False)
-        print(round(performace, 1), round(rmsd, 1))
+        # traj_ID = Trajectory(os.path.join(directory, "trajectory_ID.traj"))
+        # traj_precon = Trajectory(os.path.join(directory, "trajectory_precon.traj"))
+        # performace = len(traj_ID)/len(traj_precon)    
+        # rmsd = precon.Kabsh_rmsd(traj_ID[-1], traj_precon[-1], molindixes, removeHs=False)
+        # print(round(performace, 2), round(rmsd, 1))
 
-        sys.exit(0)
+        # sys.exit(0)
 
     # Preconditioner also goes here
 

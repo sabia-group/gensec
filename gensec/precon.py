@@ -17,7 +17,7 @@ import numpy as np
 from numpy.linalg import norm
 from itertools import product
 import operator
-
+import os
 def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
 
     coords1 = np.array([atoms.get_positions()[i] for i in molindixes])
@@ -294,7 +294,8 @@ def ExpHessian(atoms, mu=1, A=1):
     # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
     for ind in range(len(hessian)):
         hessian[ind, ind] = -np.sum(hessian[ind])
-
+    #dd = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/gensec/examples/Cu_EMT/generate/0000000001/"
+    #np.savetxt(os.path.join(dd, "expHessian.hes"), hessian)
     return hessian
 
 
@@ -1227,8 +1228,8 @@ def preconditioned_hessian(structure, fixed_frame, parameters):
     # Combine hessians into hessian
     N = len(all_atoms)
     preconditioned_hessian = np.zeros(shape = (3 * N, 3 * N))
-    for i in range(len(all_atoms)):
-        for j in range(len(all_atoms)):
+    for i in range(3 * len(all_atoms)):
+        for j in range(3 * len(all_atoms)):
             if hessian_indices[i] == hessian_indices[j]:
                 if "fixed_frame" in hessian_indices[j]:
                     p = precons_parameters["fixed_frame"]
