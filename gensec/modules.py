@@ -325,8 +325,18 @@ def all_right(structure, fixed_frame):
 
     ready = False
     if internal_clashes(structure):
-        if not intramolecular_clashes(structure):
-            if not clashes_with_fixed_frame(structure, fixed_frame):
+        if len(structure.molecules) > 1:
+            if not intramolecular_clashes(structure):
+                if hasattr(fixed_frame, "fixed_frame"):
+                    if not clashes_with_fixed_frame(structure, fixed_frame):
+                        ready = True
+                else:
+                    ready = True
+        else:
+            if hasattr(fixed_frame, "fixed_frame"):
+                if not clashes_with_fixed_frame(structure, fixed_frame):
+                    ready = True
+            else:
                 ready = True
     return ready
 
@@ -364,9 +374,10 @@ def assign_random_state(molecule, list_of_torsions):
     set_centre_of_mass(molecules[i], value_com)
 
 def merge_together(structure, fixed_frame):
-      ensemble = structure.atoms.copy()
-      del ensemble[[atom.index for atom in structure.atoms]]
-      for molecule in structure.molecules:
-          ensemble+=molecule
-      ensemble+=fixed_frame.fixed_frame
-      return ensemble
+    ensemble = structure.atoms.copy()
+    del ensemble[[atom.index for atom in structure.atoms]]
+    for molecule in structure.molecules:
+        ensemble+=molecule
+    if hasattr(fixed_frame, "fixed_frame"):
+        ensemble+=fixed_frame.fixed_frame
+    return ensemble

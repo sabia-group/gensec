@@ -1197,7 +1197,10 @@ def preconditioned_hessian(structure, fixed_frame, parameters):
     else:
         a0 = structure.molecules[0]
 
-    all_atoms = a0 + fixed_frame.fixed_frame
+    if hasattr(fixed_frame, "fixed_frame"):
+        all_atoms = a0 + fixed_frame.fixed_frame
+    else:
+        all_atoms = a0
     symbol = all_atoms.get_chemical_symbols()[0]  
     atoms = all_atoms.copy()
 
@@ -1208,15 +1211,21 @@ def preconditioned_hessian(structure, fixed_frame, parameters):
     hessian_indices = []
     for i in range(len(structure.molecules)):
         hessian_indices.append(["mol{}".format(i) for k in range(3*len(structure.molecules[i]))])
-    hessian_indices.append(["fixed_frame" for k in range(3*len(fixed_frame.fixed_frame))])
+    if hasattr(fixed_frame, "fixed_frame"):
+        hessian_indices.append(["fixed_frame" for k in range(3*len(fixed_frame.fixed_frame))])
     hessian_indices = sum(hessian_indices, [])
 
-    # Genrate all hessians
-    precons = {
-    "Lindh" : LindhHessian(all_atoms),
-    "vdW" : vdwHessian(all_atoms),
-    "Exp" : ExpHessian(all_atoms, mu=structure.mu, A=structure.A),
-    }
+    # Genrate all nececcary hessians
+    precons = {}
+    precon_names = parameters["calculator"]["preconditioner"].values()
+    if "Lindh" in precon_names:
+        precons["Lindh"] = LindhHessian(all_atoms)
+    if "Exp" in precon_names:
+        precons["Exp"] = ExpHessian(all_atoms, mu=structure.mu, A=structure.A)
+    if "vdW" in precon_names:
+        precons["vdW"] = vdwHessian(all_atoms)
+    if "ID" in precon_names:
+        precons["ID"] = np.eye(3 * len(atoms)) * 70
 
     precons_parameters = {
         "mol" : parameters["calculator"]["preconditioner"]["mol"],

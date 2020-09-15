@@ -79,3 +79,4 @@ class Workflow:
 
     def __init__(self):
         self.trials = 0
+        self.success = 0

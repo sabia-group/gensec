@@ -12,8 +12,8 @@ class Structure:
         self.connectivity_matrix_isolated = create_connectivity_matrix(self.atoms, bothways=False)
         self.list_of_torsions = detect_rotatble(self.connectivity_matrix_isolated)
 
-        if "mic" in parameters.keys():
-            self.pbc = parameters["mic"]
+        if parameters["mic"]["activate"] == True:
+            self.pbc = parameters["mic"]["pbc"]
             self.mic = True
             self.atoms.set_cell(self.pbc)
             self.atoms.set_pbc(True)
@@ -131,12 +131,12 @@ class Fixed_frame:
 
         # Minimum Image Conventio
         self.mic = False
-        if "fixed_frame" in parameters.keys():
-            self.fixed_frame = read(parameters["fixed_frame"][0], 
-                                format=parameters["fixed_frame"][1])
+        if parameters["fixed_frame"]["activate"] == True:
+            self.fixed_frame = read(parameters["fixed_frame"]["filename"], 
+                                format=parameters["fixed_frame"]["format"])
 
-        if "mic" in parameters.keys():
-            self.pbc = parameters["mic"]
+        if parameters["mic"]["activate"] == True:
+            self.pbc = parameters["mic"]["pbc"]
             self.mic = True
             self.fixed_frame.set_cell(self.pbc)
             self.fixed_frame.set_pbc(True)
