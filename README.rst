@@ -1,8 +1,8 @@
 """""""""""""""""""""""""""""""
-reStructuredText (RST) Tutorial
+GenSec Tutorial
 """""""""""""""""""""""""""""""
 ++++++++++++++++++++++++++++++++++
-Learn to write beautiful documents
+The life is much better if it sampled enough
 ++++++++++++++++++++++++++++++++++
 
 .. contents:: Overview
@@ -11,93 +11,22 @@ Learn to write beautiful documents
 ============
 Introduction
 ============
-
-reStructuredText (one word) is a plain-text markup language for writing
-technical documents, books, websites, and more.
-It is easy to read and write because it is just regular text and all you
-need is a simple text editor. Even Notepad would suffice.
-Despite it being written in plain-text, it is powerful enough
-to create professional technical documentation, books, and websites.
-
-There are software tools that will convert your plain-text document
-in to the desired output format. For example: HTML, PDF, ePub, or custom.
-It is capable of auto-generating table-of-contents, hyperlinks between
-documents, creating headings, tables, and many other elements.
-It is also extendable and customizable.
-
-In this tutorial, we will walk through everything you need to know to
-excel with reStructuredText. We will start with th e basics, but
-if you follow through to the end, you will have a deep
-understanding of how it works and how to extend the source code to suit
-your own needs.
-
-The Python community were the first adopters since it's design
-specification was written as a Python Enhancement Proposal (PEP) by
-David Goodger in 2001.
-
-PEP-257: Docstring Conventions
-PEP-258: Docutils Design Specification
-http://docutils.sourceforge.net/docs/peps/pep-0257.html
-http://docutils.sourceforge.net/docs/peps/pep-0258.html
-
-Do not be misled in to believing reStructuredText is only good for Python
-documentation. Python does use reStructuredText
-as the standard documentation, but it can be used for any kind of
-documentation and even writing books and making HTML pages. 
-GitHub supports reStructuredText and will automatically process a
-README.rst and provide the HTML output if someone lands on your project.
-
-This is aimed at technical writers, programmers, and authors who want
-an easy yet powerful way to write documents and books.
-If you are already familiar with Markdown, reStructuredText should come
-naturally. It is just as easy to get started with, but has many more
-powerful features available. If you are currently using Markdown,
-I highly recommend you give reStructuredText a chance.
-The learning curve is small if you already know very basic Markdown
-syntax.
-
-
-
-
-http://docutils.sourceforge.net/docs/index.html
-
-.. _restructuredText: https://en.wikipedia.org/wiki/ReStructuredText
-   :target: _blank
-
-.. _Python official documentation: https://github.com/python/cpython/tree/master/Doc
-
-
-
-
-
+Structure search for organic/inorganic interfaces is a challenging task due to large amount of degrees of freedom that presented by high flexibility of biomolecules. We develop structure search sampling package intended to explore conformational spaces of flexible molecules also with respect to fixed surroundings. In the package we implement flexible way for preconditioning of geometry optimization BFGS algorithm based on Exp (cite), vdW (cite) and FF (cite) like terms. 
 
 
 ============================
-Create a basic .rst document
+Manual
 ============================
 
-Before getting in to all of the features, let's look at a very basic
-reStructuredText file. reStructuredText files typically have ``.rst`` or ``.txt`` extensions.
-Here is a simple document::
+For performing of the structure search the parameters.json file is required where
+all the settings are specified.
 
-  =================
-  My Project Readme
-  =================
-  -------------------------
-  Clever subtitle goes here
-  -------------------------
+-------------------------
+Keywords of parameters.json
+-------------------------
 
-  Introduction
-  ============
-
-  This is an example reStructuredText document that starts at the very top
-  with a title and a sub-title. There is one primary header, Introduction.
-  There is one example subheading below.
-  The document is just plain text so it is easily readable even before
-  being converted to HTML, man page, PDF or other formats.
-
-  Subheading
-  ----------
+name
+----------
 
   The basic syntax is not that different from Markdown, but it also
   has many more powerful features that Markdown doesn't have. We aren't
