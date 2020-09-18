@@ -138,14 +138,14 @@ class Calculator:
         write(os.path.join(directory, "initial_configuration_{}.in".format(name)), atoms,format="aims" )
         rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]       
         opt = BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
-                    initial=a0, molindixes=list(range(len(a0))), rmsd_dev=10000, 
+                    initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
                     structure=structure, fixed_frame=fixed_frame, parameters=parameters)
         # For now, should be redone
         if not hasattr(structure, "mu"):
             structure.mu = 1
         if not hasattr(structure, "A"):
             structure.A = 1
-        opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, parameters)
+        opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, atoms, parameters)
         np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         opt.run(fmax=1e-2, steps=1000)
         write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )

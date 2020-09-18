@@ -1188,7 +1188,7 @@ def LindhHessian(atoms):
 
 
 
-def preconditioned_hessian(structure, fixed_frame, parameters):
+def preconditioned_hessian(structure, fixed_frame, atoms_current, parameters):
 
     if len(structure.molecules) > 1:
         a0 = structure.molecules[0].copy()
@@ -1203,6 +1203,7 @@ def preconditioned_hessian(structure, fixed_frame, parameters):
         all_atoms = a0
     symbol = all_atoms.get_chemical_symbols()[0]  
     atoms = all_atoms.copy()
+    atoms.set_positions(atoms_current.get_positions())
 
 
     ### Preconditioner part
@@ -1219,11 +1220,11 @@ def preconditioned_hessian(structure, fixed_frame, parameters):
     precons = {}
     precon_names = parameters["calculator"]["preconditioner"].values()
     if "Lindh" in precon_names:
-        precons["Lindh"] = LindhHessian(all_atoms)
+        precons["Lindh"] = LindhHessian(atoms)
     if "Exp" in precon_names:
-        precons["Exp"] = ExpHessian(all_atoms, mu=structure.mu, A=structure.A)
+        precons["Exp"] = ExpHessian(atoms, mu=structure.mu, A=structure.A)
     if "vdW" in precon_names:
-        precons["vdW"] = vdwHessian(all_atoms)
+        precons["vdW"] = vdwHessian(atoms)
     if "ID" in precon_names:
         precons["ID"] = np.eye(3 * len(atoms)) * 70
 

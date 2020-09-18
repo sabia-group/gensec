@@ -54,10 +54,53 @@ from ase.io import write
 # 
 # for i in [0,0.1, 0.2,0.3,0.5,0.7,1.0,2.0,3,4,5,7,10,12,13,20,25,50,100]:
 if parameters["calculator"]["optimize"] == "single":
-    dirs.create_directory()
-    structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
-    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir())
+    for directory in os.listdir(os.path.join(os.getcwd(), "generate")):
+        current_dir = os.path.join(os.getcwd(), "generate", directory)
+        # dirs.create_directory()
+        structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
+        for i in ["ID", "Lindh", "Lindh_RMSD"]:
+            parameters["name"] = i
+            if "Lindh" in i:
+                parameters["calculator"]["preconditioner"]["mol"] = "Lindh"
+                if i == "Lindh_RMSD":
+                    parameters["calculator"]["preconditioner"]["rmsd_update"] = 0.05
+            else:
+                parameters["calculator"]["preconditioner"]["mol"] = "ID"
+            calculator.relax(structure, fixed_frame, parameters, current_dir)
+        # os.system("rm /tmp/ipi_*")
     sys.exit(0)
+
+if parameters["calculator"]["optimize"] == "generate_and_relax":
+    while workflow.trials < parameters["trials"]:
+        while workflow.success < parameters["success"]:
+            workflow.trials += 1
+            print("New Trial", workflow.trials)
+            # output.write("Start the new Trial {}\n".format(workflow.trials))
+            # Generate the vector in internal degrees of freedom
+            configuration = structure.create_configuration(parameters)
+            structure.apply_configuration(configuration)
+            if all_right(structure, fixed_frame):
+                workflow.success +=1
+                print("Structuers is ok")
+                dirs.create_directory()
+                ensemble = merge_together(structure, fixed_frame)
+                dirs.save_to_directory(ensemble, parameters)
+                for i in ["ID", "Lindh", "Lindh_RMSD"]:
+                    parameters["name"] = i
+                    if "Lindh" in i:
+                        parameters["calculator"]["preconditioner"]["mol"] = "Lindh"
+                        if i == "Lindh_RMSD":
+                            parameters["calculator"]["preconditioner"]["rmsd_update"] = 0.05
+                    else:
+                        parameters["calculator"]["preconditioner"]["mol"] = "ID"
+                    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir())
+            else:
+                ensemble = merge_together(structure, fixed_frame)
+                write("bad_luck.xyz", ensemble, format="xyz")
+                pass
+        else:
+            print("{} structures were generated".format(parameters["success"]))
+            sys.exit(0)
 
 
 if parameters["calculator"]["optimize"] == "generate":
@@ -80,8 +123,8 @@ if parameters["calculator"]["optimize"] == "generate":
                 write("bad_luck.xyz", ensemble, format="xyz")
                 pass
         else:
-        	print("{} structures were generated".format(parameters["success"]))
-        	sys.exit(0)
+            print("{} structures were generated".format(parameters["success"]))
+            sys.exit(0)
 
 
 
