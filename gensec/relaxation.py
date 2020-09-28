@@ -147,8 +147,10 @@ class Calculator:
             structure.A = 1
         opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, atoms, parameters)
         np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
-        opt.run(fmax=1e-2, steps=1000)
+        fmax = parameters["calculator"]["fmax"]
+        opt.run(fmax=fmax, steps=1000)
         write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
+        np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
         calculator.close()
         
         #traj_ID = Trajectory(os.path.join(directory, "trajectory_ID.traj"))

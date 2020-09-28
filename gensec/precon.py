@@ -219,8 +219,8 @@ def vdwHessian(atoms):
         alphai = ALPHA_vdW[atom_names[i]]  
         alphaj = [ALPHA_vdW[atom_names[a]]  for a in j]
         
-        units = HARTREE_to_eV * (BOHR_to_angstr ** 6)
-        
+        units = BOHR_to_angstr ** 3
+        print(units)
         C6AB = [(2. * C6i * C6j[z]) 
                 / (alphaj[z] / alphai * C6i
                     + alphai / alphaj[z] * C6j[z]) 

@@ -44,6 +44,27 @@ class Directories:
         dir = os.path.join(os.getcwd(), "generate", format(self.dir_num, "010d"))
         write(os.path.join(dir, "{:010d}.in".format(self.dir_num)), ensemble, format="aims")
 
+    def finished(self):
+        dir = self.current_dir()
+        f = open(os.path.join(dir, "finished"), "w")
+        f.write("Calculation was finished")
+        f.close()
+
+    def find_last_dir(self):
+        dirs = os.path.join(os.getcwd(), "generate")
+        if len(os.listdir(dirs))>0:
+            last_dir = [int(i) for i in os.listdir(dirs)
+                                if "finished" in os.listdir(os.path.join(dirs, i))]
+            if len(last_dir) > 0:
+                self.dir_num = max(last_dir)
+            else:
+                self.dir_num = 0
+        else:
+            self.dir_num = 0
+        
+    # def check_for_restart(self):
+
+
     def current_dir(self):
         dir = os.path.join(os.getcwd(), "generate", format(self.dir_num, "010d"))
         return dir
