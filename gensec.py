@@ -206,11 +206,6 @@ if parameters["calculator"]["optimize"] == "search":
                 print("Already known")
                 shutil.rmtree(os.path.join(os.getcwd(), "generate", generated))
 
-    sys.exit(0)
-
-
-
-
 
     # when run out structures 
     while workflow.trials < parameters["trials"]:

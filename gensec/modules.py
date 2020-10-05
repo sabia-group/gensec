@@ -104,6 +104,50 @@ def detect_rotatble(connectivity_matrix):
     return list_of_torsions
 
 
+def detect_cycles(connectivity_matrix):
+    import networkx as nx
+    from itertools import combinations
+    """Detection of all rotatable bonds
+    2. The bonds does not contain terminate atoms
+    2. 
+    3. 
+    """
+    all_cycles = []
+    graph = construct_graph(connectivity_matrix)
+    G = nx.DiGraph(graph)  
+    cycles = [i for i in list(nx.simple_cycles(G)) if len(i) > 2]
+    comb = list(combinations(range(len(cycles)), 2))
+    for i in comb:
+        if set(cycles[i[0]]) & set(cycles[i[1]]) != set():
+            all_cycles.append(cycles[i[0]])
+    return all_cycles
+
+def exclude_rotatable_from_cycles(list_of_torsions, cycles):
+    rotatable = []
+    # print(rotatable)
+    # print(list_of_torsions)
+    for torsion in list_of_torsions:
+        found = False
+        for cycle in cycles:
+            if torsion[1] in cycle and torsion[2] in cycle:
+                found = True 
+                if found:
+                    break
+        if not found:
+            rotatable.append(torsion)
+    return rotatable
+
+def make_canonical_pyranosering(atoms, cycle):
+
+    pattern = ['C', 'C', 'C', 'C', 'C', 'O']
+    while True:
+        cycle = np.roll(cycle, 1)
+        atom_names = [atoms.get_chemical_symbols()[i] for i in cycle]
+        if atom_names==pattern:
+            return cycle
+
+
+
 
 def getroots(aNeigh):
     #    source: https://stackoverflow.com/questions/10301000/python-connected-components
