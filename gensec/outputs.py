@@ -81,7 +81,7 @@ class Output:
         report = open(report_file, "w")
         report.write("#    Copyright 2020 Dmitrii Maksimov\n")
         t = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
-        report.write("GenSec started {}\n".format(t))
+        report.write("GenSec started {}\n\n\n".format(t))
         report.close()
 
     def write_to_report(self, text):
@@ -90,7 +90,43 @@ class Output:
         report.write("\n")
         report.close()
 
+    def write_configuration(self, configuration):
+        report = open("report.out", "a")
+        report.write(text)
+        report.write("\n")
+        report.close()
 
+    def write_parameters(self, parameters, structure, blacklist):
+        report = open("report.out", "a")
+        report.write("Name of the project is {}\n".format(parameters["name"]))
+        report.write("If the unknown structure will not be found {} times in row the criteria for similarity between structures will be decreased.\n".format(parameters["trials"]))
+        report.write("After {} structures will be relaxed the algorithm will stop.\n".format(parameters["success"]))
+        report.write("{} replicas will be produced.\n".format(parameters["number_of_replicas"]))
+        report.write("Reading template geometry from {}.\n".format(parameters["geometry"][0]))
+        report.write("Number of atoms in template molecule is {}.\n".format(len(structure.molecules[0])))               
+        if parameters["fixed_frame"]["activate"]:
+            report.write("Reading fixed frame from {}.\n".format(parameters["fixed_frame"]["filename"]))
+        else:
+            report.write("Sampling is performed without fixed frame.\n")
+        if parameters["mic"]["activate"]:
+            report.write("Sampling is performed with periodic boundary conditions.\n")
+        else:
+            report.write("Sampling is performed without periodic boundary conditions.\n")
+        if parameters["configuration"]["torsions"]["list_of_tosrions"] == "auto":
+            report.write("Identified rotatable bonds are: {}.\n".format(structure.list_of_torsions))
+        if parameters["configuration"]["torsions"]["activate"]:
+            report.write("{} values of torsions will be sampled.\n".format(parameters["configuration"]["torsions"]["values"]))
+        if parameters["configuration"]["orientations"]["activate"]:
+            report.write("{} values of orientations will be sampled.\n".format(parameters["configuration"]["orientations"]["values"]))
+        if parameters["configuration"]["coms"]["activate"]:
+            report.write("{} values of centres of masses will be sampled.\n".format(parameters["configuration"]["coms"]["values"]))
+        report.write("Folder with suporting files is in {}.\n".format(parameters["calculator"]["supporting_files_folder"]))
+        report.write("ASE calculator is in {}.\n".format(parameters["calculator"]["ase_parameters_file"]))
+        if parameters["calculator"]["optimize"] == "generate":
+            report.write("GenSec wil generate structures in \"generate\" folder without relaxation\n")
+        elif parameters["calculator"]["optimize"] == "search":
+            report.write("GenSec wil generate structures in \"generate\" folder and relax them in \"search\" folder\n")
+        report.close()
 
 def load_parameters(parameters_file):
     if not os.path.exists(parameters_file):

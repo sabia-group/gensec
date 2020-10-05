@@ -176,6 +176,7 @@ if parameters["calculator"]["optimize"] == "search":
     dirs.find_last_dir(parameters)
     blacklist.check_calculated(dirs, parameters)
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
+    output.write_parameters(parameters, structure, blacklist)
     for f in glob.glob("/tmp/ipi_*"):
         os.remove(f)
     workflow.success = dirs.dir_num
@@ -209,6 +210,7 @@ if parameters["calculator"]["optimize"] == "search":
 
     # when run out structures 
     while workflow.trials < parameters["trials"]:
+
         print("New Trial", workflow.trials)
         while workflow.success < parameters["success"]:
             # output.write("Start the new Trial {}\n".format(workflow.trials))
@@ -254,7 +256,7 @@ if parameters["calculator"]["optimize"] == "search":
 
 if parameters["calculator"]["optimize"] == "generate":
     dirs = Directories(parameters)
-    output = Output("report.out")    
+    output = Output("report.out")
     workflow = Workflow()
     structure = Structure(parameters)
     fixed_frame = Fixed_frame(parameters)
@@ -264,6 +266,7 @@ if parameters["calculator"]["optimize"] == "generate":
     blacklist.check_calculated(dirs, parameters)
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
     dirs.find_last_generated_dir(parameters)
+    output.write_parameters(parameters, structure, blacklist) 
     for f in glob.glob("/tmp/ipi_*"):
         os.remove(f)
     workflow.success = dirs.dir_num
