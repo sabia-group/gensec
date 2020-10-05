@@ -101,6 +101,7 @@ class Structure:
             k=-1
             for torsion in self.list_of_torsions:
                 k+=1
+                # +4 quaternion values and +3 COM values
                 z=i*(len(self.list_of_torsions)+4+3)+k
                 fixed_indices = carried_atoms(
                                 self.connectivity_matrix_isolated, torsion)
@@ -121,6 +122,37 @@ class Structure:
             set_centre_of_mass(self.molecules[i], np.array([configuration[z+5], 
                                                             configuration[z+6], 
                                                             configuration[z+7]]))
+
+    def torsions_from_conf(self, configuration):
+        torsions = []
+        for i in range(len(self.molecules)):
+            k=-1
+            for torsion in self.list_of_torsions:
+                k+=1
+                # +4 quaternion values and +3 COM values
+                z=i*(len(self.list_of_torsions)+4+3)+k
+                torsions.append(configuration[z])
+        return torsions       
+
+    def read_configuration(self, structure, fixed_frame, gen):
+        t = structure.list_of_torsions
+        configuration = read(gen, format="aims")
+        template = merge_together(structure, fixed_frame)
+        template.set_positions(configuration.get_positions())
+        for i in range(len(structure.molecules)):
+            len_mol = len(structure.molecules[i])
+            coords = template.get_positions()[i*len_mol:i*len_mol+len_mol, :]
+            structure.molecules[i].set_positions(coords)
+            torsions = []
+            for torsion in t:
+                torsions.append(structure.molecules[i].get_dihedral(
+                                                a1=torsion[0],
+                                                a2=torsion[1],
+                                                a3=torsion[2],
+                                                a4=torsion[3]))
+        return torsions
+
+
 
 
 

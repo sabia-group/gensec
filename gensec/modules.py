@@ -78,6 +78,17 @@ def detect_rotatble(connectivity_matrix):
     """
     graph = construct_graph(connectivity_matrix)
     indx_not_terminal = [i for i in graph if len(graph[i]) > 1]
+    # Additional checks:
+    for i in indx_not_terminal:
+        # Removing atoms like CH3 from search
+        # Finding all atoms that have exactly 4 connections
+        if len(graph[i]) == 4:         
+            # Three of the atoms are terminal 
+            if [len(graph[k]) for k in graph[i]].count(1)==3:
+                indx_not_terminal.remove(i)
+            else:
+                pass
+                
     conn = [i for i in connectivity_matrix.keys() 
             if all(k in indx_not_terminal for k in i)]   
     list_of_torsions = []

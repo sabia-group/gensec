@@ -1,11 +1,12 @@
 import os
 import json
+from time import gmtime, strftime
 from ase.io import read, write
 
 
 class Directories:
 
-    def __init__(self):
+    def __init__(self, parameters):
 
         if not os.path.exists("generate"):
             os.mkdir("generate")
@@ -17,23 +18,23 @@ class Directories:
         else:
             pass
 
-        if not os.path.exists("current"):
-            os.mkdir("current")
+        if not os.path.exists("blacklist"):
+            os.mkdir("blacklist")
         else:
             pass
 
         self.dir_num = 0
 
-    def create_directory(self):
+    def create_directory(self, parameters):
         self.dir_num+=1
-        dir = os.path.join(os.getcwd(), "generate", format(self.dir_num, "010d"))
+        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(self.dir_num, "010d"))
         if not os.path.exists(dir):
             os.mkdir(dir)
         else:
             pass
 
-    def remove_last_directory(self):       
-        dir = os.path.join(os.getcwd(), "generate", format(self.dir_num, "010d"))
+    def remove_last_directory(self, parameters):       
+        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(self.dir_num, "010d"))
         if os.path.exists(dir):
             os.rmdir(dir)
         else:
@@ -41,17 +42,17 @@ class Directories:
         self.dir_num-=1
 
     def save_to_directory(self, ensemble, parameters):       
-        dir = os.path.join(os.getcwd(), "generate", format(self.dir_num, "010d"))
+        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(self.dir_num, "010d"))
         write(os.path.join(dir, "{:010d}.in".format(self.dir_num)), ensemble, format="aims")
 
-    def finished(self):
-        dir = self.current_dir()
+    def finished(self, parameters):
+        dir = self.current_dir(parameters)
         f = open(os.path.join(dir, "finished"), "w")
         f.write("Calculation was finished")
         f.close()
 
-    def find_last_dir(self):
-        dirs = os.path.join(os.getcwd(), "generate")
+    def find_last_dir(self, parameters):
+        dirs = os.path.join(os.getcwd(), "search")
         if len(os.listdir(dirs))>0:
             last_dir = [int(i) for i in os.listdir(dirs)
                                 if "finished" in os.listdir(os.path.join(dirs, i))]
@@ -62,25 +63,28 @@ class Directories:
         else:
             self.dir_num = 0
         
-    # def check_for_restart(self):
+    def find_last_generated_dir(self, parameters):
+        dirs = os.path.join(os.getcwd(), "generate")
+        if len(os.listdir(dirs))>0:
+            self.dir_num = max([int(i) for i in os.listdir(dirs)])
+        else:
+            self.dir_num = 0
 
-
-    def current_dir(self):
-        dir = os.path.join(os.getcwd(), "generate", format(self.dir_num, "010d"))
+    def current_dir(self, parameters):
+        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(self.dir_num, "010d"))
         return dir
 
 class Output:
 
     def __init__(self, report_file):
 
-        if not os.path.exists(report_file):
-            report = open(report_file, "w")
-            report.write("#    Copyright 2020 Dmitrii Maksimov\n")
-            report.close()
-        else:
-            pass
+        report = open(report_file, "w")
+        report.write("#    Copyright 2020 Dmitrii Maksimov\n")
+        t = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+        report.write("GenSec started {}\n".format(t))
+        report.close()
 
-    def write(self, text):
+    def write_to_report(self, text):
         report = open("report.out", "a")
         report.write(text)
         report.write("\n")

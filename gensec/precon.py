@@ -110,6 +110,26 @@ C6_vdW = {'H': 6.5000, 'He': 1.4600, 'Li': 1387.0000, 'Be': 214.0000, 'B': 99.50
         'Bk': 1985.82,
         'Cf': 1891.92, 'Es': 1851.1, 'Fm': 1787.07, 'Md': 1701.0, 'No': 1578.18}
 
+VDW_radii = {"X": 1.5,  "H": 1.2,  "He": 1.4, "Li": 1.82, "Be": 2.0, "B": 2.0,
+                "C": 1.7,  "N": 1.55,  "O": 1.52,  "F": 1.47,  "Ne": 1.54,
+                "Na": 1.36, "Mg": 1.18, "Al": 2.0, "Si": 2.1, "P": 1.8,
+                "S": 1.8,  "Cl": 2.27, "Ar": 1.88, "K": 1.76,  "Ca": 1.37, "Sc": 2.0,
+                "Ti": 2.0, "V": 2.0,  "Cr": 2.0, "Mn": 2.0, "Fe": 2.0, "Co": 2.0,
+                "Ni": 1.63, "Cu": 1.4, "Zn": 1.39, "Ga": 1.07, "Ge": 2.0, "As": 1.85,
+                "Se": 1.9, "Br": 1.85, "Kr": 2.02, "Rb": 2.0, "Sr": 2.0, "Y": 2.0,
+                "Zr": 2.0, "Nb": 2.0, "Mo": 2.0, "Tc": 2.0, "Ru": 2.0, "Rh": 2.0,
+                "Pd": 1.63, "Ag": 1.72, "Cd": 1.58, "In": 1.93, "Sn": 2.17, "Sb": 2.0,
+                "Te": 2.06, "I": 1.98,  "Xe": 2.16, "Cs": 2.1, "Ba": 2.0,
+                "La": 2.0, "Ce": 2.0, "Pr": 2.0, "Nd": 2.0, "Pm": 2.0, "Sm": 2.0,
+                "Eu": 2.0, "Gd": 2.0, "Tb": 2.0, "Dy": 2.0, "Ho": 2.0,
+                "Er": 2.0, "Tm": 2.0, "Yb": 2.0, "Lu": 2.0, "Hf": 2.0, "Ta": 2.0,
+                "W": 2.0,  "Re": 2.0, "Os": 2.0, "Ir": 2.0, "Pt": 1.72, "Au": 1.66,
+                "Hg": 1.55, "Tl": 1.96, "Pb": 2.02, "Bi": 2.0, "Po": 2.0, "At": 2.0, "Rn": 2.0,
+                "Fr": 2.0, "Ra": 2.0, "Ac": 2.0, "Th": 2.0, "Pa": 2.0, "U": 1.86,
+                "Np": 2.0, "Pu": 2.0, "Am": 2.0, "Cm": 2.0, "Bk": 2.0, "Cf": 2.0, "Es": 2.0, "Fm": 2.0,
+                "Md": 2.0, "No": 2.0, "Lr": 2.0, "Rf": 2.0, "Db": 2.0, "Sg": 2.0, "Bh": 2.0, "Hs": 2.0,
+                "Mt": 2.0, "Ds": 2.0, "Rg": 2.0}
+
 
 # Preambule from Lindh.py pthon sctipt
 HUGE = 1e10
@@ -206,30 +226,36 @@ def vdwHessian(atoms):
 
     def calculate_vdW(i, j, rij, coordinates, atom_names):
 
-        def calculate_vdw_block(i_ind, j_ind, coord, dist, C6_coeff):
+        def calculate_vdw_block(i_ind, j_ind, coord, dist, C6_coeff, C12_coeff):
             pairs = product(range(3), repeat=2)
             block = np.array([(coord[i_ind][k[0]] - coord[j_ind][k[0]])
                     * (coord[i_ind][k[1]] - coord[j_ind][k[1]]) for k in pairs])
-            return C6_coeff * ((-48. / dist ** 10) + (168. / dist ** 16)) * block 
+            return ((-48. * C6_coeff / dist ** 10) + (168. * C6_coeff * C12_coeff / dist ** 16)) * block 
         # C6 coefficient for atoms A and B
         C6i = C6_vdW[atom_names[i]]
         C6j = [C6_vdW[atom_names[a]] for a in j]     
+
+        # C12 coefficient for atoms A and B
+        C12i = VDW_radii[atom_names[i]]
+        C12j = [VDW_radii[atom_names[a]] for a in j]
         
         # polarizabilities α
         alphai = ALPHA_vdW[atom_names[i]]  
         alphaj = [ALPHA_vdW[atom_names[a]]  for a in j]
         
-        units = BOHR_to_angstr ** 3
-        print(units)
+        units = BOHR_to_angstr ** 6 * HARTREE_to_eV
+
         C6AB = [(2. * C6i * C6j[z]) 
                 / (alphaj[z] / alphai * C6i
                     + alphai / alphaj[z] * C6j[z]) 
                 * units
                 for z in j]
+
+        C12AB = [(C12i + C12j[z]) * 0.5 for z in j]
         
-        blocks = [(np.identity(3).reshape(1, -1) * C6AB[n] *
-                        (6. / (rij[n] ** 8) - 12 * 1. / (rij[n] ** 14))).reshape(3, 3)
-                        + (calculate_vdw_block(i, j[n], coordinates, rij[n], C6AB[n])).reshape(3, 3)
+        blocks = [(np.identity(3).reshape(1, -1) * 
+                        (C6AB[n] * 6. / (rij[n] ** 8) - 12 * C6AB[n] * C12AB[n] / (rij[n] ** 14))).reshape(3, 3)
+                        + (calculate_vdw_block(i, j[n], coordinates, rij[n], C6AB[n], C12AB[n])).reshape(3, 3)
                         if rij[n]!=0 else 
                         np.eye(3) * 0
                         for n in j]
