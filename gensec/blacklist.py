@@ -25,41 +25,47 @@ class Blacklist:
             # blacklist = np.hstack((torsions, quaternion, value_com))        
         self.blacklist = blacklist 
         self.dir = os.path.join(os.getcwd(), "blacklist")
-        self.torsional_diff_degree = 180
+        self.torsional_diff_degree = 120
+        self.criteria = "strict"
 
 
 
     def add_to_blacklist(self, vector):
         self.blacklist = np.vstack((self.blacklist, vector))
 
-    def torsional_diff(self, point, vector):
-        
-        def minimal_angle(x, y):
-            rad = min((2 * np.pi) - abs(np.deg2rad(x) - np.deg2rad(y)), 
-                                    abs(np.deg2rad(x) - np.deg2rad(y)))
-            return np.rad2deg(rad)
+    @staticmethod
+    def minimal_angle(x, y):
+        rad = min((2 * np.pi) - abs(np.deg2rad(x) - np.deg2rad(y)), 
+                                abs(np.deg2rad(x) - np.deg2rad(y)))
+        return np.rad2deg(rad)
 
-        diff_angles = [minimal_angle(x, y) for x,y in zip(vector, point)]
+    def torsional_diff(self, point, vector, criteria):
+        
+        diff_angles = [self.minimal_angle(x, y) for x,y in zip(vector, point)]
         # Checking if structures are similar depending on
         # torsional differences of angles:
-        if all(a < self.torsional_diff_degree for a in diff_angles):
-            # all the angles differ for more than 15 grad
-            similar = True 
-        else:
-            similar = False
+        if criteria == "strict":
+            if any(a < self.torsional_diff_degree for a in diff_angles):
+                similar = True 
+            else:
+                similar = False
+
+        elif criteria == "loose":
+            if all(a < self.torsional_diff_degree for a in diff_angles):
+                similar = True 
+            else:
+                similar = False
         return similar
         # return []
 
-    def find_in_blacklist(self, vector):
+    def find_in_blacklist(self, vector, criteria):
         found = False
         if type(self.blacklist[0]) == np.ndarray:
-            for point in self.blacklist:
-                if self.torsional_diff(point, vector):
+            for point in self.blacklist[1:]:
+                if self.torsional_diff(point, vector, criteria):
                     found = True
-                    break
-        else:
-            pass
-        return found
+                    return found                   
+        
 
     def get_blacklist(self):
         for vec in self.blacklist:
@@ -155,6 +161,7 @@ class Blacklist:
 
     def add_to_blacklist_traj(self, structure, fixed_frame, current_dir):
         t = structure.list_of_torsions
+        print(os.path.join(current_dir, self.find_traj(current_dir)))
         traj = Trajectory(os.path.join(current_dir, self.find_traj(current_dir)))
         for m in range(len(traj)):
             configuration = traj[m]

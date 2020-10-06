@@ -10,7 +10,7 @@ class Structure:
                         format=parameters["geometry"][1])
         self.connectivity_matrix_full = create_connectivity_matrix(self.atoms, bothways=True) 
         self.connectivity_matrix_isolated = create_connectivity_matrix(self.atoms, bothways=False)
-        self.list_of_torsions = detect_rotatble(self.connectivity_matrix_isolated)
+        self.list_of_torsions = detect_rotatble(self.connectivity_matrix_isolated, self.atoms)
 
         if parameters["mic"]["activate"] == True:
             self.pbc = parameters["mic"]["pbc"]

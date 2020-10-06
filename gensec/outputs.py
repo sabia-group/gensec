@@ -2,6 +2,9 @@ import os
 import json
 from time import gmtime, strftime
 from ase.io import read, write
+from gensec.modules import measure_torsion_of_last
+from ase.io.trajectory import Trajectory
+import shutil
 
 
 class Directories:
@@ -60,6 +63,8 @@ class Directories:
                 self.dir_num = max(last_dir)
             else:
                 self.dir_num = 0
+            remove_dirs = [int(i) for i in os.listdir(dirs)
+                                if "finished" not in os.listdir(os.path.join(dirs, i))]
         else:
             self.dir_num = 0
         
@@ -78,14 +83,15 @@ class Output:
 
     def __init__(self, report_file):
 
-        report = open(report_file, "w")
+        self.report_file = report_file
+        report = open(self.report_file, "w")
         report.write("#    Copyright 2020 Dmitrii Maksimov\n")
         t = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         report.write("GenSec started {}\n\n\n".format(t))
         report.close()
 
     def write_to_report(self, text):
-        report = open("report.out", "a")
+        report = open(self.report_file, "a")
         report.write(text)
         report.write("\n")
         report.close()
@@ -97,7 +103,7 @@ class Output:
         report.close()
 
     def write_parameters(self, parameters, structure, blacklist, dirs):
-        report = open("report.out", "a")
+        report = open(self.report_file, "a")
         report.write("Name of the project is {}\n".format(parameters["name"]))
         report.write("If the unknown structure will not be found {} times in row the criteria for similarity between structures will be decreased.\n".format(parameters["trials"]))
         report.write("After {} structures will be relaxed the algorithm will stop.\n".format(parameters["success"]))
@@ -133,17 +139,31 @@ class Output:
             report.write("Between molecular part and fixed frame part {} preconditioner of the Hessian matrix will be applied\n".format(parameters["calculator"]["preconditioner"]["mol"]))
             report.write("After difference in RMSD during geometry optimization reaches {} - updating of the Hessian will be performed\n".format(parameters["calculator"]["preconditioner"]["rmsd_update"]))
 
-            report.write("Blacklist contains {} structures\n".format(len(blacklist.blacklist)))
+            report.write("Blacklist contains {} snapshots\n".format(len(blacklist.blacklist)))
             report.write("Last calculated directory is {}\n".format(dirs.dir_num))
-            report.write("Continue the search.\n")
+
+        report.write("{} structures Already searched.\n".format(dirs.dir_num))
+        for struc in range(1, dirs.dir_num+1):
+            report.write("Structure {} has torsional angles\n{}\n".format(struc, blacklist.blacklist[struc]))
+
+
+        report.write("Continue the search.\n")            
+        report.close()
+
+    def write_successfull_generate(self, parameters, configuration, dirs):
+        report = open(self.report_file, "a")
+        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(dirs.dir_num, "010d"))
+        report.write("Structure {} succsessfully generated and saved in \n{}\n".format(dirs.dir_num, dir))
+        report.write("Structure {} has torsional angles configuration \n{}\n".format(dirs.dir_num, configuration))
         report.close()
 
     def write_successfull_relax(self, parameters, structure, blacklist, dirs):
-        report = open("report.out", "a")
-        report.write()
+        report = open(self.report_file, "a")
+        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(dirs.dir_num, "010d"))
+        report.write("Structure {} succsessfully relaxed and saved in \n{}\n".format(dirs.dir_num, dir))
+        tors = measure_torsion_of_last(Trajectory(os.path.join(dir ,blacklist.find_traj(dir)))[-1], structure.list_of_torsions)
+        report.write("Local minima of structure {} has torsional angles configuration \n{}\n".format(dirs.dir_num, tors))
         report.close()
-
-
 
 def load_parameters(parameters_file):
     if not os.path.exists(parameters_file):

@@ -70,7 +70,7 @@ def create_connectivity_matrix(atoms, bothways):
     connectivity_matrix = neighborList.get_connectivity_matrix()
     return connectivity_matrix
 
-def detect_rotatble(connectivity_matrix):
+def detect_rotatble(connectivity_matrix, atoms):
     """Detection of all rotatable bonds
     2. The bonds does not contain terminate atoms
     2. 
@@ -85,6 +85,16 @@ def detect_rotatble(connectivity_matrix):
         if len(graph[i]) == 4:         
             # Three of the atoms are terminal 
             if [len(graph[k]) for k in graph[i]].count(1)==3:
+                indx_not_terminal.remove(i)
+            else:
+                pass
+
+    for i in indx_not_terminal:
+        # Removing atoms like NH2 from search
+        # Finding all atoms that have exactly 3 connections
+        if len(graph[i]) == 3:         
+            # Two of the atoms are terminal 
+            if [len(graph[k]) for k in graph[i]].count(1)==2 and [atoms.get_chemical_symbols()[k] for k in graph[i]].count("H")==2:
                 indx_not_terminal.remove(i)
             else:
                 pass
@@ -410,6 +420,16 @@ def measure_molecules(molecules, list_of_torsions):
         # Set center of mass
         vector.append(molecules[i].get_center_of_mass())
     return vector
+
+def measure_torsion_of_last(atoms, list_of_torsions):
+    torsions = []
+    for torsion in list_of_torsions:
+        torsions.append(atoms.get_dihedral(
+                                  a1=torsion[0],
+                                  a2=torsion[1],
+                                  a3=torsion[2],
+                                  a4=torsion[3]))
+    return torsions
 
 
 def assign_random_state(molecule, list_of_torsions):

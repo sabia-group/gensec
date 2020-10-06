@@ -11,6 +11,7 @@ from gensec.blacklist import *
 from gensec.outputs import *
 from gensec.structure import *
 from gensec.relaxation import *
+from gensec.modules import measure_torsion_of_last
 
 import numpy as np
 import sys
@@ -18,6 +19,7 @@ import os
 import glob
 import shutil
 from random import randint, random, uniform
+from ase.io.trajectory import Trajectory
 
 parser = OptionParser()
 parser.add_option("-t", "--test"); 
@@ -167,7 +169,7 @@ def try_relax(structure, fixed_frame, parameters, dir):
 
 if parameters["calculator"]["optimize"] == "search":
     dirs = Directories(parameters)
-    output = Output("report.out")    
+    output = Output("report_search.out")    
     workflow = Workflow()
     structure = Structure(parameters)
     fixed_frame = Fixed_frame(parameters)
@@ -178,17 +180,20 @@ if parameters["calculator"]["optimize"] == "search":
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
     output.write_parameters(parameters, structure, blacklist, dirs)
     for f in glob.glob("/tmp/ipi_*"):
-        os.remove(f)
+        if os.path.exists(os.path.join("/tmp/", f)):
+            os.remove(os.path.join("/tmp/", f))
     workflow.success = dirs.dir_num
     structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
     generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
     blacklist.torsional_diff_degree = 5
-    if len(generated_dirs)>0:
-        for generated in generated_dirs:
-            gen = os.path.join(os.getcwd(), "generate", generated, generated+".in")
+    while len(generated_dirs)>0:
+        output.write_to_report("\nThere are {} candidate structures to relax\n".format(len(generated_dirs)))
+        for generated in sorted(generated_dirs):
+            d = os.path.join(os.getcwd(), "generate", generated)
+            output.write_to_report("\nTaking structure from folder {}\n".format(d))
+            gen = os.path.join(d, generated+".in")
             configuration = structure.read_configuration(structure, fixed_frame, gen)
-            print(gen)
-            found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration))
+            found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria="loose")
             if not found:
                 dirs.create_directory(parameters)
                 dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
@@ -196,22 +201,26 @@ if parameters["calculator"]["optimize"] == "search":
                 dirs.finished(parameters)
                 blacklist.check_calculated(dirs, parameters)
                 blacklist.add_to_blacklist_traj(structure, fixed_frame, dirs.current_dir(parameters))
+                t = blacklist.find_traj(os.path.join(dirs.current_dir(parameters)))
+                conf = measure_torsion_of_last(Trajectory(os.path.join(dirs.current_dir(parameters), t))[-1], structure.list_of_torsions)
+                output.write_to_report("found in blacklist {}".format(blacklist.find_in_blacklist(conf, criteria="loose")))
                 workflow.success += 1
                 workflow.trials = 0
-                shutil.rmtree(os.path.join(os.getcwd(), "generate", generated))
-                # else:
-                #     print("Error while relaxing")
-                #     shutil.rmtree(os.path.join(os.getcwd(), "generate", generated))
-                #     continue
+                output.write_successfull_relax(parameters, structure, blacklist, dirs)
+                shutil.rmtree(d)
+                output.write_to_report("\nGenerated structure in folder {} is deleted\n".format(d))
+                generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
+                output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
             else:
-                print("Already known")
-                shutil.rmtree(os.path.join(os.getcwd(), "generate", generated))
-
-
+                shutil.rmtree(d)
+                generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
+                output.write_to_report("\nStructure in folder {} is already in blacklist. Delete.\n".format(d))
+                output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
     # when run out structures 
-    while workflow.trials < parameters["trials"]:
+    output.write_to_report("All the structures in \"generate\" folder are calculated.")
+    output.write_to_report("Continue to generate and search.\n")
 
-        print("New Trial", workflow.trials)
+    while workflow.trials < parameters["trials"]:
         while workflow.success < parameters["success"]:
             # output.write("Start the new Trial {}\n".format(workflow.trials))
             # Generate the vector in internal degrees of freedom
@@ -219,7 +228,7 @@ if parameters["calculator"]["optimize"] == "search":
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
                 print("Structuers is ok")
-                found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration))
+                found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria="loose")
                 if not found:
                     dirs.create_directory(parameters)
                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
@@ -227,36 +236,41 @@ if parameters["calculator"]["optimize"] == "search":
                     dirs.finished(parameters)
                     blacklist.check_calculated(dirs, parameters)
                     blacklist.add_to_blacklist(structure.torsions_from_conf(configuration))
+                    output.write_successfull_relax(parameters, structure, blacklist, dirs)
                     workflow.success += 1
                     workflow.trials = 0
                 else:
-                    print("Found in blacklist!!!")
                     workflow.trials += 1 
                     if workflow.trials == parameters["trials"]:
-                        if blacklist.torsional_diff_degree > 5:
+                        if blacklist.torsional_diff_degree > 10:
                             blacklist.torsional_diff_degree -= 5
-                            print("\n\n\n\n\n")
-                            print(blacklist.torsional_diff_degree)
-                            print("\n\n\n\n\n")
+                            output.write_to_report("\nDecreasing the criteria for torsional angles to {}\n".format(blacklist.torsional_diff_degree))
                             workflow.trials = 0
                             pass
                         else:
-                            print("{} The space is sampled quite properly".format(parameters["trials"]))
-                            sys.exit(0)
+                            print("Swithing to loose criteria:\n")
+                            if blacklist.criteria == "strict":
+                                blacklist.criteria = "loose"
+                                blacklist.torsional_diff_degree = 120
+                                output.write_to_report("Start to look with loose criteria\n")
+                                workflow.trials = 0
+                                pass
+                            else:
+                               output.write_to_report("Cannot find new structures\n")
+                               sys.exit(0)
                     else:
                         pass
             else:
-                print("Structuers is not ok")
                 write("bad_luck.xyz", merge_together(structure, fixed_frame), format="xyz")
                 pass
         else:
-            print("{} number of structures was successfully relaxed!".format(parameters["success"]))
-            print("Terminating algorithm")
+            output.write_to_report("{} number of structures was successfully relaxed!".format(parameters["success"]))
+            output.write_to_report("Terminating algorithm")
             sys.exit(0)
 
 if parameters["calculator"]["optimize"] == "generate":
     dirs = Directories(parameters)
-    output = Output("report.out")
+    output = Output("report_generate.out")
     workflow = Workflow()
     structure = Structure(parameters)
     fixed_frame = Fixed_frame(parameters)
@@ -266,50 +280,62 @@ if parameters["calculator"]["optimize"] == "generate":
     blacklist.check_calculated(dirs, parameters)
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
     dirs.find_last_generated_dir(parameters)
-    output.write_parameters(parameters, structure, blacklist, dirs) 
-    for f in glob.glob("/tmp/ipi_*"):
-        os.remove(f)
+    output.write_parameters(parameters, structure, blacklist, dirs)
+    calculated_dir = os.path.join(os.getcwd(), "search") 
+    snapshots = len(os.listdir(calculated_dir))
     workflow.success = dirs.dir_num
     while workflow.trials < parameters["trials"]:
-        # print("New Trial", workflow.trials)
         while workflow.success < parameters["success"]:
-            # output.write("Start the new Trial {}\n".format(workflow.trials))
             # Generate the vector in internal degrees of freedom
             configuration = structure.create_configuration(parameters)
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
-                # print("Structuers is ok")
-                # print(len(blacklist.blacklist))
-                found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration))
+                found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria="loose")
                 if not found:
                     dirs.create_directory(parameters)
                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
                     blacklist.add_to_blacklist(structure.torsions_from_conf(configuration))
                     workflow.success += 1
                     workflow.trials = 0
-                    output.write_successfull_relax(parameters, structure, blacklist, dirs)
+                    output.write_successfull_generate(parameters, structure.torsions_from_conf(configuration), dirs)
                 else:
-                    # print("Found in blacklist!!!")
                     workflow.trials += 1 
+                    print("Trial {}".format(workflow.trials))
+                    if dirs.dir_num > snapshots:
+                        print("snap", snapshots)
+                        print("calc", len(os.listdir(calculated_dir)))
+                        need_to_visit = range(snapshots+1, len(os.listdir(calculated_dir))+1)
+                        for d in need_to_visit:
+                            d_name = os.path.join(os.getcwd(), "search", "{:010d}".format(d))
+                            if "finished" in os.listdir(d_name):
+                                output.write_to_report("Adding trajectory from {} to blacklist.\n".format(d_name))
+                                blacklist.add_to_blacklist_traj(structure, fixed_frame, d_name)
+                                snapshots += 1 
                     if workflow.trials == parameters["trials"]:
-                        if blacklist.torsional_diff_degree > 60:
+                        if blacklist.torsional_diff_degree > 10:
                             blacklist.torsional_diff_degree -= 5
-                            # print("\n\n\n\n\n")
-                            print("Swithing to ", blacklist.torsional_diff_degree)
-                            # print("\n\n\n\n\n")
+                            output.write_to_report("\nDecreasing the criteria for torsional angles to {}\n".format(blacklist.torsional_diff_degree))
                             workflow.trials = 0
                             pass
                         else:
-                            print("{} The space is sampled quite properly".format(parameters["trials"]))
-                            sys.exit(0)
+                            print("Swithing to loose criteria:\n")
+                            if blacklist.criteria == "strict":
+                                blacklist.criteria = "loose"
+                                blacklist.torsional_diff_degree = 120
+                                output.write_to_report("Start to look with loose criteria\n")
+                                workflow.trials = 0
+                                pass
+                            else:
+                               output.write_to_report("Cannot find new structures\n")
+                               sys.exit(0)
                     else:
                         pass
             else:
                 write("bad_luck.xyz", merge_together(structure, fixed_frame), format="xyz")
                 pass
         else:
-            print("{} number of structures was successfully generated!".format(parameters["success"]))
-            print("Terminating algorithm")
+            output.write_to_report("{} number of structures was successfully generated!\n".format(parameters["success"]))
+            output.write_to_report("Terminating algorithm\n")
             sys.exit(0)
 
 
