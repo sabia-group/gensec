@@ -1,5 +1,5 @@
 
-from ase.optimize import BFGS
+from gensec.bfgs import BFGS
 from ase.constraints import FixAtoms
 from ase.io import write
 import os
@@ -7,7 +7,7 @@ import sys
 import imp
 import numpy as np
 from ase.io.trajectory import Trajectory
-from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
+from gensec.neighbors import estimate_nearest_neighbour_distance
 
 import gensec.precon as precon
 import random

@@ -96,7 +96,7 @@ class Output:
         report.write("\n")
         report.close()
 
-    def write_parameters(self, parameters, structure, blacklist):
+    def write_parameters(self, parameters, structure, blacklist, dirs):
         report = open("report.out", "a")
         report.write("Name of the project is {}\n".format(parameters["name"]))
         report.write("If the unknown structure will not be found {} times in row the criteria for similarity between structures will be decreased.\n".format(parameters["trials"]))
@@ -125,8 +125,25 @@ class Output:
         if parameters["calculator"]["optimize"] == "generate":
             report.write("GenSec wil generate structures in \"generate\" folder without relaxation\n")
         elif parameters["calculator"]["optimize"] == "search":
-            report.write("GenSec wil generate structures in \"generate\" folder and relax them in \"search\" folder\n")
+            report.write("GenSec will generate structures in \"generate\" folder and relax them in \"search\" folder\n")
+            report.write("Relaxation will be perfomed until {} remaining forces are reached\n".format(parameters["calculator"]["fmax"]))
+            report.write("On molecular part {} preconditioner of the Hessian matrix will be applied\n".format(parameters["calculator"]["preconditioner"]["mol"]))
+            report.write("On fixed frame part {} preconditioner of the Hessian matrix will be applied\n".format(parameters["calculator"]["preconditioner"]["mol"]))
+            report.write("Between molecular parts {} preconditioner of the Hessian matrix will be applied\n".format(parameters["calculator"]["preconditioner"]["mol"]))
+            report.write("Between molecular part and fixed frame part {} preconditioner of the Hessian matrix will be applied\n".format(parameters["calculator"]["preconditioner"]["mol"]))
+            report.write("After difference in RMSD during geometry optimization reaches {} - updating of the Hessian will be performed\n".format(parameters["calculator"]["preconditioner"]["rmsd_update"]))
+
+            report.write("Blacklist contains {} structures\n".format(len(blacklist.blacklist)))
+            report.write("Last calculated directory is {}\n".format(dirs.dir_num))
+            report.write("Continue the search.\n")
         report.close()
+
+    def write_successfull_relax(self, parameters, structure, blacklist, dirs):
+        report = open("report.out", "a")
+        report.write()
+        report.close()
+
+
 
 def load_parameters(parameters_file):
     if not os.path.exists(parameters_file):

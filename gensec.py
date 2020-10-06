@@ -176,7 +176,7 @@ if parameters["calculator"]["optimize"] == "search":
     dirs.find_last_dir(parameters)
     blacklist.check_calculated(dirs, parameters)
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
-    output.write_parameters(parameters, structure, blacklist)
+    output.write_parameters(parameters, structure, blacklist, dirs)
     for f in glob.glob("/tmp/ipi_*"):
         os.remove(f)
     workflow.success = dirs.dir_num
@@ -266,7 +266,7 @@ if parameters["calculator"]["optimize"] == "generate":
     blacklist.check_calculated(dirs, parameters)
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
     dirs.find_last_generated_dir(parameters)
-    output.write_parameters(parameters, structure, blacklist) 
+    output.write_parameters(parameters, structure, blacklist, dirs) 
     for f in glob.glob("/tmp/ipi_*"):
         os.remove(f)
     workflow.success = dirs.dir_num
@@ -287,6 +287,7 @@ if parameters["calculator"]["optimize"] == "generate":
                     blacklist.add_to_blacklist(structure.torsions_from_conf(configuration))
                     workflow.success += 1
                     workflow.trials = 0
+                    output.write_successfull_relax(parameters, structure, blacklist, dirs)
                 else:
                     # print("Found in blacklist!!!")
                     workflow.trials += 1 
