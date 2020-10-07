@@ -47,13 +47,20 @@ def dfs_visit(G, u, found_cycle, pred_node, marked):
         if not marked[v]:                             # - Call dfs_visit recursively.
             dfs_visit(G, v, found_cycle, u, marked)
 
-def create_torsion_list(bond, graph):
+def create_torsion_list(bond, graph, atoms):
     
-    return (
-    [i for i in graph[bond[0]] if i!=bond[1]][0],
-    bond[0],
-    bond[1],
-    [i for i in graph[bond[1]] if i!=bond[0]][0])
+    symbols = atoms.get_chemical_symbols()
+    append = True
+    torsions = None
+    t1 = [i for i in graph[bond[0]] if i!=bond[1] and symbols[i]!="H" and len(graph[i])>1]
+    t4 = [i for i in graph[bond[1]] if i!=bond[0] and symbols[i]!="H" and len(graph[i])>1]
+    if len(t1)>0 and len(t4)>0:
+        torsions = (t1[0], bond[0], bond[1], t4[0])
+    else:
+        append=False
+
+
+    return append, torsions
 
 
 def set_centre_of_mass(atoms, new_com):
@@ -98,19 +105,32 @@ def detect_rotatble(connectivity_matrix, atoms):
                 indx_not_terminal.remove(i)
             else:
                 pass
+
+    for i in indx_not_terminal:
+        # Removing atoms with capping Hydrogen from search
+        # Finding all atoms that have exactly 2 connections
+        if len(graph[i]) == 2:         
+            # One Hydrogen and it is terminal 
+            if [len(graph[k]) for k in graph[i]].count(1)==1 and [atoms.get_chemical_symbols()[k] for k in graph[i]].count("H")==1:
+                indx_not_terminal.remove(i)
+            else:
+                pass
+
                 
     conn = [i for i in connectivity_matrix.keys() 
             if all(k in indx_not_terminal for k in i)]   
     list_of_torsions = []
     # If no cycles in the molecule
-    if not cycle_exists(graph):
-        for bond in conn:
-            # Check for the index order
-            list_of_torsions.append(create_torsion_list(bond, graph))
-    else:
-         for bond in conn:
-            # Check for the index order
-            list_of_torsions.append(create_torsion_list(bond, graph))       
+    # if not cycle_exists(graph):
+    for bond in conn:
+        # Check for the index order
+        append, torsions = create_torsion_list(bond, graph, atoms)
+        if append: 
+            list_of_torsions.append(torsions)
+    # else:
+    #      for bond in conn:
+    #         # Check for the index order
+    #         list_of_torsions.append(create_torsion_list(bond, graph, atoms))       
     return list_of_torsions
 
 
