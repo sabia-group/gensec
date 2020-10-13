@@ -11,7 +11,8 @@ class BFGS(Optimizer):
     def __init__(self, atoms, restart=None, logfile='-', trajectory=None,
                  maxstep=None, master=None, 
                  alpha=70.0, initial=None, rmsd_dev=1000.0, molindixes=None, 
-                 structure=None, fixed_frame=None, parameters=None, mu=None, A=None):
+                 structure=None, fixed_frame=None, parameters=None, mu=None, A=None,
+                 blacklist=None):
         """BFGS optimizer.
 
         Parameters:
@@ -59,6 +60,7 @@ class BFGS(Optimizer):
         self.structure = structure
         self.fixed_frame = fixed_frame
         self.parameters = parameters
+        self.blacklist = blacklist
               
     def todict(self):
         d = Optimizer.todict(self)

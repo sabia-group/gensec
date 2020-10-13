@@ -16,6 +16,7 @@ import numpy as np
 from itertools import product
 
 from gensec.customPrecon import preconditioned_hessian, Kabsh_rmsd
+from gensec.modules import measure_torsion_of_last
 
 class Dynamics:
 
@@ -149,23 +150,26 @@ class Dynamics:
             # compute the next step
             self.step()
             self.nsteps += 1
-            # Calculate RMSD between current and initial steps:
-            if self.initial:
-                if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
-                    self.H = preconditioned_hessian(self.structure, self.fixed_frame, self.parameters, self.atoms)
-                    a0=self.atoms.copy()
-                    self.initial=a0
-
-
-
-
             # let the user inspect the step and change things before logging
             # and predicting the next step
             yield False
-
             # log the step
             self.log()
             self.call_observers()
+            # Calculate RMSD between current and initial steps:
+            if self.initial:
+                if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
+                    # at = [self.atoms[i] for i in range(len(self.atoms)) if i in self.molindixes]
+                    torsions = measure_torsion_of_last(self.atoms, self.structure.list_of_torsions)
+                    found = self.blacklist.find_in_blacklist(torsions, criteria="loose", t=10)
+                    if found:
+                        print("\nFound in blacklist!!!\n")
+                        yield True
+                        break
+                    else:    
+                        self.H = preconditioned_hessian(self.structure, self.fixed_frame, self.parameters, self.atoms)
+                        a0=self.atoms.copy()
+                        self.initial=a0
 
         # finally check if algorithm was converged
         yield self.converged()

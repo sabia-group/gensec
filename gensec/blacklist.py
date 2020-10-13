@@ -25,8 +25,9 @@ class Blacklist:
             # blacklist = np.hstack((torsions, quaternion, value_com))        
         self.blacklist = blacklist 
         self.dir = os.path.join(os.getcwd(), "blacklist")
-        self.torsional_diff_degree = 120
+        self.torsional_diff_degree = 90
         self.criteria = "strict"
+        self.names = os.listdir(self.dir)
 
 
 
@@ -39,32 +40,33 @@ class Blacklist:
                                 abs(np.deg2rad(x) - np.deg2rad(y)))
         return np.rad2deg(rad)
 
-    def torsional_diff(self, point, vector, criteria):
+    def torsional_diff(self, point, vector, criteria, t):
         
         diff_angles = [self.minimal_angle(x, y) for x,y in zip(vector, point)]
         # Checking if structures are similar depending on
         # torsional differences of angles:
         if criteria == "strict":
-            if any(a < self.torsional_diff_degree for a in diff_angles):
+            if any(a < t for a in diff_angles):
                 similar = True 
             else:
                 similar = False
 
         elif criteria == "loose":
-            if all(a < self.torsional_diff_degree for a in diff_angles):
+            if all(a < t for a in diff_angles):
                 similar = True 
             else:
                 similar = False
         return similar
         # return []
 
-    def find_in_blacklist(self, vector, criteria):
+    def find_in_blacklist(self, vector, criteria, t):
         found = False
         if type(self.blacklist[0]) == np.ndarray:
             for point in self.blacklist[1:]:
-                if self.torsional_diff(point, vector, criteria):
+                if self.torsional_diff(point, vector, criteria=criteria, t=t):
                     found = True
-                    return found                   
+                    break
+        return found                   
         
 
     def get_blacklist(self):
@@ -83,7 +85,8 @@ class Blacklist:
 
     def check_calculated(self, dirs, parameters):
 
-        calculated_dir = os.path.join(os.getcwd(), "search")
+        calculated_dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"])
+        num_run = parameters["calculator"]["optimize"].split("_")[-1]
         if dirs.dir_num > 0:
             for i in range(1, dirs.dir_num+1):
                 traj_name = "{:010d}".format(i)
@@ -93,8 +96,27 @@ class Blacklist:
                     t = Trajectory(os.path.join(calculated_dir, traj_name, traj))
                     if len(t) != calculated_names.count(str(traj_name)):
                         for k in range(len(t)):
-                            n = os.path.join(self.dir, "{:010d}_{}.in".format(i, k))
+                            n = os.path.join(self.dir, "{:010d}_{}_{}.in".format(i, k, num_run))
                             write(n, t[k], format="aims")
+
+    def send_traj_to_blacklist_folder(self, dirs, parameters):
+
+        calculated_dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"])
+        num_run = parameters["calculator"]["optimize"].split("_")[-1]
+
+        # for i in range(1, dirs.dir_num+1):
+        traj_name = "{:010d}".format(dirs.dir_num)
+        calculated_names = [z.split("_")[0] for z in os.listdir(self.dir)]
+        traj = self.find_traj(os.path.join(calculated_dir, traj_name))
+        if traj is not None:
+            t = Trajectory(os.path.join(calculated_dir, traj_name, traj))
+            if len(t) != calculated_names.count(str(traj_name)):
+                for k in range(len(t)):
+                    n = os.path.join(self.dir, "{:010d}_{}_{}.in".format(dirs.dir_num, k, num_run))
+                    write(n, t[k], format="aims")
+
+
+
 
     def analyze_calculated(self, structure, fixed_frame, parameters):
 
@@ -181,3 +203,33 @@ class Blacklist:
                                                     a4=torsion[3]))
                 self.add_to_blacklist(torsions)
 
+    def update_blacklist(self, list_a, list_b, structure, fixed_frame):
+
+        if len(list_a) > len(list_b):
+            smaller = set(list_b)
+            bigger = set(list_a)
+        else:
+            smaller = set(list_a)
+            bigger = set(list_b)            
+
+        diff = [item for item in bigger if item not in smaller]
+        if len(diff) > 0:
+            t = structure.list_of_torsions
+            for m in diff:
+                configuration = read(os.path.join(self.dir, m), format="aims")
+                template = merge_together(structure, fixed_frame)
+                template.set_positions(configuration.get_positions())
+                # print(template.get_positions())
+                for i in range(len(structure.molecules)):
+                    len_mol = len(structure.molecules[i])
+                    coords = template.get_positions()[i*len_mol:i*len_mol+len_mol, :]
+                    structure.molecules[i].set_positions(coords)
+                    torsions = []
+                    for torsion in t:
+                        torsions.append(structure.molecules[i].get_dihedral(
+                                                        a1=torsion[0],
+                                                        a2=torsion[1],
+                                                        a3=torsion[2],
+                                                        a4=torsion[3]))
+                    self.add_to_blacklist(torsions)
+        self.names = bigger

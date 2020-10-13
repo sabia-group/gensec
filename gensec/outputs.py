@@ -16,8 +16,8 @@ class Directories:
         else:
             pass
 
-        if not os.path.exists("search"):
-            os.mkdir("search")
+        if not os.path.exists(parameters["calculator"]["optimize"]):
+            os.mkdir(parameters["calculator"]["optimize"])
         else:
             pass
 
@@ -54,11 +54,22 @@ class Directories:
         f.write("Calculation was finished")
         f.close()
 
+    def blacklisted(self, parameters):
+        dir = self.current_dir(parameters)
+        f = open(os.path.join(dir, "blacklisted"), "w")
+        f.write("Calculation was terminated and blacklisted")
+        f.close()
+
+
     def find_last_dir(self, parameters):
-        dirs = os.path.join(os.getcwd(), "search")
+
+        def finished(files, list_dir):
+            return any(i in list_dir for i in files) 
+
+        dirs = os.path.join(os.getcwd(), parameters["calculator"]["optimize"])
         if len(os.listdir(dirs))>0:
             last_dir = [int(i) for i in os.listdir(dirs)
-                                if "finished" in os.listdir(os.path.join(dirs, i))]
+                                if finished(["finished", "blacklisted"], os.listdir(os.path.join(dirs, i)))]
             if len(last_dir) > 0:
                 self.dir_num = max(last_dir)
             else:
@@ -78,6 +89,11 @@ class Directories:
     def current_dir(self, parameters):
         dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(self.dir_num, "010d"))
         return dir
+
+
+
+
+
 
 class Output:
 
@@ -130,8 +146,8 @@ class Output:
         report.write("ASE calculator is in {}.\n".format(parameters["calculator"]["ase_parameters_file"]))
         if parameters["calculator"]["optimize"] == "generate":
             report.write("GenSec wil generate structures in \"generate\" folder without relaxation\n")
-        elif parameters["calculator"]["optimize"] == "search":
-            report.write("GenSec will generate structures in \"generate\" folder and relax them in \"search\" folder\n")
+        elif "search" in parameters["calculator"]["optimize"]:
+            report.write("GenSec will generate structures in \"generate\" folder and relax them in {} folder\n".format(parameters["calculator"]["optimize"]))
             report.write("Relaxation will be perfomed until {} remaining forces are reached\n".format(parameters["calculator"]["fmax"]))
             report.write("On molecular part {} preconditioner of the Hessian matrix will be applied\n".format(parameters["calculator"]["preconditioner"]["mol"]))
             report.write("On fixed frame part {} preconditioner of the Hessian matrix will be applied\n".format(parameters["calculator"]["preconditioner"]["mol"]))
@@ -166,12 +182,17 @@ class Output:
         report.close()
 
 def load_parameters(parameters_file):
-    if not os.path.exists(parameters_file):
-        print("No parameter file, generate default one?")
-        # generate default parameter file
-    else:
-        with open(parameters_file) as f:
+    try:
+        with open(os.path.join(os.getcwd(), parameters_file)) as f:
             return json.load(f)
+    except:
+        print("No parameter file, generate default one?")
+    # if not os.path.exists(parameters_file):
+        
+    #     generate default parameter file
+    # else:
+    #     with open(parameters_file) as f:
+            
 
 class Workflow:
 

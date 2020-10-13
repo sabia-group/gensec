@@ -113,7 +113,7 @@ class Calculator:
             mu = 1
         return mu
 
-    def relax(self, structure, fixed_frame, parameters, directory):
+    def relax(self, structure, fixed_frame, parameters, directory, blacklist):
 
         if len(structure.molecules) > 1:
             a0 = structure.molecules[0].copy()
@@ -139,19 +139,23 @@ class Calculator:
         rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]       
         opt = BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
-                    structure=structure, fixed_frame=fixed_frame, parameters=parameters)
+                    structure=structure, fixed_frame=fixed_frame, parameters=parameters, 
+                    blacklist=blacklist)
         # For now, should be redone
         if not hasattr(structure, "mu"):
             structure.mu = 1
         if not hasattr(structure, "A"):
             structure.A = 1
         opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, atoms, parameters)
-        np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
+        # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
         opt.run(fmax=fmax, steps=1000)
         write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
-        np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
-        calculator.close()
+        # np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
+        try:
+            calculator.close()
+        except:
+            pass
         
         #traj_ID = Trajectory(os.path.join(directory, "trajectory_ID.traj"))
         #traj_precon = Trajectory(os.path.join(directory, "trajectory_precon.traj"))
