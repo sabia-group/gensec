@@ -11,8 +11,8 @@ class Directories:
 
     def __init__(self, parameters):
 
-        if not os.path.exists("generate"):
-            os.mkdir("generate")
+        if not os.path.exists(parameters["calculator"]["generate_folder"]):
+            os.mkdir(parameters["calculator"]["generate_folder"])
         else:
             pass
 
@@ -21,23 +21,27 @@ class Directories:
         else:
             pass
 
-        if not os.path.exists("blacklist"):
-            os.mkdir("blacklist")
+        if not os.path.exists(parameters["calculator"]["blacklist_folder"]):
+            os.mkdir(parameters["calculator"]["blacklist_folder"])
         else:
             pass
 
         self.dir_num = 0
+        self.generate_folder = parameters["calculator"]["generate_folder"]
+        self.blacklist_folder = parameters["calculator"]["blacklist_folder"]
 
     def create_directory(self, parameters):
+
+
         self.dir_num+=1
-        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(self.dir_num, "010d"))
+        dir = os.path.join(os.getcwd(), format(self.dir_num, "010d"))
         if not os.path.exists(dir):
             os.mkdir(dir)
         else:
             pass
 
     def remove_last_directory(self, parameters):       
-        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(self.dir_num, "010d"))
+        dir = os.path.join(os.getcwd(), format(self.dir_num, "010d"))
         if os.path.exists(dir):
             os.rmdir(dir)
         else:
@@ -45,7 +49,7 @@ class Directories:
         self.dir_num-=1
 
     def save_to_directory(self, ensemble, parameters):       
-        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(self.dir_num, "010d"))
+        dir = os.path.join(os.getcwd(), format(self.dir_num, "010d"))
         write(os.path.join(dir, "{:010d}.in".format(self.dir_num)), ensemble, format="aims")
 
     def finished(self, parameters):
@@ -63,31 +67,32 @@ class Directories:
 
     def find_last_dir(self, parameters):
 
-        def finished(files, list_dir):
+        def finished_dir(files, list_dir):
             return any(i in list_dir for i in files) 
 
-        dirs = os.path.join(os.getcwd(), parameters["calculator"]["optimize"])
-        if len(os.listdir(dirs))>0:
-            last_dir = [int(i) for i in os.listdir(dirs)
-                                if finished(["finished", "blacklisted"], os.listdir(os.path.join(dirs, i)))]
+        d = os.getcwd()
+        dirs = list(filter(os.path.isdir, os.listdir(d)))
+        if len(dirs)>0:
+            last_dir = [int(i) for i in dirs
+                                if finished_dir(["finished", "blacklisted"], os.listdir(os.path.join(d, i)))]
             if len(last_dir) > 0:
                 self.dir_num = max(last_dir)
             else:
                 self.dir_num = 0
-            remove_dirs = [int(i) for i in os.listdir(dirs)
-                                if "finished" not in os.listdir(os.path.join(dirs, i))]
+            remove_dirs = [int(i) for i in dirs
+                                if finished_dir(["finished", "blacklisted"], os.listdir(os.path.join(d, i)))]
         else:
             self.dir_num = 0
         
     def find_last_generated_dir(self, parameters):
-        dirs = os.path.join(os.getcwd(), "generate")
-        if len(os.listdir(dirs))>0:
-            self.dir_num = max([int(i) for i in os.listdir(dirs)])
+        dirs = list(filter(os.path.isdir, os.listdir(self.generate_folder)))
+        if len(dirs)>0:
+            self.dir_num = max([int(i) for i in dirs])
         else:
             self.dir_num = 0
 
     def current_dir(self, parameters):
-        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(self.dir_num, "010d"))
+        dir = os.path.join(os.getcwd(), format(self.dir_num, "010d"))
         return dir
 
 
@@ -175,7 +180,7 @@ class Output:
 
     def write_successfull_relax(self, parameters, structure, blacklist, dirs):
         report = open(self.report_file, "a")
-        dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"], format(dirs.dir_num, "010d"))
+        dir = os.path.join(os.getcwd(), format(dirs.dir_num, "010d"))
         report.write("Structure {} succsessfully relaxed and saved in \n{}\n".format(dirs.dir_num, dir))
         tors = measure_torsion_of_last(Trajectory(os.path.join(dir ,blacklist.find_traj(dir)))[-1], structure.list_of_torsions)
         report.write("Local minima of structure {} has torsional angles configuration \n{}\n".format(dirs.dir_num, tors))

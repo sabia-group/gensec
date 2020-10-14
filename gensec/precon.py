@@ -1214,7 +1214,7 @@ def LindhHessian(atoms):
 
 
 
-def preconditioned_hessian(structure, fixed_frame, atoms_current, parameters):
+def preconditioned_hessian(structure, fixed_frame, atoms_current, parameters, H0):
 
     if len(structure.molecules) > 1:
         a0 = structure.molecules[0].copy()
@@ -1244,7 +1244,9 @@ def preconditioned_hessian(structure, fixed_frame, atoms_current, parameters):
 
     # Genrate all nececcary hessians
     precons = {}
-    precon_names = parameters["calculator"]["preconditioner"].values()
+    precon_names = []
+    for name in parameters["calculator"]["preconditioner"].values():
+        precon_names.append(parameters["calculator"]["preconditioner"][name]["prrecon"])
     if "Lindh" in precon_names:
         precons["Lindh"] = LindhHessian(atoms)
     if "Exp" in precon_names:
@@ -1255,29 +1257,37 @@ def preconditioned_hessian(structure, fixed_frame, atoms_current, parameters):
         precons["ID"] = np.eye(3 * len(atoms)) * 70
 
     precons_parameters = {
-        "mol" : parameters["calculator"]["preconditioner"]["mol"],
-        "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"], 
-        "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"],
-        "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]
+        "mol" : parameters["calculator"]["preconditioner"]["mol"]["precon"],
+        "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["precon"], 
+        "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
+        "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]["precon"]
     }
+
+    update = {
+        "mol" : parameters["calculator"]["preconditioner"]["mol"]["update"],
+        "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["update"], 
+        "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["update"],
+        "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]["update"]
+    }
+
 
     # Combine hessians into hessian
     N = len(all_atoms)
-    preconditioned_hessian = np.zeros(shape = (3 * N, 3 * N))
+    preconditioned_hessian = H0
     for i in range(3 * len(all_atoms)):
         for j in range(3 * len(all_atoms)):
             if hessian_indices[i] == hessian_indices[j]:
-                if "fixed_frame" in hessian_indices[j]:
+                if "fixed_frame" in hessian_indices[j] and update["fixed_frame"]:
                     p = precons_parameters["fixed_frame"]
                     preconditioned_hessian[i,j] = precons[p][i,j]
-                elif "mol" in hessian_indices[j]:
+                elif "mol" in hessian_indices[j] and update["mol"]:
                     p = precons_parameters["mol"]
                     preconditioned_hessian[i,j] = precons[p][i,j]
             else:
-                if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]]:
+                if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]] and update["mol-mol"]:
                     p = precons_parameters["mol-mol"]
                     preconditioned_hessian[i,j] = precons[p][i,j]
-                else:               
+                elif update["mol-fixed_frame"]:               
                     p = precons_parameters["mol-fixed_frame"]
                     preconditioned_hessian[i,j] = precons[p][i,j]
     

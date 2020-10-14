@@ -167,7 +167,11 @@ class Dynamics:
                         yield True
                         break
                     else:    
-                        self.H = preconditioned_hessian(self.structure, self.fixed_frame, self.parameters, self.atoms)
+                        self.H = preconditioned_hessian(self.structure, 
+                                                        self.fixed_frame, 
+                                                        self.parameters,
+                                                        self.atoms,
+                                                        self.H)
                         a0=self.atoms.copy()
                         self.initial=a0
 

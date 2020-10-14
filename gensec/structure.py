@@ -130,6 +130,24 @@ class Structure:
                                                             configuration[z+6], 
                                                             configuration[z+7]]))
 
+    def apply_torsions(self, configuration):
+    # molecules, configuration, list_of_torsions, connectivity_matrix_isolated):
+        for i in range(len(self.molecules)):
+            k=-1
+            for torsion in self.list_of_torsions:
+                k+=1
+                # +4 quaternion values and +3 COM values
+                z=i*(len(self.list_of_torsions)+4+3)+k
+                fixed_indices = carried_atoms(
+                                self.connectivity_matrix_isolated, torsion)
+                self.molecules[i].set_dihedral(angle=configuration[z],
+                                          a1=torsion[0],
+                                          a2=torsion[1],
+                                          a3=torsion[2],
+                                          a4=torsion[3],
+                                          indices=fixed_indices)
+
+
     def torsions_from_conf(self, configuration):
         torsions = []
         for i in range(len(self.molecules)):

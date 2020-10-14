@@ -35,15 +35,15 @@ else:
 print(parameters["calculator"]["optimize"])
 
 if "search" in parameters["calculator"]["optimize"]:
-    dirs = Directories(parameters)
-    output = Output("report_{}.out".format(parameters["calculator"]["optimize"]))    
+    dirs = Directories(parameters)   
     workflow = Workflow()
     structure = Structure(parameters)
     fixed_frame = Fixed_frame(parameters)
     calculator = Calculator(parameters)
-    blacklist = Blacklist(structure)
+    blacklist = Blacklist(structure, parameters)
+    os.chdir(parameters["calculator"]["optimize"])
+    output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
     dirs.find_last_dir(parameters)
-    blacklist.check_calculated(dirs, parameters)
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
     output.write_parameters(parameters, structure, blacklist, dirs)
     for f in glob.glob("/tmp/ipi_*"):
@@ -51,7 +51,8 @@ if "search" in parameters["calculator"]["optimize"]:
             os.remove(os.path.join("/tmp/", f))
     workflow.success = dirs.dir_num
     structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
-    generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
+    generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
+
     # while len(generated_dirs)>0:
     #     output.write_to_report("\nThere are {} candidate structures to relax\n".format(len(generated_dirs)))
     #     for generated in sorted(generated_dirs):
@@ -75,11 +76,11 @@ if "search" in parameters["calculator"]["optimize"]:
     #             output.write_successfull_relax(parameters, structure, blacklist, dirs)
     #             shutil.rmtree(d)
     #             output.write_to_report("\nGenerated structure in folder {} is deleted\n".format(d))
-    #             generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
+    #             generated_dirs = os.listdir(dirs.generate_folder)
     #             output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
     #         else:
     #             shutil.rmtree(d)
-    #             generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
+    #             generated_dirs = os.listdir(dirs.generate_folder)
     #             output.write_to_report("\nStructure in folder {} is already in blacklist. Delete.\n".format(d))
     #             output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
     # # when run out structures 
@@ -88,20 +89,27 @@ if "search" in parameters["calculator"]["optimize"]:
     # blacklist.criteria = "loose"
 
     while workflow.trials < parameters["trials"]:
-        generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
         while workflow.success < parameters["success"]:
+            generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
             while len(generated_dirs)>0:
-                generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
+                # generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
                 output.write_to_report("\nThere are {} candidate structures to relax\n".format(len(generated_dirs)))
-                d = os.path.join(os.getcwd(), "generate", sorted(generated_dirs)[0])
-                output.write_to_report("\nTaking structure from folder {}\n".format(d))
-                gen = os.path.join(d, sorted(generated_dirs)[0]+".in")
-                configuration = structure.read_configuration(structure, fixed_frame, gen)
-                shutil.rmtree(d)
+                try:
+                    generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
+                    d = os.path.join(dirs.generate_folder, sorted(generated_dirs)[0])
+                    gen = os.path.join(d, sorted(generated_dirs)[0]+".in")
+                    configuration = structure.read_configuration(structure, fixed_frame, gen)
+                    shutil.rmtree(d)
+                except:
+                    output.write_to_report("\nSomething went wrong with folder\n")
+                    continue
                 blacklist.update_blacklist(blacklist.names, os.listdir(blacklist.dir), structure, fixed_frame)
+                print("\n\n\n", len(blacklist.blacklist), "\n\n\n")
                 found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria="loose", t=10)
                 if not found:
+                    output.write_to_report("\nTaking structure from folder {}\n".format(d))
                     dirs.create_directory(parameters)
+                    structure.apply_torsions(configuration)
                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
                     calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), blacklist)                           
                     t = blacklist.find_traj(os.path.join(dirs.current_dir(parameters)))
@@ -109,25 +117,23 @@ if "search" in parameters["calculator"]["optimize"]:
                     ff = blacklist.find_in_blacklist(conf, criteria="loose", t=10)
                     if not ff:
                         dirs.finished(parameters)
-                        # blacklist.check_calculated(dirs, parameters)
-                        # blacklist.add_to_blacklist_traj(structure, fixed_frame, dirs.current_dir(parameters))
+                        blacklist.send_traj_to_blacklist_folder(dirs, parameters)
                         workflow.success += 1
                         workflow.trials = 0
                         output.write_successfull_relax(parameters, structure, blacklist, dirs)
                         output.write_to_report("\nGenerated structure in folder {} is deleted\n".format(d))
                         output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
-                        # generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
                     else:
                         output.write_to_report("found in blacklist {}".format(ff))
                         dirs.blacklisted(parameters)
-                        # generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))                                
-                        # blacklist.check_calculated(dirs, parameters)
-                        # blacklist.add_to_blacklist_traj(structure, fixed_frame, dirs.current_dir(parameters))
+                        blacklist.send_traj_to_blacklist_folder(dirs, parameters)
 
                 else:
                     output.write_to_report("\nStructure in folder {} is already in blacklist. Delete.\n".format(d))
                     output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
-                    # generated_dirs = os.listdir(os.path.join(os.getcwd(), "generate"))
+
+
+                    # generated_dirs = os.listdir(dirs.generate_folder)
             # when run out structures 
             # output.write_to_report("All the structures in \"generate\" folder are calculated.")
             else:
@@ -140,9 +146,7 @@ if "search" in parameters["calculator"]["optimize"]:
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
                 blacklist.update_blacklist(blacklist.names, os.listdir(blacklist.dir), structure, fixed_frame)
-                print(len(blacklist.blacklist))
                 found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria="loose", t=10)
-                print("\n\n\n", len(blacklist.blacklist), "\n\n\n")
                 if not found:
                     dirs.create_directory(parameters)
                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
@@ -201,7 +205,8 @@ if parameters["calculator"]["optimize"] == "generate":
     structure = Structure(parameters)
     fixed_frame = Fixed_frame(parameters)
     calculator = Calculator(parameters)
-    blacklist = Blacklist(structure)
+    blacklist = Blacklist(structure, parameters)
+    os.chdir(parameters["calculator"]["optimize"])
     dirs.find_last_dir(parameters)
     blacklist.check_calculated(dirs, parameters)
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
@@ -217,6 +222,7 @@ if parameters["calculator"]["optimize"] == "generate":
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
                 blacklist.update_blacklist(blacklist.names, os.listdir(blacklist.dir), structure, fixed_frame)
+                print("\n\n\n", len(blacklist.blacklist), "\n\n\n")
                 found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria=blacklist.criteria, t=blacklist.torsional_diff_degree)
                 if not found:
                     dirs.create_directory(parameters)
@@ -326,7 +332,7 @@ if parameters["calculator"]["optimize"] == "generate":
 # #         break
 
 # if parameters["calculator"]["optimize"] == "single":
-#     for directory in os.listdir(os.path.join(os.getcwd(), "generate")):
+#     for directory in os.listdir(dirs.generate_folder):
 #         current_dir = os.path.join(os.getcwd(), "generate", directory)
 #         # dirs.create_directory()
 #         structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))

@@ -7,7 +7,7 @@ import shutil
 
 class Blacklist:
 
-    def __init__(self, structure):
+    def __init__(self, structure, parameters):
 
         if len(structure.molecules) > 1:
             torsions = np.array([0 for i in structure.list_of_torsions])
@@ -24,7 +24,7 @@ class Blacklist:
             # value_com = np.array([0, 0, 0])
             # blacklist = np.hstack((torsions, quaternion, value_com))        
         self.blacklist = blacklist 
-        self.dir = os.path.join(os.getcwd(), "blacklist")
+        self.dir = parameters["calculator"]["blacklist_folder"]
         self.torsional_diff_degree = 90
         self.criteria = "strict"
         self.names = os.listdir(self.dir)
@@ -85,7 +85,7 @@ class Blacklist:
 
     def check_calculated(self, dirs, parameters):
 
-        calculated_dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"])
+        calculated_dir = os.getcwd()
         num_run = parameters["calculator"]["optimize"].split("_")[-1]
         if dirs.dir_num > 0:
             for i in range(1, dirs.dir_num+1):
@@ -101,7 +101,7 @@ class Blacklist:
 
     def send_traj_to_blacklist_folder(self, dirs, parameters):
 
-        calculated_dir = os.path.join(os.getcwd(), parameters["calculator"]["optimize"])
+        calculated_dir = os.getcwd()
         num_run = parameters["calculator"]["optimize"].split("_")[-1]
 
         # for i in range(1, dirs.dir_num+1):
@@ -143,8 +143,8 @@ class Blacklist:
                     self.add_to_blacklist(torsions)
 
             # Go through generated structures:
-            dir = os.path.join(os.getcwd(), "generate")
-            for m in os.listdir(dir):
+            dir = parameters["calculator"]["generate_folder"]
+            for m in list(filter(os.path.isdir, os.listdir(dir))):
                 configuration = read(os.path.join(dir, m, m+".in"), format="aims")
                 template = merge_together(structure, fixed_frame)
                 template.set_positions(configuration.get_positions())
@@ -183,7 +183,6 @@ class Blacklist:
 
     def add_to_blacklist_traj(self, structure, fixed_frame, current_dir):
         t = structure.list_of_torsions
-        print(os.path.join(current_dir, self.find_traj(current_dir)))
         traj = Trajectory(os.path.join(current_dir, self.find_traj(current_dir)))
         for m in range(len(traj)):
             configuration = traj[m]

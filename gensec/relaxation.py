@@ -89,26 +89,6 @@ class Calculator:
             B = np.dot(v.T, np.dot(P, v))
             mu = A / B
             calculator.close()
-
-
-            # if precons_parameters["mol"]=="Exp":
-            #     if len(structure.molecules) > 1:
-            #         a0 = structure.molecules[0].copy()
-            #         for i in range(1, len(structure.molecules)):
-            #             a0+=structure.molecules[i]
-            #     else:
-            #         a0 = structure.molecules[0]
-                
-            #     if precons_parameters["fixed_frame"]=="Exp":
-            #         all_atoms = a0 + fixed_frame.fixed_frame
-            #     else:
-            #         all_atoms = a0
-            # else:
-            #     if precons_parameters["fixed_frame"]=="Exp":
-            #         all_atoms = fixed_frame.fixed_frame
-            #     else:
-            #         print("For nothing estimate mu")
-            #         sys.exit(0)
         else:
             mu = 1
         return mu
@@ -141,12 +121,13 @@ class Calculator:
                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, 
                     blacklist=blacklist)
-        # For now, should be redone
+
         if not hasattr(structure, "mu"):
             structure.mu = 1
         if not hasattr(structure, "A"):
             structure.A = 1
-        opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, atoms, parameters)
+        H0 = np.eye(3 * len(atoms)) * 70
+        opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, atoms, parameters, H0)
         # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
         opt.run(fmax=fmax, steps=1000)
