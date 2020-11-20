@@ -1,0 +1,32 @@
+Geometry = GenFormat { 
+    <<< "geo_end.gen" 
+} 
+ 
+Hamiltonian = DFTB{ 
+   MaxAngularMomentum = { 
+      C = p 
+      H = s 
+      N = p 
+      O = p 
+      S = d 
+   } 
+   SCC = Yes 
+   SCCTolerance = 1e-06 
+   SlaterKosterFiles = Type2FileNames{ 
+      Prefix = /home/damaksimovda/programs/dftbplus-20.1.x86_64-linux/Slater_Koster/mio-1-1/ 
+      Separator = "-" 
+      Suffix = ".skf" 
+      } 
+   } 
+Options { 
+   WriteResultsTag = Yes 
+} 
+ParserOptions { 
+   IgnoreUnprocessedNodes = Yes  
+} 
+Driver = Socket {
+  File = "dftbplus2"
+  Protocol = i-PI {}
+  MaxSteps = 1000
+  Verbosity = 0
+}
