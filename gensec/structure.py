@@ -11,7 +11,6 @@ class Structure:
         self.connectivity_matrix_full = create_connectivity_matrix(self.atoms, bothways=True) 
         self.connectivity_matrix_isolated = create_connectivity_matrix(self.atoms, bothways=False)
         self.list_of_torsions = detect_rotatble(self.connectivity_matrix_isolated, self.atoms)
-
         if parameters["mic"]["activate"] == True:
             self.pbc = parameters["mic"]["pbc"]
             self.mic = True
@@ -25,7 +24,6 @@ class Structure:
         if len(self.cycles) > 0:
              for i in range(len(self.cycles)):
                 self.cycles[i] = make_canonical_pyranosering(self.atoms, self.cycles[i])
-
 
     def create_configuration(self, parameters):
 

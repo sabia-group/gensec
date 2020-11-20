@@ -41,14 +41,16 @@ if "search" in parameters["calculator"]["optimize"]:
     fixed_frame = Fixed_frame(parameters)
     calculator = Calculator(parameters)
     blacklist = Blacklist(structure, parameters)
+    if not os.path.exists(parameters["calculator"]["optimize"]):
+        os.mkdir(parameters["calculator"]["optimize"])
     os.chdir(parameters["calculator"]["optimize"])
     output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
     dirs.find_last_dir(parameters)
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
     output.write_parameters(parameters, structure, blacklist, dirs)
-    for f in glob.glob("/tmp/ipi_*"):
-        if os.path.exists(os.path.join("/tmp/", f)):
-            os.remove(os.path.join("/tmp/", f))
+    # for f in glob.glob("/tmp/ipi_*"):
+    #     if os.path.exists(os.path.join("/tmp/", f)):
+    #         os.remove(os.path.join("/tmp/", f))
     workflow.success = dirs.dir_num
     structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
     generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
@@ -95,6 +97,7 @@ if "search" in parameters["calculator"]["optimize"]:
                 # generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
                 output.write_to_report("\nThere are {} candidate structures to relax\n".format(len(generated_dirs)))
                 try:
+
                     generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
                     d = os.path.join(dirs.generate_folder, sorted(generated_dirs)[0])
                     gen = os.path.join(d, sorted(generated_dirs)[0]+".in")
@@ -102,6 +105,7 @@ if "search" in parameters["calculator"]["optimize"]:
                     shutil.rmtree(d)
                 except:
                     output.write_to_report("\nSomething went wrong with folder\n")
+                    output.write_to_report(d)
                     continue
                 blacklist.update_blacklist(blacklist.names, os.listdir(blacklist.dir), structure, fixed_frame)
                 print("\n\n\n", len(blacklist.blacklist), "\n\n\n")
@@ -126,7 +130,7 @@ if "search" in parameters["calculator"]["optimize"]:
                     else:
                         output.write_to_report("found in blacklist {}".format(ff))
                         dirs.blacklisted(parameters)
-                        blacklist.send_traj_to_blacklist_folder(dirs, parameters)
+                        # blacklist.send_traj_to_blacklist_folder(dirs, parameters)
 
                 else:
                     output.write_to_report("\nStructure in folder {} is already in blacklist. Delete.\n".format(d))
@@ -165,7 +169,7 @@ if "search" in parameters["calculator"]["optimize"]:
                     else:
                         output.write_to_report("found in blacklist {}".format(ff))
                         dirs.blacklisted(parameters)                                
-                        blacklist.send_traj_to_blacklist_folder(dirs, parameters)
+                        # blacklist.send_traj_to_blacklist_folder(dirs, parameters)
                         # blacklist.add_to_blacklist_traj(structure, fixed_frame, dirs.current_dir(parameters))
                         workflow.success += 1
                         workflow.trials = 0
@@ -212,18 +216,23 @@ if parameters["calculator"]["optimize"] == "generate":
     blacklist.analyze_calculated(structure, fixed_frame, parameters)
     dirs.find_last_generated_dir(parameters)
     output.write_parameters(parameters, structure, blacklist, dirs)
-    # calculated_dir = os.path.join(os.getcwd(), "search") 
+    calculated_dir = os.path.join(os.getcwd(), "search") 
     # snapshots = len(os.listdir(calculated_dir))
+    print("GENERATE")
     workflow.success = dirs.dir_num
+    print(workflow.success)
     while workflow.trials < parameters["trials"]:
         while workflow.success < parameters["success"]:
             # Generate the vector in internal degrees of freedom
             configuration = structure.create_configuration(parameters)
+            # print(configuration)
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
                 blacklist.update_blacklist(blacklist.names, os.listdir(blacklist.dir), structure, fixed_frame)
+                # print(blacklist.blacklist)
                 print("\n\n\n", len(blacklist.blacklist), "\n\n\n")
                 found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria=blacklist.criteria, t=blacklist.torsional_diff_degree)
+                # found = False
                 if not found:
                     dirs.create_directory(parameters)
                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
@@ -268,7 +277,7 @@ if parameters["calculator"]["optimize"] == "generate":
             output.write_to_report("{} number of structures was successfully generated!\n".format(parameters["success"]))
             output.write_to_report("Terminating algorithm\n")
             sys.exit(0)
-
+    sys.exit(0)
 
 
         # for i in range(len(structure.molecules)):
@@ -331,20 +340,25 @@ if parameters["calculator"]["optimize"] == "generate":
 # #         print(structure.mu)
 # #         break
 
-# if parameters["calculator"]["optimize"] == "single":
-#     for directory in os.listdir(dirs.generate_folder):
-#         current_dir = os.path.join(os.getcwd(), "generate", directory)
-#         # dirs.create_directory()
-#         structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
-#         for i in ["ID", "Lindh", "Lindh_RMSD"]:
-#             parameters["name"] = i
-#             if "Lindh" in i:
-#                 parameters["calculator"]["preconditioner"]["mol"] = "Lindh"
-#                 if i == "Lindh_RMSD":
-#                     parameters["calculator"]["preconditioner"]["rmsd_update"] = 0.05
-#             else:
-#                 parameters["calculator"]["preconditioner"]["mol"] = "ID"
-#             calculator.relax(structure, fixed_frame, parameters, current_dir)
+if "single" in parameters["calculator"]["optimize"]:
+    dirs = Directories(parameters)   
+    workflow = Workflow()
+    structure = Structure(parameters)
+    fixed_frame = Fixed_frame(parameters)
+    calculator = Calculator(parameters)
+    blacklist = Blacklist(structure, parameters)
+    if not os.path.exists(parameters["calculator"]["optimize"]):
+        os.mkdir(parameters["calculator"]["optimize"])
+    os.chdir(parameters["calculator"]["optimize"])
+    output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
+    dirs.find_last_dir(parameters)
+    output.write_parameters(parameters, structure, blacklist, dirs)
+    structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
+    dirs.create_directory(parameters)
+    dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
+    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), blacklist)                           
+    dirs.finished(parameters)
+
 #         # os.system("rm /tmp/ipi_*")
 #     sys.exit(0)
 

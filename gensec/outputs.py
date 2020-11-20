@@ -5,30 +5,20 @@ from ase.io import read, write
 from gensec.modules import measure_torsion_of_last
 from ase.io.trajectory import Trajectory
 import shutil
-
+from pathlib import Path
 
 class Directories:
 
     def __init__(self, parameters):
 
-        if not os.path.exists(parameters["calculator"]["generate_folder"]):
-            os.mkdir(parameters["calculator"]["generate_folder"])
-        else:
-            pass
-
-        if not os.path.exists(parameters["calculator"]["optimize"]):
-            os.mkdir(parameters["calculator"]["optimize"])
-        else:
-            pass
-
-        if not os.path.exists(parameters["calculator"]["blacklist_folder"]):
-            os.mkdir(parameters["calculator"]["blacklist_folder"])
-        else:
-            pass
-
         self.dir_num = 0
         self.generate_folder = parameters["calculator"]["generate_folder"]
-        self.blacklist_folder = parameters["calculator"]["blacklist_folder"]
+        if len(os.path.split(self.generate_folder)[0]) == 0:
+            self.generate_folder = os.path.join(os.getcwd(), self.generate_folder)
+            if not os.path.exists(self.generate_folder):
+                os.mkdir(self.generate_folder)
+
+
 
     def create_directory(self, parameters):
 
@@ -165,7 +155,8 @@ class Output:
 
         report.write("{} structures Already searched.\n".format(dirs.dir_num))
         for struc in range(1, dirs.dir_num+1):
-            report.write("Structure {} has torsional angles\n{}\n".format(struc, blacklist.blacklist[struc]))
+            if parameters["configuration"]["torsions"]["activate"]:
+                report.write("Structure {} has torsional angles\n{}\n".format(struc, blacklist.blacklist[struc]))
 
 
         report.write("Continue the search.\n")            

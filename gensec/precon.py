@@ -18,6 +18,7 @@ from numpy.linalg import norm
 from itertools import product
 import operator
 import os
+
 def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
 
     coords1 = np.array([atoms.get_positions()[i] for i in molindixes])
@@ -110,25 +111,26 @@ C6_vdW = {'H': 6.5000, 'He': 1.4600, 'Li': 1387.0000, 'Be': 214.0000, 'B': 99.50
         'Bk': 1985.82,
         'Cf': 1891.92, 'Es': 1851.1, 'Fm': 1787.07, 'Md': 1701.0, 'No': 1578.18}
 
-VDW_radii = {"X": 1.5,  "H": 1.2,  "He": 1.4, "Li": 1.82, "Be": 2.0, "B": 2.0,
-                "C": 1.7,  "N": 1.55,  "O": 1.52,  "F": 1.47,  "Ne": 1.54,
-                "Na": 1.36, "Mg": 1.18, "Al": 2.0, "Si": 2.1, "P": 1.8,
-                "S": 1.8,  "Cl": 2.27, "Ar": 1.88, "K": 1.76,  "Ca": 1.37, "Sc": 2.0,
-                "Ti": 2.0, "V": 2.0,  "Cr": 2.0, "Mn": 2.0, "Fe": 2.0, "Co": 2.0,
-                "Ni": 1.63, "Cu": 1.4, "Zn": 1.39, "Ga": 1.07, "Ge": 2.0, "As": 1.85,
-                "Se": 1.9, "Br": 1.85, "Kr": 2.02, "Rb": 2.0, "Sr": 2.0, "Y": 2.0,
-                "Zr": 2.0, "Nb": 2.0, "Mo": 2.0, "Tc": 2.0, "Ru": 2.0, "Rh": 2.0,
-                "Pd": 1.63, "Ag": 1.72, "Cd": 1.58, "In": 1.93, "Sn": 2.17, "Sb": 2.0,
-                "Te": 2.06, "I": 1.98,  "Xe": 2.16, "Cs": 2.1, "Ba": 2.0,
-                "La": 2.0, "Ce": 2.0, "Pr": 2.0, "Nd": 2.0, "Pm": 2.0, "Sm": 2.0,
-                "Eu": 2.0, "Gd": 2.0, "Tb": 2.0, "Dy": 2.0, "Ho": 2.0,
-                "Er": 2.0, "Tm": 2.0, "Yb": 2.0, "Lu": 2.0, "Hf": 2.0, "Ta": 2.0,
-                "W": 2.0,  "Re": 2.0, "Os": 2.0, "Ir": 2.0, "Pt": 1.72, "Au": 1.66,
-                "Hg": 1.55, "Tl": 1.96, "Pb": 2.02, "Bi": 2.0, "Po": 2.0, "At": 2.0, "Rn": 2.0,
-                "Fr": 2.0, "Ra": 2.0, "Ac": 2.0, "Th": 2.0, "Pa": 2.0, "U": 1.86,
-                "Np": 2.0, "Pu": 2.0, "Am": 2.0, "Cm": 2.0, "Bk": 2.0, "Cf": 2.0, "Es": 2.0, "Fm": 2.0,
-                "Md": 2.0, "No": 2.0, "Lr": 2.0, "Rf": 2.0, "Db": 2.0, "Sg": 2.0, "Bh": 2.0, "Hs": 2.0,
-                "Mt": 2.0, "Ds": 2.0, "Rg": 2.0}
+# VdW radii in Bohr
+VDW_radii = {'H': 3.1000, 'He': 2.6500, 'Li': 4.1600, 'Be': 4.1700, 'B': 3.8900, 'C': 3.5900,
+        'N': 3.3400, 'O': 3.1900, 'F': 3.0400, 'Ne': 2.9100, 'Na': 3.7300, 'Mg': 4.2700,
+        'Al': 4.3300, 'Si': 4.2000, 'P': 4.0100, 'S': 3.8600, 'Cl': 3.7100, 'Ar': 3.5500,
+        'K': 3.7100, 'Ca': 4.6500, 'Sc': 4.5900, 'Ti': 4.5100, 'V': 4.4400, 'Cr': 3.9900,
+        'Mn': 3.9700, 'Fe': 4.2300, 'Co': 4.1800, 'Ni': 3.8200, 'Cu': 3.7600, 'Zn': 4.0200,
+        'Ga': 4.1900, 'Ge': 4.1900, 'As': 4.1100, 'Se': 4.0400, 'Br': 3.9300, 'Kr': 3.8200,
+        'Rb': 3.7200, 'Sr': 4.5400, 'Y': 4.8151, 'Zr': 4.53, 'Nb': 4.2365, 'Mo': 4.099,
+        'Tc': 4.076,
+        'Ru': 3.9953, 'Rh': 3.95, 'Pd': 3.6600, 'Ag': 3.8200, 'Cd': 3.99, 'In': 4.2319,
+        'Sn': 4.3030,
+        'Sb': 4.2760, 'Te': 4.22, 'I': 4.1700, 'Xe': 4.0800, 'Cs': 3.78, 'Ba': 4.77, 'La': 3.14,
+        'Ce': 3.26, 'Pr': 3.28, 'Nd': 3.3, 'Pm': 3.27, 'Sm': 3.32, 'Eu': 3.40,
+        'Gd': 3.62, 'Tb': 3.42, 'Dy': 3.26, 'Ho': 3.24, 'Er': 3.30, 'Tm': 3.26,
+        'Yb': 3.22, 'Lu': 3.20, 'Hf': 4.21, 'Ta': 4.15, 'W': 4.08, 'Re': 4.02, 'Os': 3.84,
+        'Ir': 4.00, 'Pt': 3.92, 'Au': 3.86, 'Hg': 3.98, 'Tl': 3.91, 'Pb': 4.31, 'Bi': 4.32,
+        'Po': 4.097, 'At': 4.07, 'Rn': 4.23, 'Fr': 3.90, 'Ra': 4.98, 'Ac': 2.75, 'Th': 2.85,
+        'Pa': 2.71, 'U': 3.00, 'Np': 3.28, 'Pu': 3.45, 'Am': 3.51, 'Cm': 3.47,
+        'Bk': 3.56,
+        'Cf': 3.55, 'Es': 3.76, 'Fm': 3.89, 'Md': 3.93, 'No': 3.78}
 
 
 # Preambule from Lindh.py pthon sctipt
@@ -216,73 +218,70 @@ def vector_separation(cell_h, cell_ih, qi, qj):
 
 def vdwHessian(atoms):
 
-#atoms = read(options.inputfile, format = options.formatfile)
+    def periodic_R(cell_h, cell_ih, qi, qj):
+        sij = np.dot(cell_ih, (qi - qj).T)  
+        sij -= np.rint(sij)
+        dij = np.dot(cell_h, sij).T        
+        rij = np.linalg.norm(dij)
+        return dij, rij
+
 
     N  = len(atoms)
     coordinates = atoms.get_positions()
     atom_names = atoms.get_chemical_symbols()
     cell_h = atoms.get_cell()[:]
     cell_ih = atoms.get_reciprocal_cell()[:]
-
-    def calculate_vdW(i, j, rij, coordinates, atom_names):
-
-        def calculate_vdw_block(i_ind, j_ind, coord, dist, C6_coeff, C12_coeff):
-            pairs = product(range(3), repeat=2)
-            block = np.array([(coord[i_ind][k[0]] - coord[j_ind][k[0]])
-                    * (coord[i_ind][k[1]] - coord[j_ind][k[1]]) for k in pairs])
-            return ((-48. * C6_coeff / dist ** 10) + (168. * C6_coeff * C12_coeff / dist ** 16)) * block 
-        # C6 coefficient for atoms A and B
-        C6i = C6_vdW[atom_names[i]]
-        C6j = [C6_vdW[atom_names[a]] for a in j]     
-
-        # C12 coefficient for atoms A and B
-        C12i = VDW_radii[atom_names[i]]
-        C12j = [VDW_radii[atom_names[a]] for a in j]
-        
-        # polarizabilities α
-        alphai = ALPHA_vdW[atom_names[i]]  
-        alphaj = [ALPHA_vdW[atom_names[a]]  for a in j]
-        
-        units = BOHR_to_angstr ** 6 * HARTREE_to_eV
-
-        C6AB = [(2. * C6i * C6j[z]) 
-                / (alphaj[z] / alphai * C6i
-                    + alphai / alphaj[z] * C6j[z]) 
-                * units
-                for z in j]
-
-        C12AB = [(C12i + C12j[z]) * 0.5 for z in j]
-        
-        blocks = [(np.identity(3).reshape(1, -1) * 
-                        (C6AB[n] * 6. / (rij[n] ** 8) - 12 * C6AB[n] * C12AB[n] / (rij[n] ** 14))).reshape(3, 3)
-                        + (calculate_vdw_block(i, j[n], coordinates, rij[n], C6AB[n], C12AB[n])).reshape(3, 3)
-                        if rij[n]!=0 else 
-                        np.eye(3) * 0
-                        for n in j]
-
-        return np.hstack(blocks)
-
     hessian = np.zeros(shape = (3 * N, 3 * N))
     atomsRange = list(range(N))
-    for i in atomsRange:
-        qi = coordinates[i].reshape(1,3)
-        qj = coordinates.reshape(-1,3)
-        #qj = coordinates.reshape(-1,3)[shift(atomsRange, n=-i)]
-        
+    units = BOHR_to_angstr ** 6 * HARTREE_to_eV
+
+    def C6AB(A, B):
+
+        C6AB = 2. * C6_vdW[A] * C6_vdW[B] / (ALPHA_vdW[B] / ALPHA_vdW[A] * C6_vdW[A] + ALPHA_vdW[A] / ALPHA_vdW[B] * C6_vdW[B]) * units
+        return C6AB
+
+    def C12AB(A, B, C6):
+
+        R0AB = (VDW_radii[B] * VDW_radii[A] * BOHR_to_angstr**2 * 2**2)**0.5 
+        C12AB = 0.5*C6*(R0AB**6)    
+        return C12AB 
+
+    def RAB(cell_h, cell_ih, qi, qj):
+
         if np.array_equal(cell_h, np.zeros([3, 3])):
-            rij = np.array([np.linalg.norm(qi-Qj) for Qj in qj])
+            R = np.array(np.linalg.norm(qi-qj))
         else:
-            dij, rij = vector_separation(cell_h, cell_ih, qi, qj) 
-        j = atomsRange 
-        stack = calculate_vdW(i, j, rij, coordinates, atom_names)
-        
-        hessian[3 * i + 0, :] = stack[0]
-        hessian[3 * i + 1, :] = stack[1]
-        hessian[3 * i + 2, :] = stack[2]
-        
-    # for ind in range(len(hessian)):
-        # hessian[ind, ind] =  hessian[ind, ind] + 0.5
-    #hessian[ind, ind] = -np.sum(hessian[ind])
+            dij, R = periodic_R(cell_h, cell_ih, qi, qj) 
+        return R
+
+    def vdW_element(k, l, C6, C12, R, qi, qj):
+
+        if R !=0:
+            if k == l:
+                return -48*C6*(qi[k]-qj[l])**2/R**10 + 168*C12*(qi[k]-qj[l])**2/R**16 + 6*C6/R**8 - 12*C12/R**14
+            else:
+                return -48*C6*(-qi[k]+qj[k])*(-qi[l]+qj[l])/R**10 + 168*C12*(-qi[k]+qj[k])*(-qi[l]+qj[l])/R**16
+        else:
+            return 0
+
+    for i in atomsRange:
+        for j in atomsRange:
+            for k in range(3):
+                for l in range(3):
+                    # Calculate C6, C12, rij
+                    A = atom_names[i]
+                    B = atom_names[j]
+                    C6 = C6AB(A, B)
+                    C12 = C12AB(A, B, C6)
+                    qi = coordinates[i]
+                    qj = coordinates[j]
+                    R = RAB(cell_h, cell_ih, qi, qj)
+                    hessian[3*i+k, 3*j+l] = vdW_element(k, l, C6, C12, R, qi, qj)
+       
+    for ind in range(len(hessian)):
+        hessian[ind, ind] = 0 
+        hessian[ind, ind] = -np.sum(hessian[ind]) + 0.005
+    
     return hessian
 
 
@@ -319,9 +318,8 @@ def ExpHessian(atoms, mu=1, A=1):
         
     # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
     for ind in range(len(hessian)):
-        hessian[ind, ind] = -np.sum(hessian[ind])
-    #dd = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/gensec/examples/Cu_EMT/generate/0000000001/"
-    #np.savetxt(os.path.join(dd, "expHessian.hes"), hessian)
+        hessian[ind, ind] = 0 
+        hessian[ind, ind] = -np.sum(hessian[ind]) + 0.005   
     return hessian
 
 
@@ -1211,10 +1209,7 @@ def LindhHessian(atoms):
     hessian = builder.to_array().reshape((3*n_vec, 3*n_vec))
     return hessian
 
-
-
-
-def preconditioned_hessian(structure, fixed_frame, atoms_current, parameters, H0):
+def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H, task="update"):
 
     if len(structure.molecules) > 1:
         a0 = structure.molecules[0].copy()
@@ -1245,8 +1240,23 @@ def preconditioned_hessian(structure, fixed_frame, atoms_current, parameters, H0
     # Genrate all nececcary hessians
     precons = {}
     precon_names = []
-    for name in parameters["calculator"]["preconditioner"].values():
-        precon_names.append(parameters["calculator"]["preconditioner"][name]["prrecon"])
+
+    precons_parameters = {
+        "mol" : parameters["calculator"]["preconditioner"]["mol"]["precon"],
+        "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["precon"], 
+        "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
+        "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]["precon"]
+    }
+
+    routine = {
+        "mol" : parameters["calculator"]["preconditioner"]["mol"][task],
+        "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"][task], 
+        "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"][task],
+        "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"][task]
+    }
+    print(routine)
+    precon_names = [list(precons_parameters.values())[i] for i in range(len(routine)) if list(routine.values())[i]]
+
     if "Lindh" in precon_names:
         precons["Lindh"] = LindhHessian(atoms)
     if "Exp" in precon_names:
@@ -1256,47 +1266,82 @@ def preconditioned_hessian(structure, fixed_frame, atoms_current, parameters, H0
     if "ID" in precon_names:
         precons["ID"] = np.eye(3 * len(atoms)) * 70
 
-    precons_parameters = {
-        "mol" : parameters["calculator"]["preconditioner"]["mol"]["precon"],
-        "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["precon"], 
-        "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
-        "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]["precon"]
-    }
-
-    update = {
-        "mol" : parameters["calculator"]["preconditioner"]["mol"]["update"],
-        "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["update"], 
-        "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["update"],
-        "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]["update"]
-    }
-
-
     # Combine hessians into hessian
     N = len(all_atoms)
-    preconditioned_hessian = H0
-    for i in range(3 * len(all_atoms)):
-        for j in range(3 * len(all_atoms)):
-            if hessian_indices[i] == hessian_indices[j]:
-                if "fixed_frame" in hessian_indices[j] and update["fixed_frame"]:
-                    p = precons_parameters["fixed_frame"]
-                    preconditioned_hessian[i,j] = precons[p][i,j]
-                elif "mol" in hessian_indices[j] and update["mol"]:
-                    p = precons_parameters["mol"]
-                    preconditioned_hessian[i,j] = precons[p][i,j]
-            else:
-                if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]] and update["mol-mol"]:
-                    p = precons_parameters["mol-mol"]
-                    preconditioned_hessian[i,j] = precons[p][i,j]
-                elif update["mol-fixed_frame"]:               
-                    p = precons_parameters["mol-fixed_frame"]
-                    preconditioned_hessian[i,j] = precons[p][i,j]
+    preconditioned_hessian = H
+    # for ind in range(len(preconditioned_hessian)):
+        # print("old")
+        # print(preconditioned_hessian[ind, ind])
+
+
+    # for i in range(3 * len(all_atoms)):
+    #     for j in range(3 * len(all_atoms)):
+    #         if hessian_indices[i] == hessian_indices[j]:
+    #             if "fixed_frame" in hessian_indices[j] and routine["fixed_frame"]:
+    #                 p = precons_parameters["fixed_frame"]
+    #                 preconditioned_hessian[i,j] = precons[p][i,j]
+    #             elif "mol" in hessian_indices[j] and routine["mol"]:
+    #                 p = precons_parameters["mol"]
+    #                 preconditioned_hessian[i,j] = precons[p][i,j]
+    #         else:
+    #             if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]] and routine["mol-mol"]:
+    #                 p = precons_parameters["mol-mol"]
+    #                 preconditioned_hessian[i,j] = precons[p][i,j]
+    #             elif routine["mol-fixed_frame"]:               
+    #                 p = precons_parameters["mol-fixed_frame"]
+    #                 preconditioned_hessian[i,j] = precons[p][i,j]
     
-    # add_unity to diagonal
-    for ind in range(len(preconditioned_hessian)):
-        preconditioned_hessian[ind, ind] =  preconditioned_hessian[ind, ind] + 0.005
+    if task == "update":
+        if not any(a ==  False for a in routine.values()):
+            return preconditioned_hessian
+        else:
+            for i in range(3 * len(all_atoms)):
+                for j in range(3 * len(all_atoms)):
+                    if hessian_indices[i] == hessian_indices[j]:
+                        if "fixed_frame" in hessian_indices[j] and routine["fixed_frame"]:
+                            p = precons_parameters["fixed_frame"]
+                            preconditioned_hessian[i,j] = precons[p][i,j]
+                        elif "mol" in hessian_indices[j] and routine["mol"]:
+                            p = precons_parameters["mol"]
+                            preconditioned_hessian[i,j] = precons[p][i,j]
+                    else:
+                        if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]] and routine["mol-mol"]:
+                            p = precons_parameters["mol-mol"]
+                            preconditioned_hessian[i,j] = precons[p][i,j]
+                        elif routine["mol-fixed_frame"]:               
+                            p = precons_parameters["mol-fixed_frame"]
+                            preconditioned_hessian[i,j] = precons[p][i,j]
+            for ind in range(len(preconditioned_hessian)):
+                preconditioned_hessian[ind, ind] = 0
+                preconditioned_hessian[ind, ind] = -np.sum(preconditioned_hessian[ind]) + 0.005
+                if preconditioned_hessian[ind, ind] == 0.005:
+                    preconditioned_hessian[ind, ind] = 70
+            return preconditioned_hessian
 
-    return preconditioned_hessian
 
+    if task == "initial":
+        for i in range(3 * len(all_atoms)):
+            for j in range(3 * len(all_atoms)):
+                if hessian_indices[i] == hessian_indices[j]:
+                    if "fixed_frame" in hessian_indices[j] and routine["fixed_frame"]:
+                        p = precons_parameters["fixed_frame"]
+                        preconditioned_hessian[i,j] = precons[p][i,j]
+                    elif "mol" in hessian_indices[j] and routine["mol"]:
+                        p = precons_parameters["mol"]
+                        preconditioned_hessian[i,j] = precons[p][i,j]
+                else:
+                    if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]] and routine["mol-mol"]:
+                        p = precons_parameters["mol-mol"]
+                        preconditioned_hessian[i,j] = precons[p][i,j]
+                    elif routine["mol-fixed_frame"]:               
+                        p = precons_parameters["mol-fixed_frame"]
+                        preconditioned_hessian[i,j] = precons[p][i,j]
+        for ind in range(len(preconditioned_hessian)):
+            preconditioned_hessian[ind, ind] = 0
+            preconditioned_hessian[ind, ind] = -np.sum(preconditioned_hessian[ind]) + 0.005
+            if preconditioned_hessian[ind, ind] == 0.005:
+                preconditioned_hessian[ind, ind] = 70
+        return preconditioned_hessian
 
 
 

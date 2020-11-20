@@ -15,10 +15,12 @@ from ase.io import read, write
 import numpy as np
 from itertools import product
 
-from gensec.customPrecon import preconditioned_hessian, Kabsh_rmsd
+from gensec.precon import preconditioned_hessian, Kabsh_rmsd
 from gensec.modules import measure_torsion_of_last
 
-class Dynamics:
+# from ase.optimize.optimize import Dynamics, Optimizer
+
+class Dynamics_mod:
 
 
     # ~ """Base-class for all MD and structure optimization classes."""
@@ -160,18 +162,22 @@ class Dynamics:
             if self.initial:
                 if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
                     # at = [self.atoms[i] for i in range(len(self.atoms)) if i in self.molindixes]
-                    torsions = measure_torsion_of_last(self.atoms, self.structure.list_of_torsions)
-                    found = self.blacklist.find_in_blacklist(torsions, criteria="loose", t=10)
-                    if found:
-                        print("\nFound in blacklist!!!\n")
-                        yield True
-                        break
-                    else:    
+                    # torsions = measure_torsion_of_last(self.atoms, self.structure.list_of_torsions)
+                    # found = self.blacklist.find_in_blacklist(torsions, criteria="loose", t=10)
+                    # if found:
+                    #     print("\nFound in blacklist!!!\n")
+                    #     yield True
+                    #     break
+                    # else:
+                        # print(self.H)
+                        # print(self.atoms)
                         self.H = preconditioned_hessian(self.structure, 
                                                         self.fixed_frame, 
                                                         self.parameters,
                                                         self.atoms,
-                                                        self.H)
+                                                        self.H,
+                                                        task="update")
+                        # print(self.H)
                         a0=self.atoms.copy()
                         self.initial=a0
 
@@ -185,7 +191,7 @@ class Dynamics:
         atoms are less than *fmax* or when the number of steps exceeds
         *steps*."""
 
-        for converged in Dynamics.irun(self):
+        for converged in Dynamics_mod.irun(self):
             pass
         return converged
 
@@ -204,13 +210,7 @@ class Dynamics:
         raise RuntimeError("step not implemented.")
 
 
-
-
-
-
-
-
-class Optimizer(Dynamics):
+class Optimizer_mod(Dynamics_mod):
     """Base-class for all structure optimization classes."""
 
     def __init__(
@@ -255,7 +255,7 @@ class Optimizer(Dynamics):
             force-consistent energies if available in the calculator, but
             falls back to force_consistent=False if not.
         """
-        Dynamics.__init__(
+        Dynamics_mod.__init__(
             self,
             atoms,
             logfile,
@@ -295,14 +295,14 @@ class Optimizer(Dynamics):
         self.fmax = fmax
         if steps:
             self.max_steps = steps
-        return Dynamics.irun(self)
+        return Dynamics_mod.irun(self)
 
     def run(self, fmax=0.05, steps=None):
         """ call Dynamics.run and keep track of fmax"""
         self.fmax = fmax
         if steps:
             self.max_steps = steps
-        return Dynamics.run(self)
+        return Dynamics_mod.run(self)
 
     def converged(self, forces=None):
         """Did the optimization converge?"""

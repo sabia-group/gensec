@@ -1,5 +1,5 @@
 
-from gensec.bfgs import BFGS
+from gensec.bfgs import BFGS_mod
 from ase.constraints import FixAtoms
 from ase.io import write
 import os
@@ -16,15 +16,12 @@ from subprocess import Popen
 
 class Calculator:
     def __init__(self, parameters):
-        pass
 
-
-    def load_calculator(self, parameters):
         folder = parameters["calculator"]["supporting_files_folder"]
         ase_file_name = parameters["calculator"]["ase_parameters_file"]
         full_path = os.path.join(os.getcwd(), folder, ase_file_name)
-        ase_file = imp.load_source(ase_file_name, full_path)
-        return ase_file
+        self.calculator = imp.load_source(ase_file_name, full_path).calculator
+
 
     def set_constrains(self, atoms, parameters):
         z = parameters["calculator"]["constraints"]["z-coord"]
@@ -53,9 +50,9 @@ class Calculator:
                 all_atoms = a0 + fixed_frame.fixed_frame           
             else:
                 all_atoms = a0
-            calculator = self.load_calculator(parameters).calculator  
+              
             atoms = all_atoms.copy()
-            atoms.set_calculator(calculator)
+            atoms.set_calculator(self.calculator)
             self.set_constrains(atoms, parameters)
             # Step 1: get energies and forces for initial configuration
             forces_initial = atoms.get_forces()
@@ -111,13 +108,15 @@ class Calculator:
         molindixes = list(range(len(a0)))
         # Preconditioner part 
         name = parameters["name"]
-        calculator = self.load_calculator(parameters).calculator 
         atoms = all_atoms.copy()
-        self.set_constrains(atoms, parameters)    
-        atoms.set_calculator(calculator)
+        self.set_constrains(atoms, parameters)  
+        atoms.set_calculator(self.calculator)
         write(os.path.join(directory, "initial_configuration_{}.in".format(name)), atoms,format="aims" )
-        rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]       
-        opt = BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
+        if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:   
+            rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]["value"]
+        else:
+            rmsd_threshhold = 100000000000      
+        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, 
                     blacklist=blacklist)
@@ -127,12 +126,12 @@ class Calculator:
         if not hasattr(structure, "A"):
             structure.A = 1
         H0 = np.eye(3 * len(atoms)) * 70
-        opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, atoms, parameters, H0)
-        # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
+        opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
+        np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
         opt.run(fmax=fmax, steps=1000)
         write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
-        # np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
+        np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
         try:
             calculator.close()
         except:

@@ -3,11 +3,13 @@ import warnings
 import numpy as np
 from numpy.linalg import eigh
 
-from gensec.optimize import Optimizer
+from gensec.optimize import Optimizer_mod
 from gensec.defaults import defaults
+# from ase.optimize.bfgs import BFGS
 
+import sys
+class BFGS_mod(Optimizer_mod):
 
-class BFGS(Optimizer):
     def __init__(self, atoms, restart=None, logfile='-', trajectory=None,
                  maxstep=None, master=None, 
                  alpha=70.0, initial=None, rmsd_dev=1000.0, molindixes=None, 
@@ -48,8 +50,7 @@ class BFGS(Optimizer):
         if self.maxstep > 1.0:
             warnings.warn('You are using a much too large value for '
                           'the maximum step size: %.1f Å' % maxstep)
-
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory, master)
+        Optimizer_mod.__init__(self, atoms, restart, logfile, trajectory, master)
 
         # initial hessian
         self.H0 = np.eye(3 * len(self.atoms)) * alpha
@@ -61,9 +62,9 @@ class BFGS(Optimizer):
         self.fixed_frame = fixed_frame
         self.parameters = parameters
         self.blacklist = blacklist
-              
+
     def todict(self):
-        d = Optimizer.todict(self)
+        d = Optimizer_mod.todict(self)
         if hasattr(self, 'maxstep'):
             d.update(maxstep=self.maxstep)
         return d
@@ -141,15 +142,3 @@ class BFGS(Optimizer):
 
         self.r0 = r0
         self.f0 = f0
-
-
-class oldBFGS(BFGS):
-    def determine_step(self, dr, steplengths):
-        """Old BFGS behaviour for scaling step lengths
-
-        This keeps the behaviour of truncating individual steps. Some might
-        depend of this as some absurd kind of stimulated annealing to find the
-        global minimum.
-        """
-        dr /= np.maximum(steplengths / self.maxstep, 1.0).reshape(-1, 1)
-        return dr

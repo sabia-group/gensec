@@ -1,4 +1,4 @@
-import os
+import os, sys
 import numpy as np 
 from gensec.modules import *
 from ase.io.trajectory import Trajectory
@@ -24,9 +24,22 @@ class Blacklist:
             # value_com = np.array([0, 0, 0])
             # blacklist = np.hstack((torsions, quaternion, value_com))        
         self.blacklist = blacklist 
-        self.dir = parameters["calculator"]["blacklist_folder"]
         self.torsional_diff_degree = 90
         self.criteria = "strict"
+        self.dir = parameters["calculator"]["blacklist_folder"]
+
+        if len(os.path.split(self.dir)[0]) == 0:
+            self.dir = os.path.join(os.getcwd(), self.dir)
+            # Means taht blacklist folder in the same directory with os.getcwd()
+            if not os.path.exists(self.dir):
+                os.mkdir(self.dir)
+            else:
+                pass
+        else:
+            # Means taht blacklist folder specified with full path
+            if not os.path.exists(self.dir):
+                os.mkdir(self.dir)
+
         self.names = os.listdir(self.dir)
 
 
@@ -143,7 +156,9 @@ class Blacklist:
                     self.add_to_blacklist(torsions)
 
             # Go through generated structures:
-            dir = parameters["calculator"]["generate_folder"]
+            dir = os.getcwd()
+            if len(os.path.split(dir)[0]) == 0:
+                dir = os.path.join(os.getcwd(), dir)
             for m in list(filter(os.path.isdir, os.listdir(dir))):
                 configuration = read(os.path.join(dir, m, m+".in"), format="aims")
                 template = merge_together(structure, fixed_frame)
