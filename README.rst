@@ -43,13 +43,13 @@ all the settings are specified.
 Keywords of parameters.json
 -------------------------
 
-•name, default = "ID"
+– name, default = "ID"
 Prefix of the output files.
 
-•number_of_replicas, default = 1
+– number_of_replicas, default = 1
 Number of replica of the structure specified ingeometrykeyword to beproduced.
 
-•geometry
+– geometry
 Section for specification of the template geometry file.
 – filename, default = "template.in"
 Template geometry file name to be sampled.
