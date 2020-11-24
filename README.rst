@@ -17,6 +17,21 @@ Authors: Dmitrii Maksimov
 
 ! This page is under construction !
 
+============
+Installation
+============
+First download the package
+
+git clone https://github.com/sabia-group/gensec.git
+
+We recommend to install dependensies with use of anaconda environments.
+Numpy
+ASE
+networkx
+
+If you want to use gensec as a python library add it to PYTHONPATH
+import gensec
+
 ============================
 Manual
 ============================
