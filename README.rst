@@ -42,7 +42,6 @@ all the settings are specified.
 -------------------------
 Keywords of parameters.json
 -------------------------
-
 – name, default = "ID"
 Prefix of the output files.
 
@@ -84,7 +83,7 @@ Section for specification of degrees of freedom for sampling of thetemplate geom
    ∗list_of_tosrions, default = "auto"
    Specifies particular rotational angles. With auto - all the rotatblebonds will be sampled.
    ∗values, default = "random"
-   Specifies range of values for the torsional angles to be sampledin.
+   Specifies range of values for the torsional angles to be sampled in.
 – orientations, default = false
    Section for specification of rotational degree of freedom.
    ∗mode, default = false
