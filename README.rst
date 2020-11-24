@@ -46,3 +46,20 @@ Keywords of parameters.json
 name
 ... continue.
 
+-------------------------
+Module overview
+-------------------------
+gensec.py - the main module that defines procedure of geometry generation, optimization and search/  
+
+structure.py - module with the collection of the parameters of the template molecule and degrees of freedom
+
+modules.py - collection of diverse help functions such as measurments of degrees of freedom
+
+outputs.py - module includes routines for outputfile of GenSec.
+
+precon.py - module for preconditioning of the Hessian matrix for geometry optimization.
+
+relaxation.py - routines for performing of the geometry optimizations via ASE.
+
+blacklist.py - routines for keeping history of already calculated structures.
+
