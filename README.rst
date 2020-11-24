@@ -22,7 +22,9 @@ Installation
 ============
 First download the package
 
-git clone https://github.com/sabia-group/gensec.git
+```sh
+$ git clone https://github.com/sabia-group/gensec.git
+```
 
 We recommend to install dependensies with use of anaconda environments.
 Numpy
