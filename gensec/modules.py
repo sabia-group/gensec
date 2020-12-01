@@ -360,6 +360,7 @@ def quaternion_set(atoms, quaternion, atom_1_indx, atom_2_indx):
 
 def internal_clashes(structure):
     
+    # flag bothways = True takes into account periodic boundary conditions 
     clashes = True
     for i in range(len(structure.molecules)):
         a = sorted(create_connectivity_matrix(
@@ -380,11 +381,13 @@ def intramolecular_clashes(structure):
     all_atoms = structure.molecules[0].copy()
     for molecule in structure.molecules[1:]:
         all_atoms.extend(molecule)
+    
+    # Distances between all the atoms:
     distances = all_atoms.get_all_distances(mic=structure.mic).reshape(len(all_atoms), len(all_atoms))
-
+    # Excluding check within each molecule
     for i in range(len(structure.molecules)):
         values = np.ones(len(structure.molecules[i])**2).reshape(len(structure.molecules[i]), len(structure.molecules[i])) * 100
-        distances[len(structure.molecules[i])*i:len(structure.molecules[i])*i + len(structure.molecules[i]) ,
+        distances[len(structure.molecules[i])*i:len(structure.molecules[i])*i + len(structure.molecules[i]),
                   len(structure.molecules[i])*i:len(structure.molecules[i])*i + len(structure.molecules[i]) ] = values
 
     return not all(i >= 1.4 for i in distances.flatten()) 
@@ -409,6 +412,7 @@ def clashes_with_fixed_frame(structure, fixed_frame):
 def all_right(structure, fixed_frame):
 
     ready = False
+
     if internal_clashes(structure):
         if len(structure.molecules) > 1:
             if not intramolecular_clashes(structure):

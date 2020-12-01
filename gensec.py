@@ -225,7 +225,6 @@ if parameters["calculator"]["optimize"] == "generate":
         while workflow.success < parameters["success"]:
             # Generate the vector in internal degrees of freedom
             configuration = structure.create_configuration(parameters)
-            # print(configuration)
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
                 blacklist.update_blacklist(blacklist.names, os.listdir(blacklist.dir), structure, fixed_frame)
