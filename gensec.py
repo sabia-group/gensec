@@ -7,7 +7,7 @@ __version__ = "0.1.1"
 
 from optparse import OptionParser
 
-from gensec.blacklist import *
+from gensec.known import *
 from gensec.outputs import *
 from gensec.structure import *
 from gensec.relaxation import *
@@ -40,14 +40,14 @@ if "search" in parameters["calculator"]["optimize"]:
     structure = Structure(parameters)
     fixed_frame = Fixed_frame(parameters)
     calculator = Calculator(parameters)
-    blacklist = Blacklist(structure, parameters)
+    known = Known(structure, parameters)
     if not os.path.exists(parameters["calculator"]["optimize"]):
         os.mkdir(parameters["calculator"]["optimize"])
     os.chdir(parameters["calculator"]["optimize"])
     output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
     dirs.find_last_dir(parameters)
-    blacklist.analyze_calculated(structure, fixed_frame, parameters)
-    output.write_parameters(parameters, structure, blacklist, dirs)
+    known.analyze_calculated(structure, fixed_frame, parameters)
+    output.write_parameters(parameters, structure, known, dirs)
     # for f in glob.glob("/tmp/ipi_*"):
     #     if os.path.exists(os.path.join("/tmp/", f)):
     #         os.remove(os.path.join("/tmp/", f))
@@ -62,20 +62,20 @@ if "search" in parameters["calculator"]["optimize"]:
     #         output.write_to_report("\nTaking structure from folder {}\n".format(d))
     #         gen = os.path.join(d, generated+".in")
     #         configuration = structure.read_configuration(structure, fixed_frame, gen)
-    #         found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria="loose", t=10)
+    #         found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="loose", t=10)
     #         if not found:
     #             dirs.create_directory(parameters)
     #             dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
-    #             calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), blacklist)
+    #             calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)
     #             dirs.finished(parameters)
-    #             blacklist.check_calculated(dirs, parameters)
-    #             blacklist.add_to_blacklist_traj(structure, fixed_frame, dirs.current_dir(parameters))
-    #             t = blacklist.find_traj(os.path.join(dirs.current_dir(parameters)))
+    #             known.check_calculated(dirs, parameters)
+    #             known.add_to_known_traj(structure, fixed_frame, dirs.current_dir(parameters))
+    #             t = known.find_traj(os.path.join(dirs.current_dir(parameters)))
     #             conf = measure_torsion_of_last(Trajectory(os.path.join(dirs.current_dir(parameters), t))[-1], structure.list_of_torsions)
-    #             output.write_to_report("found in blacklist {}".format(blacklist.find_in_blacklist(conf, criteria="loose", t=10)))
+    #             output.write_to_report("found in known {}".format(known.find_in_known(conf, criteria="loose", t=10)))
     #             workflow.success += 1
     #             workflow.trials = 0
-    #             output.write_successfull_relax(parameters, structure, blacklist, dirs)
+    #             output.write_successfull_relax(parameters, structure, known, dirs)
     #             shutil.rmtree(d)
     #             output.write_to_report("\nGenerated structure in folder {} is deleted\n".format(d))
     #             generated_dirs = os.listdir(dirs.generate_folder)
@@ -83,12 +83,12 @@ if "search" in parameters["calculator"]["optimize"]:
     #         else:
     #             shutil.rmtree(d)
     #             generated_dirs = os.listdir(dirs.generate_folder)
-    #             output.write_to_report("\nStructure in folder {} is already in blacklist. Delete.\n".format(d))
+    #             output.write_to_report("\nStructure in folder {} is already in known. Delete.\n".format(d))
     #             output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
     # # when run out structures 
     # output.write_to_report("All the structures in \"generate\" folder are calculated.")
     # output.write_to_report("Continue to generate and search.\n")
-    # blacklist.criteria = "loose"
+    # known.criteria = "loose"
 
     while workflow.trials < parameters["trials"]:
         while workflow.success < parameters["success"]:
@@ -107,33 +107,33 @@ if "search" in parameters["calculator"]["optimize"]:
                     output.write_to_report("\nSomething went wrong with folder\n")
                     output.write_to_report(d)
                     continue
-                blacklist.update_blacklist(blacklist.names, os.listdir(blacklist.dir), structure, fixed_frame)
-                print("\n\n\n", len(blacklist.blacklist), "\n\n\n")
-                found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria="loose", t=10)
+                known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
+                print("\n\n\n", len(known.known), "\n\n\n")
+                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="loose", t=10)
                 if not found:
                     output.write_to_report("\nTaking structure from folder {}\n".format(d))
                     dirs.create_directory(parameters)
                     structure.apply_torsions(configuration)
                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
-                    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), blacklist)                           
-                    t = blacklist.find_traj(os.path.join(dirs.current_dir(parameters)))
+                    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
+                    t = known.find_traj(os.path.join(dirs.current_dir(parameters)))
                     conf = measure_torsion_of_last(Trajectory(os.path.join(dirs.current_dir(parameters), t))[-1], structure.list_of_torsions)
-                    ff = blacklist.find_in_blacklist(conf, criteria="loose", t=10)
+                    ff = known.find_in_known(conf, criteria="loose", t=10)
                     if not ff:
                         dirs.finished(parameters)
-                        blacklist.send_traj_to_blacklist_folder(dirs, parameters)
+                        known.send_traj_to_known_folder(dirs, parameters)
                         workflow.success += 1
                         workflow.trials = 0
-                        output.write_successfull_relax(parameters, structure, blacklist, dirs)
+                        output.write_successfull_relax(parameters, structure, known, dirs)
                         output.write_to_report("\nGenerated structure in folder {} is deleted\n".format(d))
                         output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
                     else:
-                        output.write_to_report("found in blacklist {}".format(ff))
-                        dirs.blacklisted(parameters)
-                        # blacklist.send_traj_to_blacklist_folder(dirs, parameters)
+                        output.write_to_report("found in known {}".format(ff))
+                        dirs.knowned(parameters)
+                        # known.send_traj_to_known_folder(dirs, parameters)
 
                 else:
-                    output.write_to_report("\nStructure in folder {} is already in blacklist. Delete.\n".format(d))
+                    output.write_to_report("\nStructure in folder {} is already in known. Delete.\n".format(d))
                     output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
 
 
@@ -142,50 +142,50 @@ if "search" in parameters["calculator"]["optimize"]:
             # output.write_to_report("All the structures in \"generate\" folder are calculated.")
             else:
                 output.write_to_report("Continue to generate and search.\n")
-                blacklist.criteria = "loose"
+                known.criteria = "loose"
             # output.write("Start the new Trial {}\n".format(workflow.trials))
 
             # Generate the vector in internal degrees of freedom
             configuration = structure.create_configuration(parameters)
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
-                blacklist.update_blacklist(blacklist.names, os.listdir(blacklist.dir), structure, fixed_frame)
-                found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria="loose", t=10)
+                known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
+                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="loose", t=10)
                 if not found:
                     dirs.create_directory(parameters)
                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
-                    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), blacklist)
-                    t = blacklist.find_traj(os.path.join(dirs.current_dir(parameters)))
+                    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)
+                    t = known.find_traj(os.path.join(dirs.current_dir(parameters)))
                     conf = measure_torsion_of_last(Trajectory(os.path.join(dirs.current_dir(parameters), t))[-1], structure.list_of_torsions)
-                    ff = blacklist.find_in_blacklist(conf, criteria="loose", t=10)
+                    ff = known.find_in_known(conf, criteria="loose", t=10)
                     print("\n\n\n\n\n", ff)
                     if not ff:
                         dirs.finished(parameters)
-                        blacklist.send_traj_to_blacklist_folder(dirs, parameters)
-                        # blacklist.add_to_blacklist_traj(structure, fixed_frame, dirs.current_dir(parameters))
+                        known.send_traj_to_known_folder(dirs, parameters)
+                        # known.add_to_known_traj(structure, fixed_frame, dirs.current_dir(parameters))
                         workflow.success += 1
                         workflow.trials = 0
-                        output.write_successfull_relax(parameters, structure, blacklist, dirs)
+                        output.write_successfull_relax(parameters, structure, known, dirs)
                     else:
-                        output.write_to_report("found in blacklist {}".format(ff))
-                        dirs.blacklisted(parameters)                                
-                        # blacklist.send_traj_to_blacklist_folder(dirs, parameters)
-                        # blacklist.add_to_blacklist_traj(structure, fixed_frame, dirs.current_dir(parameters))
+                        output.write_to_report("found in known {}".format(ff))
+                        dirs.knowned(parameters)                                
+                        # known.send_traj_to_known_folder(dirs, parameters)
+                        # known.add_to_known_traj(structure, fixed_frame, dirs.current_dir(parameters))
                         workflow.success += 1
                         workflow.trials = 0
                 else:
                     workflow.trials += 1 
                     if workflow.trials == parameters["trials"]:
-                        if blacklist.torsional_diff_degree > 10:
-                            blacklist.torsional_diff_degree -= 5
-                            output.write_to_report("\nDecreasing the criteria for torsional angles to {}\n".format(blacklist.torsional_diff_degree))
+                        if known.torsional_diff_degree > 10:
+                            known.torsional_diff_degree -= 5
+                            output.write_to_report("\nDecreasing the criteria for torsional angles to {}\n".format(known.torsional_diff_degree))
                             workflow.trials = 0
                             pass
                         else:
                             print("Swithing to loose criteria:\n")
-                            if blacklist.criteria == "strict":
-                                blacklist.criteria = "loose"
-                                blacklist.torsional_diff_degree = 120
+                            if known.criteria == "strict":
+                                known.criteria = "loose"
+                                known.torsional_diff_degree = 120
                                 output.write_to_report("Start to look with loose criteria\n")
                                 workflow.trials = 0
                                 pass
@@ -209,13 +209,13 @@ if parameters["calculator"]["optimize"] == "generate":
     structure = Structure(parameters)
     fixed_frame = Fixed_frame(parameters)
     calculator = Calculator(parameters)
-    blacklist = Blacklist(structure, parameters)
+    known = Known(structure, parameters)
     os.chdir(parameters["calculator"]["optimize"])
     dirs.find_last_dir(parameters)
-    blacklist.check_calculated(dirs, parameters)
-    blacklist.analyze_calculated(structure, fixed_frame, parameters)
+    known.check_calculated(dirs, parameters)
+    known.analyze_calculated(structure, fixed_frame, parameters)
     dirs.find_last_generated_dir(parameters)
-    output.write_parameters(parameters, structure, blacklist, dirs)
+    output.write_parameters(parameters, structure, known, dirs)
     calculated_dir = os.path.join(os.getcwd(), "search") 
     # snapshots = len(os.listdir(calculated_dir))
     print("GENERATE")
@@ -227,15 +227,15 @@ if parameters["calculator"]["optimize"] == "generate":
             configuration = structure.create_configuration(parameters)
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
-                blacklist.update_blacklist(blacklist.names, os.listdir(blacklist.dir), structure, fixed_frame)
-                # print(blacklist.blacklist)
-                print("\n\n\n", len(blacklist.blacklist), "\n\n\n")
-                found = blacklist.find_in_blacklist(structure.torsions_from_conf(configuration), criteria=blacklist.criteria, t=blacklist.torsional_diff_degree)
+                known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
+                # print(known.known)
+                print("\n\n\n", len(known.known), "\n\n\n")
+                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria=known.criteria, t=known.torsional_diff_degree)
                 # found = False
                 if not found:
                     dirs.create_directory(parameters)
                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
-                    blacklist.add_to_blacklist(structure.torsions_from_conf(configuration))
+                    known.add_to_known(structure.torsions_from_conf(configuration))
                     workflow.success += 1
                     workflow.trials = 0
                     output.write_successfull_generate(parameters, structure.torsions_from_conf(configuration), dirs)
@@ -247,20 +247,20 @@ if parameters["calculator"]["optimize"] == "generate":
                     #     for d in need_to_visit:
                     #         d_name = os.path.join(os.getcwd(), "search", "{:010d}".format(d))
                     #         if "finished" in os.listdir(d_name):
-                    #             output.write_to_report("Adding trajectory from {} to blacklist.\n".format(d_name))
-                    #             blacklist.add_to_blacklist_traj(structure, fixed_frame, d_name)
+                    #             output.write_to_report("Adding trajectory from {} to known.\n".format(d_name))
+                    #             known.add_to_known_traj(structure, fixed_frame, d_name)
                     #             snapshots += 1 
                     if workflow.trials == parameters["trials"]:
-                        if blacklist.torsional_diff_degree > 10:
-                            blacklist.torsional_diff_degree -= 5
-                            output.write_to_report("\nDecreasing the criteria for torsional angles to {}\n".format(blacklist.torsional_diff_degree))
+                        if known.torsional_diff_degree > 10:
+                            known.torsional_diff_degree -= 5
+                            output.write_to_report("\nDecreasing the criteria for torsional angles to {}\n".format(known.torsional_diff_degree))
                             workflow.trials = 0
                             pass
                         else:
                             print("Swithing to loose criteria:\n")
-                            if blacklist.criteria == "strict":
-                                blacklist.criteria = "loose"
-                                blacklist.torsional_diff_degree = 120
+                            if known.criteria == "strict":
+                                known.criteria = "loose"
+                                known.torsional_diff_degree = 120
                                 output.write_to_report("Start to look with loose criteria\n")
                                 workflow.trials = 0
                                 pass
@@ -296,7 +296,7 @@ if parameters["calculator"]["optimize"] == "generate":
         # write("bad_configuration.in", all_atoms,format="aims" )
 
     # else:
-    #     # output.write("Next trial, found in blacklist")
+    #     # output.write("Next trial, found in known")
     #     continue
 
 # Write the enesemble into file 
@@ -315,14 +315,14 @@ if parameters["calculator"]["optimize"] == "generate":
 ## Check for PBC clashes
 # 
 # Optional Pre    loration of the conformational space
-## RMSD blacklisting
-## Internal degrees of freedom blacklisting
-## SOAP blacklisting
+## RMSD knowning
+## Internal degrees of freedom knowning
+## SOAP knowning
 
 # Potential evaluation
-## Blacklist check
+## known check
 ## Run Minimization
-## Blacklist check
+## known check
 
 # Next Trial
 # # import random
@@ -345,17 +345,17 @@ if "single" in parameters["calculator"]["optimize"]:
     structure = Structure(parameters)
     fixed_frame = Fixed_frame(parameters)
     calculator = Calculator(parameters)
-    blacklist = Blacklist(structure, parameters)
+    known = Known(structure, parameters)
     if not os.path.exists(parameters["calculator"]["optimize"]):
         os.mkdir(parameters["calculator"]["optimize"])
     os.chdir(parameters["calculator"]["optimize"])
     output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
     dirs.find_last_dir(parameters)
-    output.write_parameters(parameters, structure, blacklist, dirs)
+    output.write_parameters(parameters, structure, known, dirs)
     structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
     dirs.create_directory(parameters)
     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
-    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), blacklist)                           
+    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
     dirs.finished(parameters)
 
 #         # os.system("rm /tmp/ipi_*")

@@ -48,10 +48,10 @@ class Directories:
         f.write("Calculation was finished")
         f.close()
 
-    def blacklisted(self, parameters):
+    def knowned(self, parameters):
         dir = self.current_dir(parameters)
-        f = open(os.path.join(dir, "blacklisted"), "w")
-        f.write("Calculation was terminated and blacklisted")
+        f = open(os.path.join(dir, "knowned"), "w")
+        f.write("Calculation was terminated and knowned")
         f.close()
 
 
@@ -64,13 +64,13 @@ class Directories:
         dirs = list(filter(os.path.isdir, os.listdir(d)))
         if len(dirs)>0:
             last_dir = [int(i) for i in dirs
-                                if finished_dir(["finished", "blacklisted"], os.listdir(os.path.join(d, i)))]
+                                if finished_dir(["finished", "knowned"], os.listdir(os.path.join(d, i)))]
             if len(last_dir) > 0:
                 self.dir_num = max(last_dir)
             else:
                 self.dir_num = 0
             remove_dirs = [int(i) for i in dirs
-                                if finished_dir(["finished", "blacklisted"], os.listdir(os.path.join(d, i)))]
+                                if finished_dir(["finished", "knowned"], os.listdir(os.path.join(d, i)))]
         else:
             self.dir_num = 0
         
@@ -113,7 +113,7 @@ class Output:
         report.write("\n")
         report.close()
 
-    def write_parameters(self, parameters, structure, blacklist, dirs):
+    def write_parameters(self, parameters, structure, known, dirs):
         report = open(self.report_file, "a")
         report.write("Name of the project is {}\n".format(parameters["name"]))
         report.write("If the unknown structure will not be found {} times in row the criteria for similarity between structures will be decreased.\n".format(parameters["trials"]))
@@ -150,13 +150,13 @@ class Output:
             report.write("Between molecular part and fixed frame part {} preconditioner of the Hessian matrix will be applied\n".format(parameters["calculator"]["preconditioner"]["mol"]))
             report.write("After difference in RMSD during geometry optimization reaches {} - updating of the Hessian will be performed\n".format(parameters["calculator"]["preconditioner"]["rmsd_update"]))
 
-            report.write("Blacklist contains {} snapshots\n".format(len(blacklist.blacklist)))
+            report.write("known contains {} snapshots\n".format(len(known.known)))
             report.write("Last calculated directory is {}\n".format(dirs.dir_num))
 
         report.write("{} structures Already searched.\n".format(dirs.dir_num))
         for struc in range(1, dirs.dir_num+1):
             if parameters["configuration"]["torsions"]["activate"]:
-                report.write("Structure {} has torsional angles\n{}\n".format(struc, blacklist.blacklist[struc]))
+                report.write("Structure {} has torsional angles\n{}\n".format(struc, known.known[struc]))
 
 
         report.write("Continue the search.\n")            
@@ -169,11 +169,11 @@ class Output:
         report.write("Structure {} has torsional angles configuration \n{}\n".format(dirs.dir_num, configuration))
         report.close()
 
-    def write_successfull_relax(self, parameters, structure, blacklist, dirs):
+    def write_successfull_relax(self, parameters, structure, known, dirs):
         report = open(self.report_file, "a")
         dir = os.path.join(os.getcwd(), format(dirs.dir_num, "010d"))
         report.write("Structure {} succsessfully relaxed and saved in \n{}\n".format(dirs.dir_num, dir))
-        tors = measure_torsion_of_last(Trajectory(os.path.join(dir ,blacklist.find_traj(dir)))[-1], structure.list_of_torsions)
+        tors = measure_torsion_of_last(Trajectory(os.path.join(dir ,known.find_traj(dir)))[-1], structure.list_of_torsions)
         report.write("Local minima of structure {} has torsional angles configuration \n{}\n".format(dirs.dir_num, tors))
         report.close()
 

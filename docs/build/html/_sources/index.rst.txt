@@ -1,15 +1,15 @@
-.. GenSec Documentation documentation master file, created by
-   sphinx-quickstart on Tue Dec  1 17:57:09 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to GenSec documentation!
 ================================================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
+   installation
+   tutorials
+   citation
+   about
+   license
+   
 
 
 Indices and tables

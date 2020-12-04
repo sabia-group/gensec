@@ -91,7 +91,7 @@ class Calculator:
             mu = 1
         return mu
 
-    def relax(self, structure, fixed_frame, parameters, directory, blacklist):
+    def relax(self, structure, fixed_frame, parameters, directory, known):
 
         if len(structure.molecules) > 1:
             a0 = structure.molecules[0].copy()
@@ -118,7 +118,7 @@ class Calculator:
         else:
             rmsd_threshhold = 100000000000    
 
-        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, structure=structure, fixed_frame=fixed_frame, parameters=parameters, blacklist=blacklist)  
+        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, structure=structure, fixed_frame=fixed_frame, parameters=parameters, known=known)  
 
         if not hasattr(structure, "mu"):
             structure.mu = 1

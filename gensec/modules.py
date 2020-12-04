@@ -177,8 +177,6 @@ def make_canonical_pyranosering(atoms, cycle):
             return cycle
 
 
-
-
 def getroots(aNeigh):
     #    source: https://stackoverflow.com/questions/10301000/python-connected-components
     def findroot(aNode,aRoot):
@@ -213,7 +211,6 @@ def insertbreak(graph, atom1, atom2):
     graph[atom2].pop(graph[atom2].index(atom1))
     return graph
 
-
 def carried_atoms(connectivity_matrix_isolated, positions):
     """ Returns list of carried atoms """
     graph = construct_graph(connectivity_matrix_isolated)
@@ -222,8 +219,6 @@ def carried_atoms(connectivity_matrix_isolated, positions):
         return list(getroots(graph_with_break).values())[0]
     else:
         return list(getroots(graph_with_break).values())[1]
-
-
 
 def unit_vector(vector):
     """ Returns the unit vector of the vector."""
@@ -343,7 +338,6 @@ def align_to_axes(atoms, atom_1_indx, atom_2_indx):
     rotation_2 = Rotation(rotation_1, center, quat_2)
     return atoms.set_positions(rotation_2)
 
-
 def quaternion_set(atoms, quaternion, atom_1_indx, atom_2_indx):
 
     coords = atoms.get_positions()
@@ -357,11 +351,21 @@ def quaternion_set(atoms, quaternion, atom_1_indx, atom_2_indx):
     rotation_2 = Rotation(rotation_1, center, quat_2)
     return atoms.set_positions(rotation_2)
 
-
 def internal_clashes(structure):
+    """ Check for internal clashes within molecule
     
-    # flag bothways = True takes into account periodic boundary conditions 
-    clashes = True
+    Iterates over the molecules and compare their 
+    connectivity matrices with template's one.
+    Periodic boundary conditions are taken into
+    account with use of the flag "bothways = True".
+    
+    Arguments:
+        structure {list} -- list of the molecules 
+    
+    Returns:
+        bollean -- False if no clashes found
+    """
+    clashes = False
     for i in range(len(structure.molecules)):
         a = sorted(create_connectivity_matrix(
                     structure.molecules[i], bothways=True).keys(), 
@@ -371,18 +375,30 @@ def internal_clashes(structure):
         if operator.eq(set(a), set(b)):
             pass
         else:
-            clashes = False
+            clashes = True
 
     return clashes
 
-
 def intramolecular_clashes(structure):
-
+    """ Checks for intermolecular clashes
+    
+    Claculates distances between all atoms that 
+    belong to the different molecules. Passed if all the
+    distances are greater than 1.4 A. Periodic boundary 
+    conditions are taken into account with use of the
+    mic=structure.mic
+    
+    Arguments:
+        structure {list} -- list of the molecules
+    
+    Returns:
+        boolean -- False if no cllashes found
+    """
     all_atoms = structure.molecules[0].copy()
     for molecule in structure.molecules[1:]:
         all_atoms.extend(molecule)
     
-    # Distances between all the atoms:
+    # Distances between all the atoms with periodic boundary conditions
     distances = all_atoms.get_all_distances(mic=structure.mic).reshape(len(all_atoms), len(all_atoms))
     # Excluding check within each molecule
     for i in range(len(structure.molecules)):
@@ -392,9 +408,22 @@ def intramolecular_clashes(structure):
 
     return not all(i >= 1.4 for i in distances.flatten()) 
 
-
 def clashes_with_fixed_frame(structure, fixed_frame):
-
+    """Checks for clashes between molecules and fixed frame
+    
+    Claculates distances between all atoms in all molecules  
+    with all atoms in the fixed frame. Passed if all the
+    distances are greater than 2.0 A. Periodic boundary 
+    conditions are taken into account with use of the
+    mic=fixed_frame.mic
+    
+    Arguments:
+        structure {list} -- list of the molecules
+        fixed_frame {Atoms object} -- atoms in fixed frame
+    
+    Returns:
+        boolean -- False if all the distances are greater than 2.0 A
+    """
     mols = structure.molecules[0].copy()
     for molecule in structure.molecules[1:]:
         mols.extend(molecule)
@@ -413,7 +442,7 @@ def all_right(structure, fixed_frame):
 
     ready = False
 
-    if internal_clashes(structure):
+    if not internal_clashes(structure):
         if len(structure.molecules) > 1:
             if not intramolecular_clashes(structure):
                 if hasattr(fixed_frame, "fixed_frame"):

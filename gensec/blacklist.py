@@ -5,7 +5,7 @@ from ase.io.trajectory import Trajectory
 from ase.io import read, write
 import shutil
 
-class Blacklist:
+class Known:
 
     def __init__(self, structure, parameters):
 
@@ -13,30 +13,30 @@ class Blacklist:
             torsions = np.array([0 for i in structure.list_of_torsions])
             # quaternion = produce_quaternion(0, np.array([0, 0, 1]))
             # value_com = np.array([0, 0, 0])
-            # blacklist_one = np.hstack((torsions, quaternion, value_com))
-            # blacklist = np.hstack((torsions, quaternion, value_com)) 
+            # known_one = np.hstack((torsions, quaternion, value_com))
+            # known = np.hstack((torsions, quaternion, value_com)) 
             for i in range(len(structure.molecules) - 1):
-                blacklist = np.concatenate((torsions, torsions), axis=0)
+                known = np.concatenate((torsions, torsions), axis=0)
         else:
-            blacklist = np.array([0 for i in structure.list_of_torsions])
-            # blacklist = []
+            known = np.array([0 for i in structure.list_of_torsions])
+            # known = []
             # quaternion = produce_quaternion(0, np.array([0, 0, 1]))
             # value_com = np.array([0, 0, 0])
-            # blacklist = np.hstack((torsions, quaternion, value_com))        
-        self.blacklist = blacklist 
+            # known = np.hstack((torsions, quaternion, value_com))        
+        self.known = known 
         self.torsional_diff_degree = 90
         self.criteria = "strict"
-        self.dir = parameters["calculator"]["blacklist_folder"]
+        self.dir = parameters["calculator"]["known_folder"]
 
         if len(os.path.split(self.dir)[0]) == 0:
             self.dir = os.path.join(os.getcwd(), self.dir)
-            # Means taht blacklist folder in the same directory with os.getcwd()
+            # Means taht known folder in the same directory with os.getcwd()
             if not os.path.exists(self.dir):
                 os.mkdir(self.dir)
             else:
                 pass
         else:
-            # Means taht blacklist folder specified with full path
+            # Means taht known folder specified with full path
             if not os.path.exists(self.dir):
                 os.mkdir(self.dir)
 
@@ -44,8 +44,8 @@ class Blacklist:
 
 
 
-    def add_to_blacklist(self, vector):
-        self.blacklist = np.vstack((self.blacklist, vector))
+    def add_to_known(self, vector):
+        self.known = np.vstack((self.known, vector))
 
     @staticmethod
     def minimal_angle(x, y):
@@ -72,22 +72,22 @@ class Blacklist:
         return similar
         # return []
 
-    def find_in_blacklist(self, vector, criteria, t):
+    def find_in_known(self, vector, criteria, t):
         found = False
-        if type(self.blacklist[0]) == np.ndarray:
-            for point in self.blacklist[1:]:
+        if type(self.known[0]) == np.ndarray:
+            for point in self.known[1:]:
                 if self.torsional_diff(point, vector, criteria=criteria, t=t):
                     found = True
                     break
         return found                   
         
 
-    def get_blacklist(self):
-        for vec in self.blacklist:
+    def get_known(self):
+        for vec in self.known:
             print(vec)
 
     def get_len(self):
-        return len(self.blacklist)
+        return len(self.known)
 
     def find_traj(self, directory):
         for outputs in os.listdir(directory):
@@ -112,7 +112,7 @@ class Blacklist:
                             n = os.path.join(self.dir, "{:010d}_{}_{}.in".format(i, k, num_run))
                             write(n, t[k], format="aims")
 
-    def send_traj_to_blacklist_folder(self, dirs, parameters):
+    def send_traj_to_known_folder(self, dirs, parameters):
 
         calculated_dir = os.getcwd()
         num_run = parameters["calculator"]["optimize"].split("_")[-1]
@@ -136,7 +136,7 @@ class Blacklist:
         t = structure.list_of_torsions
 
         if parameters["calculator"]["optimize"] == "generate":
-            # Check if structures in the blacklist:
+            # Check if structures in the known:
             for m in os.listdir(self.dir):
                 configuration = read(os.path.join(self.dir, m), format="aims")
                 template = merge_together(structure, fixed_frame)
@@ -153,7 +153,7 @@ class Blacklist:
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
-                    self.add_to_blacklist(torsions)
+                    self.add_to_known(torsions)
 
             # Go through generated structures:
             dir = os.getcwd()
@@ -174,7 +174,7 @@ class Blacklist:
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
-                    self.add_to_blacklist(torsions)
+                    self.add_to_known(torsions)
 
         else:
             t = structure.list_of_torsions
@@ -194,9 +194,9 @@ class Blacklist:
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
-                    self.add_to_blacklist(torsions)
+                    self.add_to_known(torsions)
 
-    def add_to_blacklist_traj(self, structure, fixed_frame, current_dir):
+    def add_to_known_traj(self, structure, fixed_frame, current_dir):
         t = structure.list_of_torsions
         traj = Trajectory(os.path.join(current_dir, self.find_traj(current_dir)))
         for m in range(len(traj)):
@@ -215,9 +215,9 @@ class Blacklist:
                                                     a2=torsion[1],
                                                     a3=torsion[2],
                                                     a4=torsion[3]))
-                self.add_to_blacklist(torsions)
+                self.add_to_known(torsions)
 
-    def update_blacklist(self, list_a, list_b, structure, fixed_frame):
+    def update_known(self, list_a, list_b, structure, fixed_frame):
 
         if len(list_a) > len(list_b):
             smaller = set(list_b)
@@ -245,5 +245,5 @@ class Blacklist:
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
-                    self.add_to_blacklist(torsions)
+                    self.add_to_known(torsions)
         self.names = bigger
