@@ -6,6 +6,7 @@ Welcome to GenSec documentation!
 
    installation
    tutorials
+   modules
    citation
    about
    license
