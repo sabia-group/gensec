@@ -112,13 +112,16 @@ class Calculator:
         atoms = all_atoms.copy()
         self.set_constrains(atoms, parameters)  
         atoms.set_calculator(self.calculator)
-        write(os.path.join(directory, "initial_configuration_{}.in".format(name)), atoms,format="aims" )
+        write(os.path.join(directory, "initial_configuration_{}.in".format(name)), atoms, format="aims" )
         if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:  
             rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]["value"]
         else:
             rmsd_threshhold = 100000000000    
-
-        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, structure=structure, fixed_frame=fixed_frame, parameters=parameters, known=known)  
+        print(os.path.join(directory, "logfile.log"))
+        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
+                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, 
+                            known=known, logfile=os.path.join(directory, "logfile.log"))  
 
         if not hasattr(structure, "mu"):
             structure.mu = 1

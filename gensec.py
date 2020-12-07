@@ -46,6 +46,10 @@ if "search" in parameters["calculator"]["optimize"]:
     os.chdir(parameters["calculator"]["optimize"])
     output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
     dirs.find_last_dir(parameters)
+    # Finish unfinished calculation
+    
+    print(dirs.dir_num)
+    # sys.exit(0)
     known.analyze_calculated(structure, fixed_frame, parameters)
     output.write_parameters(parameters, structure, known, dirs)
     # for f in glob.glob("/tmp/ipi_*"):

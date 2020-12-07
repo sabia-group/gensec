@@ -70,8 +70,8 @@ Dynamics.irun = irun
 
 class BFGS_mod(BFGS):
     def __init__(self, atoms, restart=None, logfile='-', trajectory=None, maxstep=None, master=None, initial=None, rmsd_dev=1000.0, molindixes=None, structure=None, fixed_frame=None, parameters=None, mu=None, A=None, known=None):
-        super().__init__(atoms, restart=None, logfile='-', trajectory=None, maxstep=0.04, master=None)
-
+        BFGS.__init__(self, atoms, restart=None, logfile=logfile, trajectory=trajectory, maxstep=0.04, master=None)
+        
         # initial hessian
         self.H0 = np.eye(3 * len(self.atoms)) * 70      
         self.initial=initial
@@ -81,4 +81,5 @@ class BFGS_mod(BFGS):
         self.fixed_frame = fixed_frame
         self.parameters = parameters
         self.known = known
-        print(trajectory)
+
+        print(logfile)
