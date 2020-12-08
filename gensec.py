@@ -46,17 +46,17 @@ if "search" in parameters["calculator"]["optimize"]:
     os.chdir(parameters["calculator"]["optimize"])
     output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
     dirs.find_last_dir(parameters)
-    # Finish unfinished calculation
-    
-    print(dirs.dir_num)
-    # sys.exit(0)
     known.analyze_calculated(structure, fixed_frame, parameters)
     output.write_parameters(parameters, structure, known, dirs)
     # for f in glob.glob("/tmp/ipi_*"):
     #     if os.path.exists(os.path.join("/tmp/", f)):
     #         os.remove(os.path.join("/tmp/", f))
-    workflow.success = dirs.dir_num
+    
     structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
+    # Finish unfinished calculation
+    calculator.finish_relaxation(structure, fixed_frame, parameters, dirs.current_dir(parameters))
+    dirs.finished(parameters)
+    workflow.success = dirs.dir_num
     generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
 
     # while len(generated_dirs)>0:
@@ -133,7 +133,7 @@ if "search" in parameters["calculator"]["optimize"]:
                         output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
                     else:
                         output.write_to_report("found in known {}".format(ff))
-                        dirs.knowned(parameters)
+                        dirs.known(parameters)
                         # known.send_traj_to_known_folder(dirs, parameters)
 
                 else:
@@ -172,7 +172,7 @@ if "search" in parameters["calculator"]["optimize"]:
                         output.write_successfull_relax(parameters, structure, known, dirs)
                     else:
                         output.write_to_report("found in known {}".format(ff))
-                        dirs.knowned(parameters)                                
+                        dirs.known(parameters)                                
                         # known.send_traj_to_known_folder(dirs, parameters)
                         # known.add_to_known_traj(structure, fixed_frame, dirs.current_dir(parameters))
                         workflow.success += 1

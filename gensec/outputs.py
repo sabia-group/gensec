@@ -48,10 +48,10 @@ class Directories:
         f.write("Calculation was finished")
         f.close()
 
-    def knowned(self, parameters):
+    def known(self, parameters):
         dir = self.current_dir(parameters)
-        f = open(os.path.join(dir, "knowned"), "w")
-        f.write("Calculation was terminated and knowned")
+        f = open(os.path.join(dir, "known"), "w")
+        f.write("Calculation was terminated and known")
         f.close()
 
 
@@ -60,17 +60,11 @@ class Directories:
         def finished_dir(files, list_dir):
             return any(i in list_dir for i in files) 
 
-        d = os.getcwd()
+        d = os.getcwd() # goes to the working directory
         dirs = list(filter(os.path.isdir, os.listdir(d)))
-        if len(dirs)>0:
-            last_dir = [int(i) for i in dirs
-                                if finished_dir(["finished", "knowned"], os.listdir(os.path.join(d, i)))]
-            if len(last_dir) > 0:
-                self.dir_num = max(last_dir)
-            else:
-                self.dir_num = 0
-            remove_dirs = [int(i) for i in dirs
-                                if finished_dir(["finished", "knowned"], os.listdir(os.path.join(d, i)))]
+        if len(dirs) > 0:
+            self.dir_num = len(dirs)
+            print()
         else:
             self.dir_num = 0
         
@@ -84,10 +78,6 @@ class Directories:
     def current_dir(self, parameters):
         dir = os.path.join(os.getcwd(), format(self.dir_num, "010d"))
         return dir
-
-
-
-
 
 
 class Output:

@@ -95,8 +95,8 @@ class Known:
         return len(self.known)
 
     def find_traj(self, directory):
-        for outputs in os.listdir(directory):
-            if "trajectory" in outputs and ".traj" in outputs:
+        for output in os.listdir(directory):
+            if "trajectory" in output and ".traj" in outputs:
                 return outputs
         else:
             return None
