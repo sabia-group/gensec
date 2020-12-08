@@ -178,21 +178,28 @@ class Calculator:
             for i in trajs:
                 os.remove(os.path.join(directory, i))
 
-        def perform_from_last(traj):
+        def perform_from_last(directory, traj):
 
             if traj == None:
                 return False
             else:
                 size = os.path.getsize(os.path.join(directory, traj))
                 if size == 0:
-                    return False
+                    history_trajs = [i for i in os.listdir(directory) if "history" in i]
+                    if len(history_trajs)>0:
+                        name_history_traj = "{:05d}_history_{}".format(len(history_trajs), traj)
+                        os.rename(os.path.join(directory, name_history_traj), 
+                                  os.path.join(directory, traj))
+                        return True
+                    else:
+                        return False
                 else:
                     return True
 
     
         if not "finished" in os.listdir(directory):
             traj = find_traj(directory)
-            if perform_from_last(traj): 
+            if perform_from_last(directory, traj): 
                 if len(structure.molecules) > 1:
                     molsize = len(structure.molecules[0])*len(structure.molecules)
                 else:
