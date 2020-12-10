@@ -93,7 +93,8 @@ class Known:
 
     def get_known(self):
         for vec in self.known:
-            print(vec)
+            pass
+            # print(vec)
 
     def get_len(self):
         return len(self.known)

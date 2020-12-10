@@ -41,15 +41,40 @@ class Structure:
         def make_orientation(self, parameters):
             if parameters["configuration"]["orientations"]["values"] == "random":
                 quaternion = produce_quaternion(
-                    randint(-180, 180), 
+                    randint(0, 360), 
                     np.array([random(),
                               random(),
                               random()]))
+            elif parameters["configuration"]["orientations"]["values"] == "discretized":
+                # Discretizes the values for the main vector of the molecuele
+                # for the angle part the number of allowed rotations
+                turns = 360.0//parameters["configuration"]["orientations"]["angle"]
+                angles = np.linspace(0, 360, num=turns+1)
+                if parameters["configuration"]["orientations"]["vector"]["Type"] == "exclusion":
+                    exclude = np.eye(3)[choice(range(2))]
+                    x = parameters["configuration"]["orientations"]["vector"]["x"] 
+                    y = parameters["configuration"]["orientations"]["vector"]["y"] 
+                    z = parameters["configuration"]["orientations"]["vector"]["z"]
+                    quaternion = produce_quaternion(
+                        choice(angles), 
+                        np.array([choice(x)*exclude[0],
+                                  choice(y)*exclude[1],
+                                  choice(z)*exclude[2]]))
+                else:
+                    x = parameters["configuration"]["orientations"]["vector"]["x"] 
+                    y = parameters["configuration"]["orientations"]["vector"]["y"] 
+                    z = parameters["configuration"]["orientations"]["vector"]["z"]
+                    quaternion = produce_quaternion(
+                        choice(angles), 
+                        np.array([choice(x),
+                                  choice(y),
+                                  choice(z)]))
+
             else:
                 angle = parameters["configuration"]["orientations"]["angle"] 
-                x = parameters["configuration"]["orientations"]["x"] 
-                y = parameters["configuration"]["orientations"]["y"] 
-                z = parameters["configuration"]["orientations"]["z"] 
+                x = parameters["configuration"]["orientations"]["vector"]["x"] 
+                y = parameters["configuration"]["orientations"]["vector"]["y"] 
+                z = parameters["configuration"]["orientations"]["vector"]["z"] 
                 quaternion = produce_quaternion(
                     randint(angle[0], angle[1]), 
                     np.array([uniform(x[0], x[1]),
@@ -73,7 +98,6 @@ class Structure:
                  com = np.array([choice(np.linspace(0, 10, 10)), 
                                  choice(np.linspace(0, 10, 10)), 
                                  choice(np.linspace(0, 10, 10))])
-
             return com
 
         if parameters["configuration"]["torsions"]["activate"]:
@@ -91,7 +115,6 @@ class Structure:
             sys.exit(0)
         else:
             configuration = np.hstack((torsions, quaternion, coms))  
-            print(configuration)
 
 
         if len(self.molecules) > 1:
