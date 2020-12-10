@@ -112,7 +112,7 @@ class Calculator:
         atoms = all_atoms.copy()
         self.set_constrains(atoms, parameters)  
         atoms.set_calculator(self.calculator)
-        write(os.path.join(directory, "initial_configuration_{}.in".format(name)), atoms, format="aims" )
+        # write(os.path.join(directory, "initial_configuration_{}.in".format(name)), atoms, format="aims" )
         if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:  
             rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]["value"]
         else:
@@ -130,11 +130,11 @@ class Calculator:
             structure.A = 1
         H0 = np.eye(3 * len(atoms)) * 70
         opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
-        np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
+        # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
         opt.run(fmax=fmax, steps=1000)
-        write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
-        np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
+        # write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
+        # np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
         try:
             calculator.close()
         except:
@@ -178,6 +178,11 @@ class Calculator:
             for i in trajs:
                 os.remove(os.path.join(directory, i))
 
+        def finished(directory):
+            f = open(os.path.join(directory, "finished"), "w")
+            f.write("Calculation was finished")
+            f.close()
+
         def perform_from_last(directory, traj):
 
             if traj == None:
@@ -196,63 +201,64 @@ class Calculator:
                 else:
                     return True
 
-    
-        if not "finished" in os.listdir(directory):
-            traj = find_traj(directory)
-            if perform_from_last(directory, traj): 
-                if len(structure.molecules) > 1:
-                    molsize = len(structure.molecules[0])*len(structure.molecules)
-                else:
-                    molsize = len(structure.molecules[0])
-                if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:  
-                    rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]["value"]
-                else:
-                    rmsd_threshhold = 100000000000
+        if os.path.basename(os.path.normpath(directory)) != format(0, "010d"):
+            if not "finished" in os.listdir(directory) and not "known" in os.listdir(directory):
+                traj = find_traj(directory)
+                if perform_from_last(directory, traj): 
+                    if len(structure.molecules) > 1:
+                        molsize = len(structure.molecules[0])*len(structure.molecules)
+                    else:
+                        molsize = len(structure.molecules[0])
+                    if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:  
+                        rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]["value"]
+                    else:
+                        rmsd_threshhold = 100000000000
 
-                name = parameters["name"]
-                # Save the history of trajectory
-                send_traj_to_history(name, directory)
-                # Perform relaxation
-                traj = os.path.join(directory, "trajectory_{}.traj".format(name))
-                t = Trajectory(os.path.join(directory, traj))
-                atoms = t[-1].copy()
-                self.set_constrains(atoms, parameters)
-                atoms.set_calculator(self.calculator)
-                opt = BFGS_mod(atoms, trajectory=traj, 
-                                initial=atoms[:molsize], molindixes=list(range(molsize)), rmsd_dev=rmsd_threshhold, 
-                                structure=structure, fixed_frame=fixed_frame, parameters=parameters, 
-                                logfile=os.path.join(directory, "logfile.log"), 
-                                restart=os.path.join(directory, 'qn.pckl')) 
+                    name = parameters["name"]
+                    # Save the history of trajectory
+                    send_traj_to_history(name, directory)
+                    # Perform relaxation
+                    traj = os.path.join(directory, "trajectory_{}.traj".format(name))
+                    t = Trajectory(os.path.join(directory, traj))
+                    atoms = t[-1].copy()
+                    self.set_constrains(atoms, parameters)
+                    atoms.set_calculator(self.calculator)
+                    opt = BFGS_mod(atoms, trajectory=traj, 
+                                    initial=atoms[:molsize], molindixes=list(range(molsize)), rmsd_dev=rmsd_threshhold, 
+                                    structure=structure, fixed_frame=fixed_frame, parameters=parameters, 
+                                    logfile=os.path.join(directory, "logfile.log"), 
+                                    restart=os.path.join(directory, 'qn.pckl')) 
 
-                fmax = parameters["calculator"]["fmax"]
-                opt.run(fmax=fmax, steps=1000)
-                concatenate_trajs(name, directory)
-                try:
-                    calculator.close()
-                except:
-                    pass
+                    fmax = parameters["calculator"]["fmax"]
+                    opt.run(fmax=fmax, steps=1000)
+                    concatenate_trajs(name, directory)
+                    try:
+                        calculator.close()
+                    except:
+                        pass
+                    finished(directory)
 
-            else:
-                # Didn't perform any step - start relaxation 
-                #from initial .in  geometry.
-                foldername = os.path.basename(os.path.normpath(directory))
-                structure_file = os.path.join(directory, foldername+".in")
-                for i in os.listdir(directory):
-                    if os.path.join(directory,i)!=structure_file:
-                        os.remove(os.path.join(directory,i))
-                atoms = read(os.path.join(directory, foldername+".in"), format="aims")
-                if len(structure.molecules) > 1:
-                    molsize = len(structure.molecules[0])*len(structure.molecules)
                 else:
-                    molsize = len(structure.molecules[0])
-                name = parameters["name"]
-                self.set_constrains(atoms, parameters)  
-                atoms.set_calculator(self.calculator)
-                traj = os.path.join(directory, "trajectory_{}.traj".format(name))
-                if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:  
-                    rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]["value"]
-                else:
-                    rmsd_threshhold = 100000000000    
+                    # Didn't perform any step - start relaxation 
+                    #from initial .in  geometry.
+                    foldername = os.path.basename(os.path.normpath(directory))
+                    structure_file = os.path.join(directory, foldername+".in")
+                    for i in os.listdir(directory):
+                        if os.path.join(directory,i)!=structure_file:
+                            os.remove(os.path.join(directory,i))
+                    atoms = read(os.path.join(directory, foldername+".in"), format="aims")
+                    if len(structure.molecules) > 1:
+                        molsize = len(structure.molecules[0])*len(structure.molecules)
+                    else:
+                        molsize = len(structure.molecules[0])
+                    name = parameters["name"]
+                    self.set_constrains(atoms, parameters)  
+                    atoms.set_calculator(self.calculator)
+                    traj = os.path.join(directory, "trajectory_{}.traj".format(name))
+                    if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:  
+                        rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]["value"]
+                    else:
+                        rmsd_threshhold = 100000000000    
 
                     opt = BFGS_mod(atoms, trajectory=traj, 
                                     initial=atoms[:molsize], molindixes=list(range(molsize)), rmsd_dev=rmsd_threshhold, 
@@ -260,19 +266,20 @@ class Calculator:
                                     logfile=os.path.join(directory, "logfile.log"), 
                                     restart=os.path.join(directory, 'qn.pckl'))   
 
-                if not hasattr(structure, "mu"):
-                    structure.mu = 1
-                if not hasattr(structure, "A"):
-                    structure.A = 1
-                H0 = np.eye(3 * len(atoms)) * 70
-                opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
-                np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
-                fmax = parameters["calculator"]["fmax"]
-                opt.run(fmax=fmax, steps=1000)
-                try:
-                    calculator.close()
-                except:
-                    pass
+                    if not hasattr(structure, "mu"):
+                        structure.mu = 1
+                    if not hasattr(structure, "A"):
+                        structure.A = 1
+                    H0 = np.eye(3 * len(atoms)) * 70
+                    opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
+                    np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
+                    fmax = parameters["calculator"]["fmax"]
+                    opt.run(fmax=fmax, steps=1000)
+                    try:
+                        calculator.close()
+                    except:
+                        pass
+                    finished(directory)
 
         
         #traj_ID = Trajectory(os.path.join(directory, "trajectory_ID.traj"))

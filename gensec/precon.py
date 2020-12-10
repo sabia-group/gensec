@@ -1254,7 +1254,6 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
         "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"][task],
         "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"][task]
     }
-    print(routine)
     precon_names = [list(precons_parameters.values())[i] for i in range(len(routine)) if list(routine.values())[i]]
 
     if "Lindh" in precon_names:

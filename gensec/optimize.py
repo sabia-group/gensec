@@ -54,6 +54,7 @@ def irun(self):
         self.call_observers()
         # Calculate RMSD between current and initial steps:
         if self.initial:
+            print(self.atoms.get_potential_energy())
             if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
                     self.H = preconditioned_hessian(self.structure, 
                                                     self.fixed_frame, 

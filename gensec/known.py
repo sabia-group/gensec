@@ -29,8 +29,8 @@ class Known:
             # value_com = np.array([0, 0, 0])
             # known = np.hstack((torsions, quaternion, value_com))        
         self.known = known 
-        self.torsional_diff_degree = 90
-        self.criteria = "strict"
+        self.torsional_diff_degree = 180
+        self.criteria = "any"
         self.dir = parameters["calculator"]["known_folder"]
 
         if len(os.path.split(self.dir)[0]) == 0:
@@ -63,13 +63,17 @@ class Known:
         diff_angles = [self.minimal_angle(x, y) for x,y in zip(vector, point)]
         # Checking if structures are similar depending on
         # torsional differences of angles:
-        if criteria == "strict":
+        if criteria == "any":
+            # If even one torsion angle is less than specified angle 
+            # Structures are considered similar
             if any(a < t for a in diff_angles):
                 similar = True 
             else:
                 similar = False
 
-        elif criteria == "loose":
+        elif criteria == "all":
+            # If all torsion angles areany less than specified angle 
+            # Structures are considered similar
             if all(a < t for a in diff_angles):
                 similar = True 
             else:
@@ -96,8 +100,8 @@ class Known:
 
     def find_traj(self, directory):
         for output in os.listdir(directory):
-            if "trajectory" in output and ".traj" in outputs:
-                return outputs
+            if "trajectory" in output and ".traj" in output:
+                return output
         else:
             return None
 

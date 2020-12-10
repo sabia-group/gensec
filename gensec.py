@@ -55,7 +55,6 @@ if "search" in parameters["calculator"]["optimize"]:
     structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
     # Finish unfinished calculation
     calculator.finish_relaxation(structure, fixed_frame, parameters, dirs.current_dir(parameters))
-    dirs.finished(parameters)
     workflow.success = dirs.dir_num
     generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
 
@@ -66,7 +65,7 @@ if "search" in parameters["calculator"]["optimize"]:
     #         output.write_to_report("\nTaking structure from folder {}\n".format(d))
     #         gen = os.path.join(d, generated+".in")
     #         configuration = structure.read_configuration(structure, fixed_frame, gen)
-    #         found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="loose", t=10)
+    #         found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="all", t=10)
     #         if not found:
     #             dirs.create_directory(parameters)
     #             dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
@@ -76,7 +75,7 @@ if "search" in parameters["calculator"]["optimize"]:
     #             known.add_to_known_traj(structure, fixed_frame, dirs.current_dir(parameters))
     #             t = known.find_traj(os.path.join(dirs.current_dir(parameters)))
     #             conf = measure_torsion_of_last(Trajectory(os.path.join(dirs.current_dir(parameters), t))[-1], structure.list_of_torsions)
-    #             output.write_to_report("found in known {}".format(known.find_in_known(conf, criteria="loose", t=10)))
+    #             output.write_to_report("found in known {}".format(known.find_in_known(conf, criteria="all", t=10)))
     #             workflow.success += 1
     #             workflow.trials = 0
     #             output.write_successfull_relax(parameters, structure, known, dirs)
@@ -92,12 +91,17 @@ if "search" in parameters["calculator"]["optimize"]:
     # # when run out structures 
     # output.write_to_report("All the structures in \"generate\" folder are calculated.")
     # output.write_to_report("Continue to generate and search.\n")
-    # known.criteria = "loose"
+    # known.criteria = "all"
 
+    # Number of trials to generate new structure
+    # before decreasing of the criteria 
     while workflow.trials < parameters["trials"]:
+        # Requsted number of relaxations to perform
         while workflow.success < parameters["success"]:
+            # Check for new structures in generated folder
+            print("Check for new structures in generated folder")
             generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
-            while len(generated_dirs)>0:
+            if len(generated_dirs)>0:
                 # generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
                 output.write_to_report("\nThere are {} candidate structures to relax\n".format(len(generated_dirs)))
                 try:
@@ -113,7 +117,7 @@ if "search" in parameters["calculator"]["optimize"]:
                     continue
                 known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
                 print("\n\n\n", len(known.known), "\n\n\n")
-                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="loose", t=10)
+                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="all", t=5)
                 if not found:
                     output.write_to_report("\nTaking structure from folder {}\n".format(d))
                     dirs.create_directory(parameters)
@@ -122,7 +126,7 @@ if "search" in parameters["calculator"]["optimize"]:
                     calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
                     t = known.find_traj(os.path.join(dirs.current_dir(parameters)))
                     conf = measure_torsion_of_last(Trajectory(os.path.join(dirs.current_dir(parameters), t))[-1], structure.list_of_torsions)
-                    ff = known.find_in_known(conf, criteria="loose", t=10)
+                    ff = known.find_in_known(conf, criteria="all", t=5)
                     if not ff:
                         dirs.finished(parameters)
                         known.send_traj_to_known_folder(dirs, parameters)
@@ -146,35 +150,51 @@ if "search" in parameters["calculator"]["optimize"]:
             # output.write_to_report("All the structures in \"generate\" folder are calculated.")
             else:
                 output.write_to_report("Continue to generate and search.\n")
-                known.criteria = "loose"
+                known.criteria = "all"
             # output.write("Start the new Trial {}\n".format(workflow.trials))
 
+
+            # No structures in generated folder
+            print("No new structures in generated folder")
             # Generate the vector in internal degrees of freedom
             configuration = structure.create_configuration(parameters)
+            # Apply the configuration to the template molecule
             structure.apply_configuration(configuration)
+            # Check if the structure is sencible and don't have clashes
             if all_right(structure, fixed_frame):
+            	# Check if there are new structures appear in known folder
                 known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
-                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="loose", t=10)
+                # Two structures are considered similar if all their corresponding torsional angles
+                # are different for less than 5 dgrees. 
+                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="all", t=5)
                 if not found:
+                    print("Structure is unique")
+                    structure.apply_configuration(configuration) # For some reason need to apply again here
+                    # Create new directory for outputs
                     dirs.create_directory(parameters)
+                    # Save the initial configuration in the folder
+                    # This will be used for restart of the calculation in the case of error
+                    # if no optimization steps were performed
                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
+                    # Perform relaxation
                     calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)
+                    # Find the final trajectory
                     t = known.find_traj(os.path.join(dirs.current_dir(parameters)))
+                    # take final local minima
                     conf = measure_torsion_of_last(Trajectory(os.path.join(dirs.current_dir(parameters), t))[-1], structure.list_of_torsions)
-                    ff = known.find_in_known(conf, criteria="loose", t=10)
-                    print("\n\n\n\n\n", ff)
-                    if not ff:
+                    # Check if it was among known structures before this relaxation
+                    was_known = known.find_in_known(conf, criteria="all", t=5)
+                    # Send all the steps of the trajectory to known folder
+                    known.send_traj_to_known_folder(dirs, parameters)
+                    print("\n\n\n\n\n", was_known)
+                    if not was_known:
                         dirs.finished(parameters)
-                        known.send_traj_to_known_folder(dirs, parameters)
-                        # known.add_to_known_traj(structure, fixed_frame, dirs.current_dir(parameters))
                         workflow.success += 1
                         workflow.trials = 0
                         output.write_successfull_relax(parameters, structure, known, dirs)
                     else:
-                        output.write_to_report("found in known {}".format(ff))
+                        output.write_to_report("found in known {}".format(was_known))
                         dirs.known(parameters)                                
-                        # known.send_traj_to_known_folder(dirs, parameters)
-                        # known.add_to_known_traj(structure, fixed_frame, dirs.current_dir(parameters))
                         workflow.success += 1
                         workflow.trials = 0
                 else:
@@ -186,25 +206,95 @@ if "search" in parameters["calculator"]["optimize"]:
                             workflow.trials = 0
                             pass
                         else:
-                            print("Swithing to loose criteria:\n")
-                            if known.criteria == "strict":
-                                known.criteria = "loose"
-                                known.torsional_diff_degree = 120
-                                output.write_to_report("Start to look with loose criteria\n")
-                                workflow.trials = 0
-                                pass
-                            else:
-                               output.write_to_report("Cannot find new structures\n")
-                               sys.exit(0)
+                           output.write_to_report("Cannot find new structures\n")
+                           sys.exit(0)
                     else:
                         pass
             else:
+            	# Save not sensible structure for evaluation
                 write("bad_luck.xyz", merge_together(structure, fixed_frame), format="xyz")
                 pass
         else:
             output.write_to_report("{} number of structures was successfully relaxed!".format(parameters["success"]))
             output.write_to_report("Terminating algorithm")
             sys.exit(0)
+
+# if parameters["calculator"]["optimize"] == "generate":
+#     dirs = Directories(parameters)
+#     output = Output("report_generate.out")
+#     workflow = Workflow()
+#     structure = Structure(parameters)
+#     fixed_frame = Fixed_frame(parameters)
+#     calculator = Calculator(parameters)
+#     known = Known(structure, parameters)
+#     os.chdir(parameters["calculator"]["optimize"])
+#     dirs.find_last_dir(parameters)
+#     known.check_calculated(dirs, parameters)
+#     known.analyze_calculated(structure, fixed_frame, parameters)
+#     dirs.find_last_generated_dir(parameters)
+#     output.write_parameters(parameters, structure, known, dirs)
+#     calculated_dir = os.path.join(os.getcwd(), "search") 
+#     # snapshots = len(os.listdir(calculated_dir))
+#     print("GENERATE")
+#     workflow.success = dirs.dir_num
+#     print(workflow.success)
+#     while workflow.trials < parameters["trials"]:
+#         while workflow.success < parameters["success"]:
+#             # Generate the vector in internal degrees of freedom
+#             configuration = structure.create_configuration(parameters)
+#             structure.apply_configuration(configuration)
+#             if all_right(structure, fixed_frame):
+#                 known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
+#                 # print(known.known)
+#                 print("\n\n\n", len(known.known), "\n\n\n")
+#                 found = known.find_in_known(structure.torsions_from_conf(configuration), criteria=known.criteria, t=known.torsional_diff_degree)
+#                 # found = False
+#                 if not found:
+#                     dirs.create_directory(parameters)
+#                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
+#                     known.add_to_known(structure.torsions_from_conf(configuration))
+#                     workflow.success += 1
+#                     workflow.trials = 0
+#                     output.write_successfull_generate(parameters, structure.torsions_from_conf(configuration), dirs)
+#                 else:
+#                     workflow.trials += 1 
+#                     print("Trial {}".format(workflow.trials))
+#                     # if dirs.dir_num > snapshots:
+#                     #     need_to_visit = range(snapshots+1, len(os.listdir(calculated_dir))+1)
+#                     #     for d in need_to_visit:
+#                     #         d_name = os.path.join(os.getcwd(), "search", "{:010d}".format(d))
+#                     #         if "finished" in os.listdir(d_name):
+#                     #             output.write_to_report("Adding trajectory from {} to known.\n".format(d_name))
+#                     #             known.add_to_known_traj(structure, fixed_frame, d_name)
+#                     #             snapshots += 1 
+#                     if workflow.trials == parameters["trials"]:
+#                         if known.torsional_diff_degree > 10:
+#                             known.torsional_diff_degree -= 5
+#                             output.write_to_report("\nDecreasing the criteria for torsional angles to {}\n".format(known.torsional_diff_degree))
+#                             workflow.trials = 0
+#                             pass
+#                         else:
+#                             print("Swithing to all criteria:\n")
+#                             if known.criteria == "any":
+#                                 known.criteria = "all"
+#                                 known.torsional_diff_degree = 180
+#                                 output.write_to_report("Start to look with all criteria\n")
+#                                 workflow.trials = 0
+#                                 pass
+#                             else:
+#                                output.write_to_report("Cannot find new structures\n")
+#                                sys.exit(0)
+#                     else:
+#                         pass
+#             else:
+#                 write("bad_luck.xyz", merge_together(structure, fixed_frame), format="xyz")
+#                 pass
+#         else:
+#             output.write_to_report("{} number of structures was successfully generated!\n".format(parameters["success"]))
+#             output.write_to_report("Terminating algorithm\n")
+#             sys.exit(0)
+#     sys.exit(0)
+
 
 if parameters["calculator"]["optimize"] == "generate":
     dirs = Directories(parameters)
@@ -215,6 +305,7 @@ if parameters["calculator"]["optimize"] == "generate":
     calculator = Calculator(parameters)
     known = Known(structure, parameters)
     os.chdir(parameters["calculator"]["optimize"])
+
     dirs.find_last_dir(parameters)
     known.check_calculated(dirs, parameters)
     known.analyze_calculated(structure, fixed_frame, parameters)
@@ -222,7 +313,7 @@ if parameters["calculator"]["optimize"] == "generate":
     output.write_parameters(parameters, structure, known, dirs)
     calculated_dir = os.path.join(os.getcwd(), "search") 
     # snapshots = len(os.listdir(calculated_dir))
-    print("GENERATE")
+    print("Initialize")
     workflow.success = dirs.dir_num
     print(workflow.success)
     while workflow.trials < parameters["trials"]:
@@ -234,6 +325,8 @@ if parameters["calculator"]["optimize"] == "generate":
                 known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
                 # print(known.known)
                 print("\n\n\n", len(known.known), "\n\n\n")
+                print(known.criteria)
+                print(known.torsional_diff_degree)
                 found = known.find_in_known(structure.torsions_from_conf(configuration), criteria=known.criteria, t=known.torsional_diff_degree)
                 # found = False
                 if not found:
@@ -246,14 +339,6 @@ if parameters["calculator"]["optimize"] == "generate":
                 else:
                     workflow.trials += 1 
                     print("Trial {}".format(workflow.trials))
-                    # if dirs.dir_num > snapshots:
-                    #     need_to_visit = range(snapshots+1, len(os.listdir(calculated_dir))+1)
-                    #     for d in need_to_visit:
-                    #         d_name = os.path.join(os.getcwd(), "search", "{:010d}".format(d))
-                    #         if "finished" in os.listdir(d_name):
-                    #             output.write_to_report("Adding trajectory from {} to known.\n".format(d_name))
-                    #             known.add_to_known_traj(structure, fixed_frame, d_name)
-                    #             snapshots += 1 
                     if workflow.trials == parameters["trials"]:
                         if known.torsional_diff_degree > 10:
                             known.torsional_diff_degree -= 5
@@ -261,16 +346,8 @@ if parameters["calculator"]["optimize"] == "generate":
                             workflow.trials = 0
                             pass
                         else:
-                            print("Swithing to loose criteria:\n")
-                            if known.criteria == "strict":
-                                known.criteria = "loose"
-                                known.torsional_diff_degree = 120
-                                output.write_to_report("Start to look with loose criteria\n")
-                                workflow.trials = 0
-                                pass
-                            else:
-                               output.write_to_report("Cannot find new structures\n")
-                               sys.exit(0)
+                           output.write_to_report("Initialization is finished\n")
+                           sys.exit(0)
                     else:
                         pass
             else:
@@ -281,6 +358,7 @@ if parameters["calculator"]["optimize"] == "generate":
             output.write_to_report("Terminating algorithm\n")
             sys.exit(0)
     sys.exit(0)
+
 
 
         # for i in range(len(structure.molecules)):
