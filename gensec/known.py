@@ -15,7 +15,7 @@ class Known:
     def __init__(self, structure, parameters):
 
         if len(structure.molecules) > 1:
-            torsions = np.empty_like(np.array([0 for i in structure.list_of_torsions]))
+            torsions = np.empty(shape = len(structure.list_of_torsions))
             # quaternion = produce_quaternion(0, np.array([0, 0, 1]))
             # value_com = np.array([0, 0, 0])
             # known_one = np.hstack((torsions, quaternion, value_com))
@@ -23,13 +23,13 @@ class Known:
             for i in range(len(structure.molecules) - 1):
                 known = np.concatenate((torsions, torsions), axis=0)
         else:
-            known = np.empty_like(np.array([0 for i in structure.list_of_torsions]))
+            known = np.empty(shape = len(structure.list_of_torsions))
             # known = []
             # quaternion = produce_quaternion(0, np.array([0, 0, 1]))
             # value_com = np.array([0, 0, 0])
             # known = np.hstack((torsions, quaternion, value_com))        
         self.known = known 
-        self.torsional_diff_degree = 180
+        self.torsional_diff_degree = 90
         self.criteria = "any"
         self.dir = parameters["calculator"]["known_folder"]
 

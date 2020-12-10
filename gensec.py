@@ -105,7 +105,6 @@ if "search" in parameters["calculator"]["optimize"]:
                 # generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
                 output.write_to_report("\nThere are {} candidate structures to relax\n".format(len(generated_dirs)))
                 try:
-
                     generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
                     d = os.path.join(dirs.generate_folder, sorted(generated_dirs)[0])
                     gen = os.path.join(d, sorted(generated_dirs)[0]+".in")

@@ -76,10 +76,22 @@ class Structure:
 
             return com
 
-        torsions = make_torsion(self, parameters)
-        quaternion = make_orientation(self, parameters)
-        coms = make_com(self, parameters)
-        configuration = np.hstack((torsions, quaternion, coms))  
+        if parameters["configuration"]["torsions"]["activate"]:
+            torsions = make_torsion(self, parameters)
+        if parameters["configuration"]["orientations"]["activate"]:
+            quaternion = make_orientation(self, parameters)
+        else:
+            quaternion = [0,0,0,1]
+        if parameters["configuration"]["coms"]["activate"]:
+            coms = make_com(self, parameters)
+        else:
+            coms = [0,0,0]       
+        if not any(parameters["configuration"][i]["activate"] for i in parameters["configuration"]):
+            print("Nothing to sample")
+            sys.exit(0)
+        else:
+            configuration = np.hstack((torsions, quaternion, coms))  
+            print(configuration)
 
 
         if len(self.molecules) > 1:
