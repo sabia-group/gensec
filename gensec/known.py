@@ -23,7 +23,7 @@ class Known:
             for i in range(len(structure.molecules) - 1):
                 known = np.concatenate((torsions, torsions), axis=0)
         else:
-            known = np.array([0 for i in structure.list_of_torsions])
+            known = np.empty_like(np.array([0 for i in structure.list_of_torsions]))
             # known = []
             # quaternion = produce_quaternion(0, np.array([0, 0, 1]))
             # value_com = np.array([0, 0, 0])

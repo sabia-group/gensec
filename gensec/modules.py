@@ -55,7 +55,7 @@ def create_torsion_list(bond, graph, atoms):
     t1 = [i for i in graph[bond[0]] if i!=bond[1] and symbols[i]!="H" and len(graph[i])>1]
     t4 = [i for i in graph[bond[1]] if i!=bond[0] and symbols[i]!="H" and len(graph[i])>1]
     if len(t1)>0 and len(t4)>0:
-        torsions = (t1[0], bond[0], bond[1], t4[0])
+        torsions = [t1[0], bond[0], bond[1], t4[0]]
     else:
         append=False
 

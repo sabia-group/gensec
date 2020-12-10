@@ -320,10 +320,11 @@ if parameters["calculator"]["optimize"] == "generate":
         while workflow.success < parameters["success"]:
             # Generate the vector in internal degrees of freedom
             configuration = structure.create_configuration(parameters)
+            # print(configuration)
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
                 known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
-                # print(known.known)
+                print(known.known)
                 print("\n\n\n", len(known.known), "\n\n\n")
                 print(known.criteria)
                 print(known.torsional_diff_degree)
