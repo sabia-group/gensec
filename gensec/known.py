@@ -14,20 +14,29 @@ class Known:
     """
     def __init__(self, structure, parameters):
 
-        if len(structure.molecules) > 1:
-            torsions = np.empty(shape = len(structure.list_of_torsions))
-            # quaternion = produce_quaternion(0, np.array([0, 0, 1]))
-            # value_com = np.array([0, 0, 0])
-            # known_one = np.hstack((torsions, quaternion, value_com))
-            # known = np.hstack((torsions, quaternion, value_com)) 
-            for i in range(len(structure.molecules) - 1):
-                known = np.concatenate((torsions, torsions), axis=0)
-        else:
-            known = np.empty(shape = len(structure.list_of_torsions))
-            # known = []
-            # quaternion = produce_quaternion(0, np.array([0, 0, 1]))
-            # value_com = np.array([0, 0, 0])
-            # known = np.hstack((torsions, quaternion, value_com))        
+        if not any(parameters["configuration"][i]["known"] for i in parameters["configuration"]):
+            print("Keeping history is disabled")
+            sys.exit(0)
+
+        full_vector = []
+        for i in range(len(structure.molecules)):
+            history = {}
+            if parameters["configuration"]["torsions"]["known"]:
+                history["torsions"] = np.empty(shape = len(structure.list_of_torsions))
+            else:
+                history["torsions"] = []
+            if parameters["configuration"]["orientations"]["known"]:
+                history["orientation"] = np.array([0,0,0,0])
+            else:
+                history["orientation"] = []
+            if parameters["configuration"]["coms"]["known"]:
+                history["com"] = np.array([0, 0, 0])
+            else:
+                history["com"] = []
+            internal_vec_mol = np.hstack((history["torsions"], history["orientation"], history["com"])) 
+            full_vector.append(internal_vec_mol)       
+        known = np.hstack(full_vector)
+
         self.known = known 
         self.torsional_diff_degree = 20
         self.criteria = "any"
@@ -162,7 +171,6 @@ class Known:
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
-
                 self.add_to_known(torsions)
 
             # Go through generated structures:
@@ -178,6 +186,8 @@ class Known:
                     len_mol = len(structure.molecules[i])
                     coords = template.get_positions()[i*len_mol:i*len_mol+len_mol, :]
                     structure.molecules[i].set_positions(coords)
+                    orientation = measure_quaternion(structure.molecules[i], 0, -1)
+                    com = structure.molecules[i].get_center_of_mass()
                     for torsion in t:
                         torsions.append(structure.molecules[i].get_dihedral(
                                                         a1=torsion[0],
@@ -192,19 +202,20 @@ class Known:
                 configuration = read(os.path.join(self.dir, m), format="aims")
                 template = merge_together(structure, fixed_frame)
                 template.set_positions(configuration.get_positions())
-                # print(template.get_positions())
+                torsions = []
                 for i in range(len(structure.molecules)):
                     len_mol = len(structure.molecules[i])
                     coords = template.get_positions()[i*len_mol:i*len_mol+len_mol, :]
                     structure.molecules[i].set_positions(coords)
-                    torsions = []
+                    orientation = measure_quaternion(structure.molecules[i], 0, -1)
+                    com = structure.molecules[i].get_center_of_mass()
                     for torsion in t:
                         torsions.append(structure.molecules[i].get_dihedral(
                                                         a1=torsion[0],
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
-                    self.add_to_known(torsions)
+                self.add_to_known(torsions)
 
     def add_to_known_traj(self, structure, fixed_frame, current_dir):
         t = structure.list_of_torsions
@@ -213,12 +224,13 @@ class Known:
             configuration = traj[m]
             template = merge_together(structure, fixed_frame)
             template.set_positions(configuration.get_positions())
-            # print(template.get_positions())
+            torsions = []
             for i in range(len(structure.molecules)):
                 len_mol = len(structure.molecules[i])
                 coords = template.get_positions()[i*len_mol:i*len_mol+len_mol, :]
                 structure.molecules[i].set_positions(coords)
-                torsions = []
+                orientation = measure_quaternion(structure.molecules[i], 0, -1)
+                com = structure.molecules[i].get_center_of_mass()
                 for torsion in t:
                     torsions.append(structure.molecules[i].get_dihedral(
                                                     a1=torsion[0],
@@ -243,17 +255,18 @@ class Known:
                 configuration = read(os.path.join(self.dir, m), format="aims")
                 template = merge_together(structure, fixed_frame)
                 template.set_positions(configuration.get_positions())
-                # print(template.get_positions())
+                torsions = []
                 for i in range(len(structure.molecules)):
                     len_mol = len(structure.molecules[i])
                     coords = template.get_positions()[i*len_mol:i*len_mol+len_mol, :]
                     structure.molecules[i].set_positions(coords)
-                    torsions = []
+                    orientation = measure_quaternion(structure.molecules[i], 0, -1)
+                    com = structure.molecules[i].get_center_of_mass()
                     for torsion in t:
                         torsions.append(structure.molecules[i].get_dihedral(
                                                         a1=torsion[0],
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
-                    self.add_to_known(torsions)
+                self.add_to_known(torsions)
         self.names = bigger
