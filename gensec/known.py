@@ -151,12 +151,11 @@ class Known:
                 configuration = read(os.path.join(self.dir, m), format="aims")
                 template = merge_together(structure, fixed_frame)
                 template.set_positions(configuration.get_positions())
-                # print(template.get_positions())
+                torsions = []
                 for i in range(len(structure.molecules)):
                     len_mol = len(structure.molecules[i])
                     coords = template.get_positions()[i*len_mol:i*len_mol+len_mol, :]
                     structure.molecules[i].set_positions(coords)
-                    torsions = []
                     for torsion in t:
                         torsions.append(structure.molecules[i].get_dihedral(
                                                         a1=torsion[0],
@@ -164,7 +163,7 @@ class Known:
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
 
-                    self.add_to_known(torsions)
+                self.add_to_known(torsions)
 
             # Go through generated structures:
             dir = os.getcwd()
@@ -185,7 +184,6 @@ class Known:
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
-                print(torsions)
                 self.add_to_known(torsions)
 
         else:
