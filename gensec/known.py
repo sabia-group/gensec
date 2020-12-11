@@ -29,7 +29,7 @@ class Known:
             # value_com = np.array([0, 0, 0])
             # known = np.hstack((torsions, quaternion, value_com))        
         self.known = known 
-        self.torsional_diff_degree = 90
+        self.torsional_diff_degree = 20
         self.criteria = "any"
         self.dir = parameters["calculator"]["known_folder"]
 
@@ -163,6 +163,7 @@ class Known:
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
+
                     self.add_to_known(torsions)
 
             # Go through generated structures:
@@ -173,18 +174,19 @@ class Known:
                 configuration = read(os.path.join(dir, m, m+".in"), format="aims")
                 template = merge_together(structure, fixed_frame)
                 template.set_positions(configuration.get_positions())
+                torsions = []
                 for i in range(len(structure.molecules)):
                     len_mol = len(structure.molecules[i])
                     coords = template.get_positions()[i*len_mol:i*len_mol+len_mol, :]
                     structure.molecules[i].set_positions(coords)
-                    torsions = []
                     for torsion in t:
                         torsions.append(structure.molecules[i].get_dihedral(
                                                         a1=torsion[0],
                                                         a2=torsion[1],
                                                         a3=torsion[2],
                                                         a4=torsion[3]))
-                    self.add_to_known(torsions)
+                print(torsions)
+                self.add_to_known(torsions)
 
         else:
             t = structure.list_of_torsions

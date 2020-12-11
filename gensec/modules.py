@@ -399,7 +399,11 @@ def intramolecular_clashes(structure):
         all_atoms.extend(molecule)
     
     # Distances between all the atoms with periodic boundary conditions
-    distances = all_atoms.get_all_distances(mic=structure.mic).reshape(len(all_atoms), len(all_atoms))
+    if hasattr(structure, "mic"):
+        distances = all_atoms.get_all_distances(mic=structure.mic).reshape(len(all_atoms), len(all_atoms))
+    else:
+        distances = all_atoms.get_all_distances().reshape(len(all_atoms), len(all_atoms))
+
     # Excluding check within each molecule
     for i in range(len(structure.molecules)):
         values = np.ones(len(structure.molecules[i])**2).reshape(len(structure.molecules[i]), len(structure.molecules[i])) * 100

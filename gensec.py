@@ -307,6 +307,7 @@ if parameters["calculator"]["optimize"] == "generate":
 
     dirs.find_last_dir(parameters)
     known.check_calculated(dirs, parameters)
+    print(known.known)
     known.analyze_calculated(structure, fixed_frame, parameters)
     dirs.find_last_generated_dir(parameters)
     output.write_parameters(parameters, structure, known, dirs)
