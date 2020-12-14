@@ -105,11 +105,11 @@ class Structure:
         if parameters["configuration"]["orientations"]["activate"]:
             quaternion = make_orientation(self, parameters)
         else:
-            quaternion = [0,0,0,1]
+            quaternion = [0,0,0,1]    # Initial orientation
         if parameters["configuration"]["coms"]["activate"]:
             coms = make_com(self, parameters)
         else:
-            coms = [0,0,0]       
+            coms = [0,0,0]  # put center of mass to the origin 
         if not any(parameters["configuration"][i]["activate"] for i in parameters["configuration"]):
             print("Nothing to sample")
             sys.exit(0)

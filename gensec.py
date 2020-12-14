@@ -307,7 +307,6 @@ if parameters["calculator"]["optimize"] == "generate":
 
     dirs.find_last_dir(parameters)
     known.check_calculated(dirs, parameters)
-    print(known.known)
     known.analyze_calculated(structure, fixed_frame, parameters)
     dirs.find_last_generated_dir(parameters)
     output.write_parameters(parameters, structure, known, dirs)
@@ -316,6 +315,8 @@ if parameters["calculator"]["optimize"] == "generate":
     print("Initialize")
     workflow.success = dirs.dir_num
     print(workflow.success)
+
+
     while workflow.trials < parameters["trials"]:
         while workflow.success < parameters["success"]:
             # Generate the vector in internal degrees of freedom
@@ -324,16 +325,21 @@ if parameters["calculator"]["optimize"] == "generate":
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
                 known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
-                # print(known.known)
-                # print("\n\n\n", len(known.known), "\n\n\n")
-                # print(known.criteria)
-                # print(known.torsional_diff_degree)
-                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria=known.criteria, t=known.torsional_diff_degree)
-                # found = False
+                print("Structure is alright")
+                print("Looking if it is known structure")
+                current_coords = merge_together(structure, fixed_frame)
+                found = known.find_in_known(current_coords,
+                							parameters,
+                							structure, 
+                							fixed_frame,
+                							criteria=known.criteria, 
+                							t=known.torsional_diff_degree)
+
                 if not found:
                     dirs.create_directory(parameters)
-                    dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
-                    known.add_to_known(structure.torsions_from_conf(configuration))
+                    dirs.save_to_directory(current_coords, parameters)
+                    t, o, c = known.get_internal_vector(current_coords, structure, fixed_frame, parameters)
+                    known.add_to_known(t, o, c)
                     workflow.success += 1
                     workflow.trials = 0
                     output.write_successfull_generate(parameters, structure.torsions_from_conf(configuration), dirs)

@@ -146,7 +146,7 @@ class Output:
         report.write("{} structures Already searched.\n".format(dirs.dir_num))
         for struc in range(1, dirs.dir_num+1):
             if parameters["configuration"]["torsions"]["activate"]:
-                report.write("Structure {} has torsional angles\n{}\n".format(struc, known.known[struc]))
+                report.write("Structure {} has torsional angles\n{}\n".format(struc, known.torsions[struc]))
 
 
         report.write("Continue the search.\n")            
