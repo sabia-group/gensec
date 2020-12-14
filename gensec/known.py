@@ -100,13 +100,23 @@ class Known:
                 similar = False
         return similar
 
+    def angle_between(vec1, vec2):
+        return np.arccos(np.clip(np.dot(vec1, vec2), -1.0, 1.0))
+
     def orientational_diff(self, point, vector):
-        
-        return False
+        similar = False
+        main_vec_angle = angle_between(point[1:], vector[1:])
+        if main_vec_angle < 30:
+            ratotion_angle = self.minimal_angle(point[0], vector[0])
+            if ratotion_angle < 30:
+                similar = True
+        return similar
 
     def coms_diff(self, point, vector):
-        
-        return False
+        similar = False
+        if np.linalg.norm(point - vector) < 1:
+            similar = True
+        return similar
 
 
 
@@ -116,31 +126,82 @@ class Known:
         # Goes through all the vectors except first one that was generated for template.
 
         tt, oo, cc = self.get_internal_vector(coords, structure, fixed_frame, parameters)
+
         # Goes first throug torsions
         if parameters["configuration"]["torsions"]["known"]:
             if len(self.torsions.shape) > 1:
-                for point in range(1, len(self.torsions[1:])):
+                for point in range(1, len(self.torsions)):
                     if self.torsional_diff(self.torsions[point], tt, criteria=criteria, t=t):
                         found = True
                         index = point
                         break
             else:
                 pass
-            # if found in torsions then goes through orientations
+            # if found in torsions then goes through orientation ofr 
+            # the same point as was found for torsions
             if found:
-                print(point)
-                print()
+                print("Found in torsions")
+                print("Check if the orientations are also the same")
                 if parameters["configuration"]["orientations"]["known"]:
-                    print("Now should go through orientations")
-                    # sys.exit(0)
-            # If found in orientation then goes throug coms
-            # if found:
-            #     if parameters["configuration"]["torsions"]["known"]:
-            #         print("Now should go through orientations")
-            #         sys.exit(0)
-        # else:
-            # if parameters["configuration"]["torsions"]["known"]:
+                    if self.orientational_diff(self.orientations[point], oo):
+                        print("Found in orientations")
+                        pass
+                    else:
+                        print("Even though the torsions are the same the orientations are different")
+                        found = False
+            if found:
+                # If torsions are the same and orientations are the same, check for coms
+                # If checking for coms is activated.
+                if parameters["configuration"]["coms"]["known"]:
+                    if self.coms_diff(self.coms[point], cc):
+                        print("Also found in the coms")
+                        pass
+                    else:
+                        print("Structure is unique")
+                        found = False
+            else:
+                print("Structure is unique")
+                pass
 
+        # If need to check only through orientations
+        else:
+            print("Torsions are disabled")
+            # Goes first throug orientations
+            if parameters["configuration"]["orientations"]["known"]:
+                print("going through orientations")
+                if len(self.orientations.shape) > 1:
+                    for point in range(1, len(self.orientations)):
+                        if self.orientational_diff(self.orientations[point], oo):
+                            found = True
+                            index = point
+                            break
+                else:
+                    print("This is the first structure")
+                    pass
+
+                if found:
+                    # if found in torsions then goes through coms
+                    if parameters["configuration"]["coms"]["known"]:
+                        if self.coms_diff(self.coms[point], cc):
+                            print("Found in coms")
+                            pass
+                        else:
+                            print("Structure not found in coms")
+                            found = False
+            else:
+                # Only check for positions is activated:
+                # goes through positions and check coms:
+                if parameters["configuration"]["coms"]["known"]:
+                    print("going through coms")
+                    if len(self.coms.shape) > 1:
+                        for point in range(1, len(self.coms)):
+                            if self.coms_diff(self.coms[point], cc):
+                                found = True
+                                index = point
+                                break
+                    else:
+                        print("This is the first structure")
+                        pass                
         return found                   
         
 
