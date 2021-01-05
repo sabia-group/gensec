@@ -53,7 +53,7 @@ def irun(self):
         self.log()
         self.call_observers()
         # Calculate RMSD between current and initial steps:
-        print(self.H)
+        # print(self.H)
         if self.initial:
             print(self.atoms.get_potential_energy())
             
@@ -67,16 +67,16 @@ def irun(self):
                 a0=self.atoms.copy()
                 self.initial=a0
                 
-        d = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/vdW/Ar/single_vdW/"
-        name = "hessian.hes"
-        import os
-        h = os.path.join(d, name)
-        if not os.path.exists(h):
-            open(h, 'a').close()
-        f=open(h,'a')
-        np.savetxt(f, self.H)
-        f.write("\n")
-        f.close()
+        # d = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/vdW/Ar/single_vdW/"
+        # name = "hessian.hes"
+        # import os
+        # h = os.path.join(d, name)
+        # if not os.path.exists(h):
+        #     open(h, 'a').close()
+        # f=open(h,'a')
+        # np.savetxt(f, self.H)
+        # f.write("\n")
+        # f.close()
     # finally check if algorithm was converged
     yield self.converged()
 
