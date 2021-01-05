@@ -233,7 +233,7 @@ def vdwHessian(atoms):
     cell_ih = atoms.get_reciprocal_cell()[:]
     hessian = np.zeros(shape = (3 * N, 3 * N))
     atomsRange = list(range(N))
-    units = BOHR_to_angstr ** 6 * HARTREE_to_eV
+    units = (BOHR_to_angstr ** 6) * HARTREE_to_eV 
 
     def C6AB(A, B):
 
@@ -282,7 +282,7 @@ def vdwHessian(atoms):
         hessian[ind, ind] = 0 
         hessian[ind, ind] = -np.sum(hessian[ind]) + 0.005
     
-    return hessian
+    return hessian * 20
 
 
 def ExpHessian(atoms, mu=1, A=1):
@@ -1261,7 +1261,7 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
     if "Exp" in precon_names:
         precons["Exp"] = ExpHessian(atoms, mu=structure.mu, A=structure.A)
     if "vdW" in precon_names:
-        precons["vdW"] = vdwHessian(atoms)
+        precons["vdW"] = vdwHessian(atoms) 
     if "ID" in precon_names:
         precons["ID"] = np.eye(3 * len(atoms)) * 70
 

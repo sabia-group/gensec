@@ -53,33 +53,64 @@ def irun(self):
         self.log()
         self.call_observers()
         # Calculate RMSD between current and initial steps:
+        print(self.H)
         if self.initial:
             print(self.atoms.get_potential_energy())
+            
             if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
-                    self.H = preconditioned_hessian(self.structure, 
-                                                    self.fixed_frame, 
-                                                    self.parameters,
-                                                    self.atoms,
-                                                    self.H,
-                                                    task="update")
-                    a0=self.atoms.copy()
-                    self.initial=a0
+                self.H = preconditioned_hessian(self.structure, 
+                                                self.fixed_frame, 
+                                                self.parameters,
+                                                self.atoms,
+                                                self.H,
+                                                task="update") 
+                a0=self.atoms.copy()
+                self.initial=a0
+                
+        d = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/vdW/Ar/single_vdW/"
+        name = "hessian.hes"
+        import os
+        h = os.path.join(d, name)
+        if not os.path.exists(h):
+            open(h, 'a').close()
+        f=open(h,'a')
+        np.savetxt(f, self.H)
+        f.write("\n")
+        f.close()
     # finally check if algorithm was converged
     yield self.converged()
 
 Dynamics.irun = irun
 
 class BFGS_mod(BFGS):
-    def __init__(self, atoms, restart=None, logfile='-', trajectory=None, maxstep=None, master=None, initial=None, rmsd_dev=1000.0, molindixes=None, structure=None, fixed_frame=None, parameters=None, mu=None, A=None, known=None):
+    def __init__(self, atoms, restart=None, logfile='-', trajectory=None, maxstep=None, 
+                master=None, initial=None, rmsd_dev=1000.0, molindixes=None, structure=None, 
+                H0=None, fixed_frame=None, parameters=None, mu=None, A=None, known=None):
         BFGS.__init__(self, atoms, restart=restart, logfile=logfile, trajectory=trajectory, maxstep=0.04, master=None)
         
         # initial hessian
-        self.H0 = np.eye(3 * len(self.atoms)) * 70      
+        
+        self.H0 = H0 
         self.initial=initial
         self.rmsd_dev=rmsd_dev
-        self.molindixes=molindixes
+        self.molindixes = molindixes
         self.structure = structure
         self.fixed_frame = fixed_frame
         self.parameters = parameters
 
-        print(logfile)
+    def update(self, r, f, r0, f0):
+        if self.H is None:
+            #self.H = np.eye(3 * len(self.atoms)) * 70.0
+            self.H = self.H0
+            return
+        dr = r - r0
+
+        if np.abs(dr).max() < 1e-7:
+            # Same configuration again (maybe a restart):
+            return
+
+        df = f - f0
+        a = np.dot(dr, df)
+        dg = np.dot(self.H, dr)
+        b = np.dot(dr, dg)
+        self.H -= np.outer(df, df) / a + np.outer(dg, dg) / b

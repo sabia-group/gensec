@@ -47,7 +47,7 @@ if "search" in parameters["calculator"]["optimize"]:
     output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
     dirs.find_last_dir(parameters)
     known.analyze_calculated(structure, fixed_frame, parameters)
-    output.write_parameters(parameters, structure, known, dirs)
+    # output.write_parameters(parameters, structure, known, dirs)
     # for f in glob.glob("/tmp/ipi_*"):
     #     if os.path.exists(os.path.join("/tmp/", f)):
     #         os.remove(os.path.join("/tmp/", f))
@@ -114,9 +114,11 @@ if "search" in parameters["calculator"]["optimize"]:
                     output.write_to_report("\nSomething went wrong with folder\n")
                     output.write_to_report(d)
                     continue
-                known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
-                print("\n\n\n", len(known.known), "\n\n\n")
-                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="all", t=5)
+                known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame, parameters)
+                # print("\n\n\n", len(known.torsions), "\n\n\n")
+                current_coords = merge_together(structure, fixed_frame)
+                found = known.find_in_known(current_coords, parameters, structure, fixed_frame,
+                                                criteria=known.criteria, t=known.torsional_diff_degree)
                 if not found:
                     output.write_to_report("\nTaking structure from folder {}\n".format(d))
                     dirs.create_directory(parameters)
@@ -125,15 +127,17 @@ if "search" in parameters["calculator"]["optimize"]:
                     calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
                     t = known.find_traj(os.path.join(dirs.current_dir(parameters)))
                     conf = measure_torsion_of_last(Trajectory(os.path.join(dirs.current_dir(parameters), t))[-1], structure.list_of_torsions)
-                    ff = known.find_in_known(conf, criteria="all", t=5)
-                    if not ff:
+                    current_coords = merge_together(structure, fixed_frame)
+                    found = known.find_in_known(current_coords, parameters, structure, fixed_frame,
+                                                criteria=known.criteria, t=known.torsional_diff_degree)
+                    if not found:
                         dirs.finished(parameters)
                         known.send_traj_to_known_folder(dirs, parameters)
                         workflow.success += 1
                         workflow.trials = 0
                         output.write_successfull_relax(parameters, structure, known, dirs)
                         output.write_to_report("\nGenerated structure in folder {} is deleted\n".format(d))
-                        output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
+                        # output.write_to_report("\nThere are {} candidate structures left to relax\n".format(len(generated_dirs)))
                     else:
                         output.write_to_report("found in known {}".format(ff))
                         dirs.known(parameters)
@@ -161,11 +165,13 @@ if "search" in parameters["calculator"]["optimize"]:
             structure.apply_configuration(configuration)
             # Check if the structure is sencible and don't have clashes
             if all_right(structure, fixed_frame):
-            	# Check if there are new structures appear in known folder
-                known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
+                # Check if there are new structures appear in known folder
+                known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame, parameters)
                 # Two structures are considered similar if all their corresponding torsional angles
                 # are different for less than 5 dgrees. 
-                found = known.find_in_known(structure.torsions_from_conf(configuration), criteria="all", t=5)
+                current_coords = merge_together(structure, fixed_frame)
+                found = known.find_in_known(current_coords, parameters, structure, fixed_frame,
+                                                criteria=known.criteria, t=known.torsional_diff_degree)
                 if not found:
                     print("Structure is unique")
                     structure.apply_configuration(configuration) # For some reason need to apply again here
@@ -182,7 +188,9 @@ if "search" in parameters["calculator"]["optimize"]:
                     # take final local minima
                     conf = measure_torsion_of_last(Trajectory(os.path.join(dirs.current_dir(parameters), t))[-1], structure.list_of_torsions)
                     # Check if it was among known structures before this relaxation
-                    was_known = known.find_in_known(conf, criteria="all", t=5)
+                    current_coords = merge_together(structure, fixed_frame)
+                    was_known = known.find_in_known(current_coords, parameters, structure, fixed_frame,
+                                                criteria=known.criteria, t=known.torsional_diff_degree)
                     # Send all the steps of the trajectory to known folder
                     known.send_traj_to_known_folder(dirs, parameters)
                     print("\n\n\n\n\n", was_known)
@@ -210,7 +218,7 @@ if "search" in parameters["calculator"]["optimize"]:
                     else:
                         pass
             else:
-            	# Save not sensible structure for evaluation
+                # Save not sensible structure for evaluation
                 write("bad_luck.xyz", merge_together(structure, fixed_frame), format="xyz")
                 pass
         else:
@@ -304,7 +312,6 @@ if parameters["calculator"]["optimize"] == "generate":
     calculator = Calculator(parameters)
     known = Known(structure, parameters)
     os.chdir(parameters["calculator"]["optimize"])
-
     dirs.find_last_dir(parameters)
     known.check_calculated(dirs, parameters)
     known.analyze_calculated(structure, fixed_frame, parameters)
@@ -324,16 +331,16 @@ if parameters["calculator"]["optimize"] == "generate":
             print(configuration)
             structure.apply_configuration(configuration)
             if all_right(structure, fixed_frame):
-                known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
+                known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame, parameters)
                 print("Structure is alright")
                 print("Looking if it is known structure")
                 current_coords = merge_together(structure, fixed_frame)
                 found = known.find_in_known(current_coords,
-                							parameters,
-                							structure, 
-                							fixed_frame,
-                							criteria=known.criteria, 
-                							t=known.torsional_diff_degree)
+                                            parameters,
+                                            structure, 
+                                            fixed_frame,
+                                            criteria=known.criteria, 
+                                            t=known.torsional_diff_degree)
 
                 if not found:
                     dirs.create_directory(parameters)
@@ -429,6 +436,39 @@ if parameters["calculator"]["optimize"] == "generate":
 # #         break
 
 if "single" in parameters["calculator"]["optimize"]:
+
+    # if len(os.listdir(parameters["calculator"]["generate_folder"])) > 0:
+    #     dirs = Directories(parameters)   
+    #     workflow = Workflow()
+    #     gendir = os.path.join(os.getcwd(), parameters["calculator"]["generate_folder"])
+    #     basedir = os.getcwd()
+    #     os.chdir(parameters["calculator"]["optimize"])
+    #     for i in sorted(os.listdir(gendir)):
+    #         parameters["geometry"][0] = os.path.join(gendir, i, i+".in")
+    #         parameters["geometry"][1] = "aims"
+    #         parameters["fixed_frame"]["filename"] = os.path.join(basedir, "slab.in")
+    #         parameters["fixed_frame"]["format"] = "aims"
+    #         parameters["calculator"]["ase_parameters_file"] = os.path.join(basedir, "supporting", "ase_command.py")
+    #         print(parameters["geometry"][0])
+
+    #         structure = Structure(parameters)
+    #         fixed_frame = Fixed_frame(parameters)
+    #         calculator = Calculator(parameters)
+    #         known = Known(structure, parameters)
+    #         if not os.path.exists(parameters["calculator"]["optimize"]):
+    #             os.mkdir(parameters["calculator"]["optimize"])
+    #         # output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
+    #         dirs.find_last_dir(parameters)
+    #         # output.write_parameters(parameters, structure, known, dirs)
+    #         # structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
+    #         dirs.create_directory(parameters)
+    #         dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
+    #         calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
+    #         dirs.finished(parameters)
+
+
+
+    # else:
     dirs = Directories(parameters)   
     workflow = Workflow()
     structure = Structure(parameters)
@@ -440,7 +480,7 @@ if "single" in parameters["calculator"]["optimize"]:
     os.chdir(parameters["calculator"]["optimize"])
     output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
     dirs.find_last_dir(parameters)
-    output.write_parameters(parameters, structure, known, dirs)
+    # output.write_parameters(parameters, structure, known, dirs)
     structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
     dirs.create_directory(parameters)
     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)

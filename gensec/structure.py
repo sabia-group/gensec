@@ -51,7 +51,7 @@ class Structure:
                 turns = 360.0//parameters["configuration"]["orientations"]["angle"]
                 angles = np.linspace(0, 360, num=turns+1)
                 if parameters["configuration"]["orientations"]["vector"]["Type"] == "exclusion":
-                    exclude = np.eye(3)[choice(range(2))]
+                    exclude = np.eye(3)[choice([1, 2])]
                     x = parameters["configuration"]["orientations"]["vector"]["x"] 
                     y = parameters["configuration"]["orientations"]["vector"]["y"] 
                     z = parameters["configuration"]["orientations"]["vector"]["z"]

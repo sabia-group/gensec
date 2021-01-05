@@ -141,8 +141,8 @@ class Known:
             # the same point as was found for torsions
             if found:
                 print("Found in torsions")
-                print("Check if the orientations are also the same")
                 if parameters["configuration"]["orientations"]["known"]:
+                    print("Check if the orientations are also the same")
                     if self.orientational_diff(self.orientations[point], oo):
                         print("Found in orientations")
                         pass
@@ -240,7 +240,7 @@ class Known:
 
         calculated_dir = os.getcwd()
         num_run = parameters["calculator"]["optimize"].split("_")[-1]
-
+        print(parameters["calculator"]["optimize"].split("_")[-1])
         # for i in range(1, dirs.dir_num+1):
         traj_name = "{:010d}".format(dirs.dir_num)
         calculated_names = [z.split("_")[0] for z in os.listdir(self.dir)]
@@ -320,7 +320,7 @@ class Known:
             self.add_to_known_orientations(o)
             self.add_to_known_coms(c)
 
-    def update_known(self, list_a, list_b, structure, fixed_frame):
+    def update_known(self, list_a, list_b, structure, fixed_frame, parameters):
 
         if len(list_a) > len(list_b):
             smaller = set(list_b)

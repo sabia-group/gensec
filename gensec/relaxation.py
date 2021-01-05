@@ -35,14 +35,13 @@ class Calculator:
 
         # Figure out for which atoms Exp is applicapble
         precons_parameters = {
-            "mol" : parameters["calculator"]["preconditioner"]["mol"],
-            "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"], 
-            "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"],
-            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol"]
+            "mol" : parameters["calculator"]["preconditioner"]["mol"]["precon"],
+            "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["precon"], 
+            "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
+            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol"]["precon"]
         }
 
-
-        if "Exp" in parameters["calculator"]["preconditioner"].values():
+        if "Exp" in precons_parameters.values():
             if len(structure.molecules) > 1:
                 a0 = structure.molecules[0].copy()
                 for i in range(1, len(structure.molecules)):
@@ -88,7 +87,7 @@ class Calculator:
             A = np.dot(v.T, force_diff)
             B = np.dot(v.T, np.dot(P, v))
             mu = A / B
-            calculator.close()
+            # calculator.close()
         else:
             mu = 1
         return mu
@@ -117,19 +116,20 @@ class Calculator:
             rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]["value"]
         else:
             rmsd_threshhold = 100000000000    
-
-        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
-                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
-                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, 
-                            logfile=os.path.join(directory, "logfile.log"),
-                            restart=os.path.join(directory, 'qn.pckl'))  
-
         if not hasattr(structure, "mu"):
             structure.mu = 1
         if not hasattr(structure, "A"):
-            structure.A = 1
+            structure.A = 1        
         H0 = np.eye(3 * len(atoms)) * 70
-        opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
+        H0_init= precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
+        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
+                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+                            mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+                            restart=os.path.join(directory, 'qn.pckl'))  
+
+
+        # opt.H0 = H0_init        
         # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
         opt.run(fmax=fmax, steps=1000)
@@ -223,9 +223,10 @@ class Calculator:
                     atoms = t[-1].copy()
                     self.set_constrains(atoms, parameters)
                     atoms.set_calculator(self.calculator)
+                    H0 = np.eye(3 * len(atoms)) * 70
                     opt = BFGS_mod(atoms, trajectory=traj, 
                                     initial=atoms[:molsize], molindixes=list(range(molsize)), rmsd_dev=rmsd_threshhold, 
-                                    structure=structure, fixed_frame=fixed_frame, parameters=parameters, 
+                                    structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0,
                                     logfile=os.path.join(directory, "logfile.log"), 
                                     restart=os.path.join(directory, 'qn.pckl')) 
 
@@ -258,11 +259,11 @@ class Calculator:
                     if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:  
                         rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"]["value"]
                     else:
-                        rmsd_threshhold = 100000000000    
-
+                        rmsd_threshhold = 100000000000
+                    H0 = np.eye(3 * len(atoms)) * 70    
                     opt = BFGS_mod(atoms, trajectory=traj, 
                                     initial=atoms[:molsize], molindixes=list(range(molsize)), rmsd_dev=rmsd_threshhold, 
-                                    structure=structure, fixed_frame=fixed_frame, parameters=parameters, 
+                                    structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0,
                                     logfile=os.path.join(directory, "logfile.log"), 
                                     restart=os.path.join(directory, 'qn.pckl'))   
 
@@ -270,7 +271,6 @@ class Calculator:
                         structure.mu = 1
                     if not hasattr(structure, "A"):
                         structure.A = 1
-                    H0 = np.eye(3 * len(atoms)) * 70
                     opt.H0 = precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
                     np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
                     fmax = parameters["calculator"]["fmax"]
