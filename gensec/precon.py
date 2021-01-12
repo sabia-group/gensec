@@ -237,14 +237,16 @@ def vdwHessian(atoms):
 
     def C6AB(A, B):
 
-        C6AB = 2. * C6_vdW[A] * C6_vdW[B] / (ALPHA_vdW[B] / ALPHA_vdW[A] * C6_vdW[A] + ALPHA_vdW[A] / ALPHA_vdW[B] * C6_vdW[B]) * units
-        return C6AB
+        C6AB = 2. * C6_vdW[A] * C6_vdW[B] / (ALPHA_vdW[B] / ALPHA_vdW[A] * C6_vdW[A] + ALPHA_vdW[A] / ALPHA_vdW[B] * C6_vdW[B]) 
+        # C6AB = 0.5 * (C6_vdW[A] + C6_vdW[B])
+        
+        return C6AB * units # in eV*Angstr^6
 
     def C12AB(A, B, C6):
 
-        R0AB = (VDW_radii[B] * VDW_radii[A] * BOHR_to_angstr**2 * 2**2)**0.5 
+        R0AB = (VDW_radii[B] + VDW_radii[A]) * 0.5 * BOHR_to_angstr  # in Angstroms
         C12AB = 0.5*C6*(R0AB**6)    
-        return C12AB 
+        return C12AB # in eV*Angstr^6
 
     def RAB(cell_h, cell_ih, qi, qj):
 
@@ -252,13 +254,13 @@ def vdwHessian(atoms):
             R = np.array(np.linalg.norm(qi-qj))
         else:
             dij, R = periodic_R(cell_h, cell_ih, qi, qj) 
-        return R
+        return R # in Angstroms
 
     def vdW_element(k, l, C6, C12, R, qi, qj):
 
         if R !=0:
             if k == l:
-                return -48*C6*(qi[k]-qj[l])**2/R**10 + 168*C12*(qi[k]-qj[l])**2/R**16 + 6*C6/R**8 - 12*C12/R**14
+                return -48*C6*(-qi[k]+qj[l])**2/R**10 + 168*C12*(-qi[k]+qj[l])**2/R**16 + 6*C6/R**8 - 12*C12/R**14
             else:
                 return -48*C6*(-qi[k]+qj[k])*(-qi[l]+qj[l])/R**10 + 168*C12*(-qi[k]+qj[k])*(-qi[l]+qj[l])/R**16
         else:
@@ -276,13 +278,40 @@ def vdwHessian(atoms):
                     qi = coordinates[i]
                     qj = coordinates[j]
                     R = RAB(cell_h, cell_ih, qi, qj)
-                    hessian[3*i+k, 3*j+l] = vdW_element(k, l, C6, C12, R, qi, qj)
-       
-    for ind in range(len(hessian)):
-        hessian[ind, ind] = 0 
-        hessian[ind, ind] = -np.sum(hessian[ind]) + 0.005
+                    hessian[3*i+k, 3*j+l] = -vdW_element(k, l, C6, C12, R, qi, qj) 
+    hessian = hessian 
+
+    x_range = [3*ind for ind in range(len(atoms))]
+    y_range = [3*ind+1 for ind in range(len(atoms))]
+    z_range = [3*ind+2 for ind in range(len(atoms))]
+
+    for ind in range(len(x_range)):
+        to_sum  = np.delete(x_range, ind)
+        hessian[x_range[ind], x_range[ind]] = -np.sum(hessian[x_range[ind],to_sum]) 
+        hessian[x_range[ind]+1, x_range[ind]] = -np.sum(hessian[x_range[ind]+1,to_sum]) 
+        hessian[x_range[ind]+2, x_range[ind]] = -np.sum(hessian[x_range[ind]+2,to_sum]) 
+
+    for ind in range(len(y_range)):
+        to_sum  = np.delete(y_range, ind)
+        hessian[x_range[ind], x_range[ind]+1] = -np.sum(hessian[x_range[ind],to_sum]) 
+        hessian[x_range[ind]+1, x_range[ind]+1] = -np.sum(hessian[x_range[ind]+1,to_sum]) 
+        hessian[x_range[ind]+2, x_range[ind]+1] = -np.sum(hessian[x_range[ind]+2,to_sum]) 
+
+    for ind in range(len(y_range)):
+        to_sum  = np.delete(z_range, ind)
+        hessian[x_range[ind], x_range[ind]+2] = -np.sum(hessian[x_range[ind],to_sum])         
+        hessian[x_range[ind]+1, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+1,to_sum])         
+        hessian[x_range[ind]+2, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+2,to_sum])         
+
+    # for ind in range(len(hessian)):
+        # hessian[ind, ind] = 0 
+        # hessian[ind, ind] = -np.sum(hessian[ind]) + 0.005 
     
-    return hessian * 20
+    # for ind in range(len(hessian)):
+    #     hessian[ind, ind] = 0 
+    #     hessian[ind, ind] = -np.sum(hessian[ind]) + 0.005 
+    
+    return hessian 
 
 
 def ExpHessian(atoms, mu=1, A=1):

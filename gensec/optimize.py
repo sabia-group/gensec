@@ -56,17 +56,21 @@ def irun(self):
         # print(self.H)
         if self.initial:
             print(self.atoms.get_potential_energy())
-            
+    
             if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
+                # print("was")
+                # print(self.H)
                 self.H = preconditioned_hessian(self.structure, 
                                                 self.fixed_frame, 
                                                 self.parameters,
                                                 self.atoms,
                                                 self.H,
                                                 task="update") 
+                # print("became")
+                # print(self.H)                 
                 a0=self.atoms.copy()
                 self.initial=a0
-                
+
         # d = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/vdW/Ar/single_vdW/"
         # name = "hessian.hes"
         # import os

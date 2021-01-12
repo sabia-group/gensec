@@ -22,12 +22,12 @@ class Structure:
             self.atoms.set_pbc(True)
         self.molecules = [self.atoms.copy() for i in range(parameters["number_of_replicas"])]
 
-        self.cycles = detect_cycles(self.connectivity_matrix_full)
-        self.list_of_torsions = exclude_rotatable_from_cycles(self.list_of_torsions, self.cycles)
+        # self.cycles = detect_cycles(self.connectivity_matrix_full)
+        # self.list_of_torsions = exclude_rotatable_from_cycles(self.list_of_torsions, self.cycles)
 
-        if len(self.cycles) > 0:
-             for i in range(len(self.cycles)):
-                self.cycles[i] = make_canonical_pyranosering(self.atoms, self.cycles[i])
+        # if len(self.cycles) > 0:
+             # for i in range(len(self.cycles)):
+                # self.cycles[i] = make_canonical_pyranosering(self.atoms, self.cycles[i])
 
     def create_configuration(self, parameters):
 

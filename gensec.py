@@ -323,7 +323,7 @@ if parameters["calculator"]["optimize"] == "generate":
     workflow.success = dirs.dir_num
     print(workflow.success)
 
-
+    from ase.constraints import FixAtoms
     while workflow.trials < parameters["trials"]:
         while workflow.success < parameters["success"]:
             # Generate the vector in internal degrees of freedom
@@ -335,6 +335,7 @@ if parameters["calculator"]["optimize"] == "generate":
                 print("Structure is alright")
                 print("Looking if it is known structure")
                 current_coords = merge_together(structure, fixed_frame)
+
                 found = known.find_in_known(current_coords,
                                             parameters,
                                             structure, 
@@ -343,6 +344,7 @@ if parameters["calculator"]["optimize"] == "generate":
                                             t=known.torsional_diff_degree)
 
                 if not found:
+                    calculator.set_constrains(current_coords, parameters) 
                     dirs.create_directory(parameters)
                     dirs.save_to_directory(current_coords, parameters)
                     t, o, c = known.get_internal_vector(current_coords, structure, fixed_frame, parameters)
