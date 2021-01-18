@@ -39,8 +39,25 @@ class Calculator:
             "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
             "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol"]["precon"]
         }
-
-        if "Exp" in precons_parameters.values():
+        precons_parameters_init = {
+            "mol" : parameters["calculator"]["preconditioner"]["mol"]["initial"],
+            "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["initial"], 
+            "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["initial"],
+            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol"]["initial"]
+        }
+        precons_parameters_update = {
+            "mol" : parameters["calculator"]["preconditioner"]["mol"]["update"],
+            "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["update"], 
+            "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["update"],
+            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol"]["update"]
+        }
+        need_for_exp = []
+        for i in range(len(precons_parameters.values())):
+            if precons_parameters.values()[i] == "Exp":
+                if precons_parameters_init[i] or precons_parameters_update[i]
+                    need_for_exp.append("Exp")
+                    
+        if "Exp" in need_for_exp:
             if len(structure.molecules) > 1:
                 a0 = structure.molecules[0].copy()
                 for i in range(1, len(structure.molecules)):
