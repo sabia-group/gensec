@@ -37,27 +37,27 @@ class Calculator:
             "mol" : parameters["calculator"]["preconditioner"]["mol"]["precon"],
             "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["precon"], 
             "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
-            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol"]["precon"]
+            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]["precon"]
         }
         precons_parameters_init = {
             "mol" : parameters["calculator"]["preconditioner"]["mol"]["initial"],
             "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["initial"], 
             "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["initial"],
-            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol"]["initial"]
+            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]["initial"]
         }
         precons_parameters_update = {
             "mol" : parameters["calculator"]["preconditioner"]["mol"]["update"],
             "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["update"], 
             "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["update"],
-            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol"]["update"]
+            "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]["update"]
         }
-        need_for_exp = []
-        for i in range(len(precons_parameters.values())):
-            if precons_parameters.values()[i] == "Exp":
-                if precons_parameters_init[i] or precons_parameters_update[i]:
-                    need_for_exp.append("Exp")
-
-        if "Exp" in need_for_exp:
+        need_for_exp = False 
+        for i in range(len(list(precons_parameters.values()))):
+            if list(precons_parameters.values())[i] == "Exp":
+                if list(precons_parameters_init.values())[i] or list(precons_parameters_update.values())[i]:
+                    need_for_exp = True
+        print(need_for_exp)
+        if need_for_exp:
             if len(structure.molecules) > 1:
                 a0 = structure.molecules[0].copy()
                 for i in range(1, len(structure.molecules)):
@@ -105,7 +105,7 @@ class Calculator:
             mu = A / B
             # calculator.close()
         else:
-            mu = 1
+            mu = 1.0
         return mu
 
     def relax(self, structure, fixed_frame, parameters, directory, known):
