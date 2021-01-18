@@ -15,6 +15,7 @@ import random
 from subprocess import Popen
 import shutil
 
+from ase.io.trajectory import Trajectory
 
 class Calculator:
     def __init__(self, parameters):
