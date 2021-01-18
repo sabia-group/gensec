@@ -131,7 +131,7 @@ class Calculator:
         # opt.H0 = H0_init        
         # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
-        opt.run(fmax=fmax, steps=10000)
+        opt.run(fmax=fmax, steps=600)
         # write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
         # np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
         try:

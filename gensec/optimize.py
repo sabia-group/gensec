@@ -18,79 +18,20 @@ from itertools import product
 from gensec.precon import preconditioned_hessian, Kabsh_rmsd
 from gensec.modules import measure_torsion_of_last
 
-from ase.optimize.optimize import Dynamics
 from ase.optimize.bfgs import BFGS
 
 from copy import deepcopy
+from numpy.linalg import eigh
+import os
 
 
-def irun(self):
-        
-    """Modified Run dynamics algorithm as generator. Checks 
-    RMSD difference and initialize the Heesian matrix update routine
-    """
-
-    # compute inital structure and log the first step
-    self.atoms.get_forces()
-
-    # yield the first time to inspect before logging
-    yield False
-
-    if self.nsteps == 0:
-        self.log()
-        self.call_observers()
-
-    # run the algorithm until converged or max_steps reached
-    while not self.converged() and self.nsteps < self.max_steps:
-
-        # compute the next step
-        self.step()
-        self.nsteps += 1
-        # let the user inspect the step and change things before logging
-        # and predicting the next step
-        yield False
-        # log the step
-        self.log()
-        self.call_observers()
-        # Calculate RMSD between current and initial steps:
-        # print(self.H)
-        if self.initial:
-            print(self.atoms.get_potential_energy())
-    
-            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
-                # print("was")
-                # print(self.H)
-                self.H = preconditioned_hessian(self.structure, 
-                                                self.fixed_frame, 
-                                                self.parameters,
-                                                self.atoms,
-                                                self.H,
-                                                task="update") 
-                # print("became")
-                # print(self.H)                 
-                a0=self.atoms.copy()
-                self.initial=a0
-
-        # d = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/vdW/Ar/single_vdW/"
-        # name = "hessian.hes"
-        # import os
-        # h = os.path.join(d, name)
-        # if not os.path.exists(h):
-        #     open(h, 'a').close()
-        # f=open(h,'a')
-        # np.savetxt(f, self.H)
-        # f.write("\n")
-        # f.close()
-    # finally check if algorithm was converged
-    yield self.converged()
-
-Dynamics.irun = irun
+print("This is old version")
 
 class BFGS_mod(BFGS):
     def __init__(self, atoms, restart=None, logfile='-', trajectory=None, maxstep=None, 
                 master=None, initial=None, rmsd_dev=1000.0, molindixes=None, structure=None, 
                 H0=None, fixed_frame=None, parameters=None, mu=None, A=None, known=None):
-        BFGS.__init__(self, atoms, restart=restart, logfile=logfile, trajectory=trajectory, maxstep=0.04, master=None)
+        BFGS.__init__(self, atoms, restart=restart, logfile=logfile, trajectory=trajectory, maxstep=0.2, master=None)
         
         # initial hessian
         
@@ -104,17 +45,98 @@ class BFGS_mod(BFGS):
 
     def update(self, r, f, r0, f0):
         if self.H is None:
-            #self.H = np.eye(3 * len(self.atoms)) * 70.0
-            self.H = self.H0
+            #self.H = np.eye(3 * len(self.atoms)) * 70.0 # This is the change compared to ASE
+            self.H = self.H0 # This is the change compared to ASE
             return
         dr = r - r0
 
         if np.abs(dr).max() < 1e-7:
             # Same configuration again (maybe a restart):
             return
+        # Calculate RMSD between current and initial steps:
+        if self.initial: # This is the change compared to ASE
+            # print(self.atoms.get_potential_energy())
+            # Experimental for vdW clusters
+            forces = self.atoms.get_forces()
+            fmax = sqrt((forces ** 2).sum(axis=1).max())
+            print("Force",  fmax)
+            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
+                print("Applying update")
+                # name = "hessian_progress.hes"
+                # h = os.path.join(os.getcwd(), name)
+                # if not os.path.exists(h):
+                #     open(h, 'a').close()
+                # f=open(h,'a')
+                # f.write("RMSD is Exceed, the hessian will be updated\n")
+                # f.write("Hessian before (GenSec)\n")
+                # np.savetxt(f, self.H)
+                # f.write("\n")
+                
+                self.H = preconditioned_hessian(self.structure, 
+                                                self.fixed_frame, 
+                                                self.parameters,
+                                                self.atoms,
+                                                self.H,
+                                                task="update") 
+                # f.write("Hessian after (GenSec)\n")
+                # np.savetxt(f, self.H)
+                # f.write("\n") 
+                # f.close()              
+                a0=self.atoms.copy()
+                self.initial=a0
+            else:
+                df = f - f0
+                a = np.dot(dr, df)
+                dg = np.dot(self.H, dr)
+                b = np.dot(dr, dg)
+                self.H -= np.outer(df, df) / a + np.outer(dg, dg) / b
+        else:
+            df = f - f0
+            a = np.dot(dr, df)
+            dg = np.dot(self.H, dr)
+            b = np.dot(dr, dg)
+            self.H -= np.outer(df, df) / a + np.outer(dg, dg) / b
+#############################################################
+        # Prints out Hessian, for developing purposes (GenSec)
+        # name = "hessian_progress.hes"
+        # h = os.path.join(os.getcwd(), name)
+        # if not os.path.exists(h):
+        #     open(h, 'a').close()
+        # f=open(h,'a')
+        # f.write("Hessian after update (GenSec)\n")
+        # np.savetxt(f, self.H)
+        # f.write("\n")
+        # f.close()
+#############################################################
 
-        df = f - f0
-        a = np.dot(dr, df)
-        dg = np.dot(self.H, dr)
-        b = np.dot(dr, dg)
-        self.H -= np.outer(df, df) / a + np.outer(dg, dg) / b
+    def step(self, f=None):
+        atoms = self.atoms
+
+        if f is None:
+            f = atoms.get_forces()
+
+        r = atoms.get_positions()
+        f = f.reshape(-1)
+        self.update(r.flat, f, self.r0, self.f0)
+        omega, V = eigh(self.H)
+        dr = np.dot(V, np.dot(f, V) / np.fabs(omega)).reshape((-1, 3))
+        steplengths = (dr**2).sum(1)**0.5
+        dr = self.determine_step(dr, steplengths)
+        max_step = round(sqrt((dr ** 2).sum(axis=1).max()), 4)
+        print("Step size is {}".format(max_step))
+        atoms.set_positions(r + dr)
+        self.r0 = r.flat.copy()
+        self.f0 = f.copy()
+        self.dump((self.H, self.r0, self.f0, self.maxstep))
+#############################################################
+        # Prints out Hessian, for developing purposes (GenSec)
+        # name = "hessian_progress.hes"
+        # h = os.path.join(os.getcwd(), name)
+        # if not os.path.exists(h):
+        #     open(h, 'a').close()
+        # f=open(h,'a')
+        # f.write("Making step having hessian (GenSec)\n")
+        # np.savetxt(f, self.H)
+        # f.write("\n")
+        # f.close()
+#############################################################

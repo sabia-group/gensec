@@ -439,55 +439,55 @@ if parameters["calculator"]["optimize"] == "generate":
 
 if "single" in parameters["calculator"]["optimize"]:
 
-    # if len(os.listdir(parameters["calculator"]["generate_folder"])) > 0:
-    #     dirs = Directories(parameters)   
-    #     workflow = Workflow()
-    #     gendir = os.path.join(os.getcwd(), parameters["calculator"]["generate_folder"])
-    #     basedir = os.getcwd()
-    #     os.chdir(parameters["calculator"]["optimize"])
-    #     for i in sorted(os.listdir(gendir)):
-    #         parameters["geometry"][0] = os.path.join(gendir, i, i+".in")
-    #         parameters["geometry"][1] = "aims"
-    #         parameters["fixed_frame"]["filename"] = os.path.join(basedir, "slab.in")
-    #         parameters["fixed_frame"]["format"] = "aims"
-    #         parameters["calculator"]["ase_parameters_file"] = os.path.join(basedir, "supporting", "ase_command.py")
-    #         print(parameters["geometry"][0])
+    if len(os.listdir(parameters["calculator"]["generate_folder"])) > 0:
+        dirs = Directories(parameters)   
+        workflow = Workflow()
+        gendir = os.path.join(os.getcwd(), parameters["calculator"]["generate_folder"])
+        basedir = os.getcwd()
+        os.chdir(parameters["calculator"]["optimize"])
+        for i in sorted(os.listdir(gendir)):
+            parameters["geometry"][0] = os.path.join(gendir, i, i+".in")
+            parameters["geometry"][1] = "aims"
+            parameters["fixed_frame"]["filename"] = os.path.join(basedir, "slab.in")
+            parameters["fixed_frame"]["format"] = "aims"
+            parameters["calculator"]["ase_parameters_file"] = os.path.join(basedir, "supporting", "ase_command.py")
+            print(parameters["geometry"][0])
 
-    #         structure = Structure(parameters)
-    #         fixed_frame = Fixed_frame(parameters)
-    #         calculator = Calculator(parameters)
-    #         known = Known(structure, parameters)
-    #         if not os.path.exists(parameters["calculator"]["optimize"]):
-    #             os.mkdir(parameters["calculator"]["optimize"])
-    #         # output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
-    #         dirs.find_last_dir(parameters)
-    #         # output.write_parameters(parameters, structure, known, dirs)
-    #         # structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
-    #         dirs.create_directory(parameters)
-    #         dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
-    #         calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
-    #         dirs.finished(parameters)
+            structure = Structure(parameters)
+            fixed_frame = Fixed_frame(parameters)
+            calculator = Calculator(parameters)
+            known = Known(structure, parameters)
+            if not os.path.exists(parameters["calculator"]["optimize"]):
+                os.mkdir(parameters["calculator"]["optimize"])
+            # output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
+            dirs.find_last_dir(parameters)
+            # output.write_parameters(parameters, structure, known, dirs)
+            # structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
+            dirs.create_directory(parameters)
+            dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
+            calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
+            dirs.finished(parameters)
 
 
 
-    # else:
-    dirs = Directories(parameters)   
-    workflow = Workflow()
-    structure = Structure(parameters)
-    fixed_frame = Fixed_frame(parameters)
-    calculator = Calculator(parameters)
-    known = Known(structure, parameters)
-    if not os.path.exists(parameters["calculator"]["optimize"]):
-        os.mkdir(parameters["calculator"]["optimize"])
-    os.chdir(parameters["calculator"]["optimize"])
-    output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
-    dirs.find_last_dir(parameters)
-    # output.write_parameters(parameters, structure, known, dirs)
-    structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
-    dirs.create_directory(parameters)
-    dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
-    calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
-    dirs.finished(parameters)
+    else:
+        dirs = Directories(parameters)   
+        workflow = Workflow()
+        structure = Structure(parameters)
+        fixed_frame = Fixed_frame(parameters)
+        calculator = Calculator(parameters)
+        known = Known(structure, parameters)
+        if not os.path.exists(parameters["calculator"]["optimize"]):
+            os.mkdir(parameters["calculator"]["optimize"])
+        os.chdir(parameters["calculator"]["optimize"])
+        output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
+        dirs.find_last_dir(parameters)
+        # output.write_parameters(parameters, structure, known, dirs)
+        structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
+        dirs.create_directory(parameters)
+        dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
+        calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
+        dirs.finished(parameters)
 
 #         # os.system("rm /tmp/ipi_*")
 #     sys.exit(0)
