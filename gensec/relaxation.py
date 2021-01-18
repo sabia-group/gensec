@@ -54,9 +54,9 @@ class Calculator:
         need_for_exp = []
         for i in range(len(precons_parameters.values())):
             if precons_parameters.values()[i] == "Exp":
-                if precons_parameters_init[i] or precons_parameters_update[i]
+                if precons_parameters_init[i] or precons_parameters_update[i]:
                     need_for_exp.append("Exp")
-                    
+
         if "Exp" in need_for_exp:
             if len(structure.molecules) > 1:
                 a0 = structure.molecules[0].copy()
