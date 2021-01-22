@@ -91,15 +91,15 @@ class BFGS_mod(BFGS):
         self.H -= np.outer(df, df) / a + np.outer(dg, dg) / b
 #############################################################
         # Prints out Hessian, for developing purposes (GenSec)
-        # name = "hessian_progress.hes"
-        # h = os.path.join(os.getcwd(), name)
-        # if not os.path.exists(h):
-        #     open(h, 'a').close()
-        # f=open(h,'a')
-        # f.write("Hessian after update (GenSec)\n")
-        # np.savetxt(f, self.H)
-        # f.write("\n")
-        # f.close()
+        name = "hessian_progress.hes"
+        h = os.path.join(os.getcwd(), name)
+        if not os.path.exists(h):
+            open(h, 'a').close()
+        f=open(h,'a')
+        f.write("Hessian after update (GenSec)\n")
+        np.savetxt(f, self.H)
+        f.write("\n")
+        f.close()
 #############################################################
 
     def step(self, f=None):
