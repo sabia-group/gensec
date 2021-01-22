@@ -513,3 +513,10 @@ def merge_together(structure, fixed_frame):
     if hasattr(fixed_frame, "fixed_frame"):
         ensemble+=fixed_frame.fixed_frame
     return ensemble
+
+def prepare_for_saving(structure):
+    ensemble = structure.atoms.copy()
+    del ensemble[[atom.index for atom in structure.atoms]]
+    for molecule in structure.molecules:
+        ensemble+=molecule
+    return ensemble

@@ -346,7 +346,7 @@ if parameters["calculator"]["optimize"] == "generate":
                 if not found:
                     calculator.set_constrains(current_coords, parameters) 
                     dirs.create_directory(parameters)
-                    dirs.save_to_directory(current_coords, parameters)
+                    dirs.save_to_directory(prepare_for_saving(structure), parameters)
                     t, o, c = known.get_internal_vector(current_coords, structure, fixed_frame, parameters)
                     known.add_to_known(t, o, c)
                     workflow.success += 1
@@ -444,6 +444,8 @@ if "single" in parameters["calculator"]["optimize"]:
         workflow = Workflow()
         gendir = os.path.join(os.getcwd(), parameters["calculator"]["generate_folder"])
         basedir = os.getcwd()
+        if not os.path.exists(parameters["calculator"]["optimize"]):
+            os.mkdir(parameters["calculator"]["optimize"])
         os.chdir(parameters["calculator"]["optimize"])
         for i in sorted(os.listdir(gendir)):
             parameters["geometry"][0] = os.path.join(gendir, i, i+".in")
@@ -471,6 +473,7 @@ if "single" in parameters["calculator"]["optimize"]:
 
 
     else:
+
         dirs = Directories(parameters)   
         workflow = Workflow()
         structure = Structure(parameters)
@@ -480,8 +483,9 @@ if "single" in parameters["calculator"]["optimize"]:
         if not os.path.exists(parameters["calculator"]["optimize"]):
             os.mkdir(parameters["calculator"]["optimize"])
         os.chdir(parameters["calculator"]["optimize"])
-        output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
+        # output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
         dirs.find_last_dir(parameters)
+
         # output.write_parameters(parameters, structure, known, dirs)
         structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
         dirs.create_directory(parameters)

@@ -57,7 +57,7 @@ class Calculator:
             if list(precons_parameters.values())[i] == "Exp":
                 if list(precons_parameters_init.values())[i] or list(precons_parameters_update.values())[i]:
                     need_for_exp = True
-        print(need_for_exp)
+
         if need_for_exp:
             if len(structure.molecules) > 1:
                 a0 = structure.molecules[0].copy()
@@ -149,8 +149,8 @@ class Calculator:
         # opt.H0 = H0_init        
         # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
-        opt.run(fmax=fmax, steps=600)
-        # write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
+        opt.run(fmax=fmax, steps=1000)
+        write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
         # np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
         try:
             calculator.close()
