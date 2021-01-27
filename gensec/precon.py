@@ -282,6 +282,31 @@ def vdwHessian(atoms):
                         hessian[3*i+k, 3*j+l] = -vdW_element(k, l, C6, C12, R, qi, qj) 
 
     hessian = hessian + hessian.T
+    jitter = 0.005
+    # Proper ASR
+    x_range = [3*ind for ind in range(len(atoms))]
+    y_range = [3*ind+1 for ind in range(len(atoms))]
+    z_range = [3*ind+2 for ind in range(len(atoms))]
+
+    for ind in range(len(x_range)):
+        to_sum  = np.delete(x_range, ind)
+        hessian[x_range[ind], x_range[ind]] = -np.sum(hessian[x_range[ind],to_sum]) + jitter
+        hessian[x_range[ind]+1, x_range[ind]] = -np.sum(hessian[x_range[ind]+1,to_sum]) 
+        hessian[x_range[ind]+2, x_range[ind]] = -np.sum(hessian[x_range[ind]+2,to_sum]) 
+
+    for ind in range(len(y_range)):
+        to_sum  = np.delete(y_range, ind)
+        hessian[x_range[ind], x_range[ind]+1] = -np.sum(hessian[x_range[ind],to_sum]) 
+        hessian[x_range[ind]+1, x_range[ind]+1] = -np.sum(hessian[x_range[ind]+1,to_sum])+ jitter 
+        hessian[x_range[ind]+2, x_range[ind]+1] = -np.sum(hessian[x_range[ind]+2,to_sum]) 
+
+    for ind in range(len(y_range)):
+        to_sum  = np.delete(z_range, ind)
+        hessian[x_range[ind], x_range[ind]+2] = -np.sum(hessian[x_range[ind],to_sum])         
+        hessian[x_range[ind]+1, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+1,to_sum])         
+        hessian[x_range[ind]+2, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+2,to_sum]) + jitter 
+
+
   
     return hessian 
 
@@ -1208,6 +1233,31 @@ def LindhHessian(atoms):
     # builder.add_unity(add_unity)
 
     hessian = builder.to_array().reshape((3*n_vec, 3*n_vec))
+
+    # Proper ASR
+    jitter = 0.005
+    x_range = [3*ind for ind in range(len(atoms))]
+    y_range = [3*ind+1 for ind in range(len(atoms))]
+    z_range = [3*ind+2 for ind in range(len(atoms))]
+
+    for ind in range(len(x_range)):
+        to_sum  = np.delete(x_range, ind)
+        hessian[x_range[ind], x_range[ind]] = -np.sum(hessian[x_range[ind],to_sum]) + jitter
+        hessian[x_range[ind]+1, x_range[ind]] = -np.sum(hessian[x_range[ind]+1,to_sum]) 
+        hessian[x_range[ind]+2, x_range[ind]] = -np.sum(hessian[x_range[ind]+2,to_sum]) 
+
+    for ind in range(len(y_range)):
+        to_sum  = np.delete(y_range, ind)
+        hessian[x_range[ind], x_range[ind]+1] = -np.sum(hessian[x_range[ind],to_sum]) 
+        hessian[x_range[ind]+1, x_range[ind]+1] = -np.sum(hessian[x_range[ind]+1,to_sum])+ jitter 
+        hessian[x_range[ind]+2, x_range[ind]+1] = -np.sum(hessian[x_range[ind]+2,to_sum]) 
+
+    for ind in range(len(y_range)):
+        to_sum  = np.delete(z_range, ind)
+        hessian[x_range[ind], x_range[ind]+2] = -np.sum(hessian[x_range[ind],to_sum])         
+        hessian[x_range[ind]+1, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+1,to_sum])         
+        hessian[x_range[ind]+2, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+2,to_sum]) + jitter 
+
     return hessian
 
 def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H, task="update"):
@@ -1297,11 +1347,12 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
             if np.array_equal(preconditioned_hessian, np.eye(3 * len(atoms)) * 70):
                 pass
             else:
+
                 # Proper ASR
                 x_range = [3*ind for ind in range(len(atoms))]
                 y_range = [3*ind+1 for ind in range(len(atoms))]
                 z_range = [3*ind+2 for ind in range(len(atoms))]
-                
+
                 for ind in range(len(x_range)):
                     to_sum  = np.delete(x_range, ind)
                     preconditioned_hessian[x_range[ind], x_range[ind]] = -np.sum(preconditioned_hessian[x_range[ind],to_sum]) + jitter
@@ -1311,7 +1362,7 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
                 for ind in range(len(y_range)):
                     to_sum  = np.delete(y_range, ind)
                     preconditioned_hessian[x_range[ind], x_range[ind]+1] = -np.sum(preconditioned_hessian[x_range[ind],to_sum]) 
-                    preconditioned_hessian[x_range[ind]+1, x_range[ind]+1] = -np.sum(preconditioned_hessian[x_range[ind]+1,to_sum]) + jitter
+                    preconditioned_hessian[x_range[ind]+1, x_range[ind]+1] = -np.sum(preconditioned_hessian[x_range[ind]+1,to_sum])+ jitter 
                     preconditioned_hessian[x_range[ind]+2, x_range[ind]+1] = -np.sum(preconditioned_hessian[x_range[ind]+2,to_sum]) 
 
                 for ind in range(len(y_range)):

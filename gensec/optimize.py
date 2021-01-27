@@ -23,15 +23,14 @@ from ase.optimize.bfgs import BFGS
 from copy import deepcopy
 from numpy.linalg import eigh
 import os
-
-
-print("This is old version")
+from numpy import eye, absolute, sqrt, isinf
+from ase.optimize import BFGSLineSearch
 
 class BFGS_mod(BFGS):
-    def __init__(self, atoms, restart=None, logfile='-', trajectory=None, maxstep=None, 
+    def __init__(self, atoms, restart=None, logfile='-', trajectory=None, maxstep=0.04, 
                 master=None, initial=None, rmsd_dev=1000.0, molindixes=None, structure=None, 
                 H0=None, fixed_frame=None, parameters=None, mu=None, A=None, known=None):
-        BFGS.__init__(self, atoms, restart=restart, logfile=logfile, trajectory=trajectory, maxstep=0.04, master=None)
+        BFGS.__init__(self, atoms, restart=restart, logfile=logfile, trajectory=trajectory, maxstep=maxstep, master=None)
         
         # initial hessian
         
@@ -48,6 +47,7 @@ class BFGS_mod(BFGS):
             #self.H = np.eye(3 * len(self.atoms)) * 70.0 # This is the change compared to ASE
             self.H = self.H0 # This is the change compared to ASE
             return
+
         dr = r - r0
 
         if np.abs(dr).max() < 1e-7:
@@ -59,7 +59,7 @@ class BFGS_mod(BFGS):
             # Experimental for vdW clusters
             forces = self.atoms.get_forces()
             fmax = sqrt((forces ** 2).sum(axis=1).max())
-            print("Force   ",  fmax)
+            print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
             if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
                 print("################################Applying update")
                 # name = "hessian_progress.hes"
@@ -91,15 +91,15 @@ class BFGS_mod(BFGS):
         self.H -= np.outer(df, df) / a + np.outer(dg, dg) / b
 #############################################################
         # Prints out Hessian, for developing purposes (GenSec)
-        name = "hessian_progress.hes"
-        h = os.path.join(os.getcwd(), name)
-        if not os.path.exists(h):
-            open(h, 'a').close()
-        f=open(h,'a')
-        f.write("Hessian after update (GenSec)\n")
-        np.savetxt(f, self.H)
-        f.write("\n")
-        f.close()
+        # name = "hessian_progress.hes"
+        # h = os.path.join(os.getcwd(), name)
+        # if not os.path.exists(h):
+        #     open(h, 'a').close()
+        # f=open(h,'a')
+        # f.write("Hessian after update (GenSec)\n")
+        # np.savetxt(f, self.H)
+        # f.write("\n")
+        # f.close()
 #############################################################
 
     def step(self, f=None):
@@ -133,3 +133,4 @@ class BFGS_mod(BFGS):
         # f.write("\n")
         # f.close()
 #############################################################
+

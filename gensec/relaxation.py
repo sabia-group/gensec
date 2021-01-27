@@ -1,5 +1,6 @@
 
 from gensec.optimize import BFGS_mod
+from gensec.optimize import BFGSLineSearch_mod
 from gensec.defaults import defaults
 from ase.constraints import FixAtoms
 from ase.io import write
@@ -174,17 +175,23 @@ class Calculator:
             structure.A = 1        
         H0 = np.eye(3 * len(atoms)) * 70
         H0_init= precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
-        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.04, 
                             initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
                             structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
                             mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
                             restart=os.path.join(directory, 'qn.pckl'))  
 
+        # opt = BFGSLineSearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
+        #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+        #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+        #                     restart=os.path.join(directory, 'qn.pckl')) 
+
 
         # opt.H0 = H0_init        
         # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
-        opt.run(fmax=fmax, steps=1000)
+        opt.run(fmax=fmax, steps=10000)
         write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
         # np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
         try:
