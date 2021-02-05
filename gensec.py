@@ -443,6 +443,7 @@ if "single" in parameters["calculator"]["optimize"]:
         dirs = Directories(parameters)   
         workflow = Workflow()
         gendir = os.path.join(os.getcwd(), parameters["calculator"]["generate_folder"])
+        # known = Known(structure, parameters)
         basedir = os.getcwd()
         if not os.path.exists(parameters["calculator"]["optimize"]):
             os.mkdir(parameters["calculator"]["optimize"])
@@ -454,13 +455,13 @@ if "single" in parameters["calculator"]["optimize"]:
             parameters["fixed_frame"]["format"] = "aims"
             parameters["calculator"]["ase_parameters_file"] = os.path.join(basedir, "supporting", "ase_command.py")
             print(parameters["geometry"][0])
-
+            
             structure = Structure(parameters)
             fixed_frame = Fixed_frame(parameters)
             calculator = Calculator(parameters)
             known = Known(structure, parameters)
-            if not os.path.exists(parameters["calculator"]["optimize"]):
-                os.mkdir(parameters["calculator"]["optimize"])
+            # if not os.path.exists(parameters["calculator"]["optimize"]):
+                # os.mkdir(parameters["calculator"]["optimize"])
             # output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
             dirs.find_last_dir(parameters)
             # output.write_parameters(parameters, structure, known, dirs)

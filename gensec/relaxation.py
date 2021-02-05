@@ -1,6 +1,11 @@
 
 from gensec.optimize import BFGS_mod
+from gensec.optimize import TRM_BFGS
 from gensec.optimize import BFGSLineSearch_mod
+from gensec.optimize import LBFGS_Linesearch_mod
+from ase.optimize import BFGSLineSearch
+from ase.optimize import BFGS
+from ase.optimize import LBFGS
 from gensec.defaults import defaults
 from ase.constraints import FixAtoms
 from ase.io import write
@@ -61,7 +66,6 @@ class Calculator:
 
         if need_for_exp:
             if len(structure.molecules) > 1:
-                print("more than one")
                 a0 = structure.molecules[0].copy()
                 for i in range(1, len(structure.molecules)):
                     a0+=structure.molecules[i]
@@ -175,23 +179,48 @@ class Calculator:
             structure.A = 1        
         H0 = np.eye(3 * len(atoms)) * 70
         H0_init= precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
-        opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.04, 
-                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
-                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
-                            mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
-                            restart=os.path.join(directory, 'qn.pckl'))  
-
-        # opt = BFGSLineSearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        # opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.04, 
         #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
         #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
         #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
-        #                     restart=os.path.join(directory, 'qn.pckl')) 
+        #                     restart=os.path.join(directory, 'qn.pckl'))  
+
+        opt = BFGSLineSearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, maxstep=0.2, 
+                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+                            mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+                            restart=os.path.join(directory, 'qn.pckl'), c1=0.23, c2=0.46, alpha=10.0, stpmax=50.0, 
+                            force_consistent=False) 
+        # opt = LBFGS_Linesearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, maxstep=0.2, 
+        #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+        #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+        #                     restart=os.path.join(directory, 'qn.pckl'), force_consistent=True) 
+
+        # opt = TRM_BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.2, 
+        #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
+        #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+        #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+        #                     restart=os.path.join(directory, 'qn.pckl'))  
+
+        # REFERENSE ASE
+        # print("This is referense calculation with ASE")
+        # opt = BFGS(atoms, 
+        #             trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        #             maxstep=0.04, 
+        #             logfile=os.path.join(directory, "logfile.log"))
+
+        # opt = BFGSLineSearch(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        #                     logfile=os.path.join(directory, "logfile.log"))
+        # opt = LBFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        #                     logfile=os.path.join(directory, "logfile.log"))
+
 
 
         # opt.H0 = H0_init        
         # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
-        opt.run(fmax=fmax, steps=10000)
+        opt.run(fmax=fmax, steps=1000)
         write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
         # np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
         try:
