@@ -12,12 +12,16 @@ from ase.io.trajectory import Trajectory
 import collections
 
 from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
+from ase.neighborlist import neighbor_list
+from ase.optimize.precon import Exp
 
 import numpy as np
 from numpy.linalg import norm
 from itertools import product
 import operator
 import os
+
+from gensec.defaults import alphas_vdW
 
 def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
 
@@ -97,7 +101,7 @@ def check_positive_symmetric(hessian):
         hessian {matrix} -- 3Nx3N where N is lenght of atoms
     """
 
-    symmetric = np.all(np.abs(hessian-hessian.T) < 1e-14)
+    symmetric = np.all(np.abs(hessian-hessian.T) < 1e-10)
     d, w = np.linalg.eigh(hessian)
     positive =  np.all(d>0)    
     return symmetric, positive
@@ -315,23 +319,8 @@ def vdwHessian(atoms):
                 return 2
         k = name2row(A)
         l = name2row(B)
-        # alpha = ALPHAS[k, l]
-        
-        alpha = 7.415741574157416
-        # alpha = 1.5851585158515853 
-
-        # alpha = 1.0
         R0_vdW_AB = get_R0AB(A, B)
-        # alpha = 2.5352535253525352
-        alpha = 2.6102610261026102
-        # alpha = 1.4951495149514953
-        # alpha = R0_vdW_AB
-        # alpha = 50.47504750475048
-        # print(R0_vdW_AB)
-        # print(alpha)
-        # sys.exit(0)
-        # print("Dif", R0_vdW_AB**2 - R**2)
-        # print("Exp", np.exp(alpha*(R0_vdW_AB**2 - R**2)))
+        alpha = alphas_vdW[A][B]
         return np.exp(alpha*(R0_vdW_AB**2 - R**2))
 
     def C12AB(A, B, C6):
@@ -394,7 +383,7 @@ def vdwHessian(atoms):
                         # print("rho, ",rho_ij(A, B, R))
                         # print(rho_ij(A, B, R))
                         # print(vdW_element(k, l, C6, C12, R0AB, R, qi, qj))
-                        hessian[3*i+k, 3*j+l] = vdW_element(k, l, C6, C12, R0AB, R, qi, qj) * rho_ij(A, B, R)
+                        hessian[3*i+k, 3*j+l] = vdW_element(k, l, C6, C12, R0AB, R, qi, qj) * rho_ij(A, B, R) 
                         # hessian[3*i+k, 3*j+l] = vdW_element_exact(k, l, C6, C12, R0AB, R, qi, qj)   
 
     # Fill the down triangle
@@ -411,81 +400,96 @@ def vdwHessian(atoms):
         sys.exit(0)
     if not positive:
         print("Hessian is not positive definite! Will give troubles during optimization!")
-        # sys.exit(0)
+        sys.exit(0)
     return hessian 
 
+import numpy as np
+import matplotlib.pyplot as plt
+import tkinter
+import matplotlib
 
-def ExpHessian(atoms, mu=1, A=1):
+def ExpHessian(atoms, mu=1, A=3):
+    return Exp(mu=mu, A=A, r_cut=10).make_precon(atoms).todense()
 
-    N  = len(atoms)
-    # A=options.A
-    r_NN = estimate_nearest_neighbour_distance(atoms)
-    r_cut = 2.0 * r_NN
-    coordinates = atoms.get_positions()
-    cell_h = atoms.get_cell()[:]
-    cell_ih = atoms.get_reciprocal_cell()[:]
+    # N  = len(atoms)
+    # # A=options.A
+    # r_NN = estimate_nearest_neighbour_distance(atoms)
+    # r_cut = 2.0 * r_NN
+    # coordinates = atoms.get_positions()
+    # cell_h = atoms.get_cell()[:]
+    # cell_ih = atoms.get_reciprocal_cell()[:]
 
-    hessian = np.zeros(shape = (3 * N, 3 * N))
-    atomsRange = list(range(N))
-    for i in atomsRange:
-        qi = coordinates[i].reshape(1,3)
-        qj = coordinates.reshape(-1,3)
-
-        if np.array_equal(cell_h,np.zeros([3, 3])):
-            rij = np.array([np.linalg.norm(qi-Qj) for Qj in qj])
-        else:
-            dij, rij = vector_separation(cell_h, cell_ih, qi, qj)
-
-        coeff = -mu * np.exp(-A * (rij / r_NN - 1))
-        mask = np.array(rij>=r_cut)
-        coeff[mask] = 0
-
-        stack = np.hstack([np.identity(3)*coef for coef in coeff])
-
-        hessian[3 * i + 0, :] = stack[0]
-        hessian[3 * i + 1, :] = stack[1]
-        hessian[3 * i + 2, :] = stack[2]
+    # hessian = np.zeros(shape = (3 * N, 3 * N))
+    # atomsRange = list(range(N))
+    # for i in atomsRange:
+    #     qi = coordinates[i].reshape(1,3)
+    #     qj = coordinates.reshape(-1,3)
+    #     if np.array_equal(cell_h,np.zeros([3, 3])):
+    #         rij = np.array([np.linalg.norm(qi-Qj) for Qj in qj])
+    #     else:
+    #         dij, rij = vector_separation(cell_h, cell_ih, qi, qj)
         
-    # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
-    for ind in range(len(hessian)):
-        hessian[ind, ind] = 0 
-        hessian[ind, ind] = -np.sum(hessian[ind]) + 0.005   
-    return hessian
+    #     coeff = -mu * np.exp(-A * (rij / r_NN - 1))
+    #     mask = np.array(rij>=r_cut)
+    #     coeff[mask] = 0
+
+    #     stack = np.hstack([np.identity(3)*coef for coef in coeff])
+    #     hessian[3 * i + 0, :] = stack[0]
+    #     hessian[3 * i + 1, :] = stack[1]
+    #     hessian[3 * i + 2, :] = stack[2]
+
+    # # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
+    # hessian = ASR(hessian) 
+    # # Add stabilization to the diagonal
+    # jitter = 0.1
+    # hessian = add_jitter(hessian, jitter)
+    # # Check if positive and symmetric:
+    # symmetric, positive = check_positive_symmetric(hessian)
+    # if not symmetric:
+    #     print("Hessian is not symmetric! Will give troubles during optimization!")
+    #     sys.exit(0)
+    # if not positive:
+    #     print("Hessian is not positive definite! Will give troubles during optimization!")
+    #     # sys.exit(0)
+    # return hessian 
 
 
-def ExpHessian_P(atoms, mu=1, A=1):
+# def ExpHessian_P(atoms, mu=1, A=3):
 
-    N  = len(atoms)
-    # A=options.A
-    r_NN = estimate_nearest_neighbour_distance(atoms)
-    r_cut = 2.0 * r_NN
-    coordinates = atoms.get_positions()
-    cell_h = atoms.get_cell()[:]
-    cell_ih = atoms.get_reciprocal_cell()[:]
+#     N  = len(atoms)
+#     # A=options.A
+#     r_NN = estimate_nearest_neighbour_distance(atoms)
+#     r_cut = 2.0 * r_NN
+#     coordinates = atoms.get_positions()
+#     cell_h = atoms.get_cell()[:]
+#     cell_ih = atoms.get_reciprocal_cell()[:]
 
-    hessian = np.zeros(shape = ( N, N))
-    atomsRange = list(range(N))
-    for i in atomsRange:
-        qi = coordinates[i].reshape(1,3)
-        qj = coordinates.reshape(-1,3)
+#     hessian = np.zeros(shape = ( N, N))
+#     atomsRange = list(range(N))
+#     for i in atomsRange:
+#         qi = coordinates[i].reshape(1,3)
+#         qj = coordinates.reshape(-1,3)
 
-        if np.array_equal(cell_h,np.zeros([3, 3])):
-            rij = np.array([np.linalg.norm(qi-Qj) for Qj in qj])
-        else:
-            dij, rij = vector_separation(cell_h, cell_ih, qi, qj)
+#         if np.array_equal(cell_h,np.zeros([3, 3])):
+#             rij = np.array([np.linalg.norm(qi-Qj) for Qj in qj])
+#         else:
+#             dij, rij = vector_separation(cell_h, cell_ih, qi, qj)
 
-        coeff = -mu * np.exp(-A * (rij / r_NN - 1))
-        mask = np.array(rij>=r_cut)
-        coeff[mask] = 0
+#         coeff = -mu * np.exp(-A * (rij / r_NN - 1))
+#         mask = np.array(rij>=r_cut)
+#         coeff[mask] = 0
 
-        stack = np.hstack([coef for coef in coeff])
+#         stack = np.hstack([np.identity(3)*coef for coef in coeff])
 
-        hessian[i,:] = stack
-    # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
-    for ind in range(len(hessian)):
-        hessian[ind, ind] = -np.sum(hessian[ind])
+#         hessian[3 * i + 0, :] = stack[0]
+#         hessian[3 * i + 1, :] = stack[1]
+#         hessian[3 * i + 2, :] = stack[2]
+#     hessian = ASR(hessian) 
+#     # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
+#     # for ind in range(len(hessian)):
+#         # hessian[ind, ind] = -np.sum(hessian[ind])
 
-    return hessian
+#     return hessian
 
 
 def _acc_dict(key, d, val):
@@ -1416,7 +1420,7 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
     if "Lindh" in precon_names:
         precons["Lindh"] = LindhHessian(atoms)
     if "Exp" in precon_names:
-        precons["Exp"] = ExpHessian(atoms, mu=structure.mu, A=structure.A)
+        precons["Exp"] = ExpHessian(atoms, mu=1.0, A=3.0)
     if "vdW" in precon_names:
         precons["vdW"] = vdwHessian(atoms) 
     if "ID" in precon_names:
@@ -1464,11 +1468,12 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
                 symmetric, positive = check_positive_symmetric(preconditioned_hessian)
                 if not symmetric:
                     print("Hessian is not symmetric! Will give troubles during optimization!")
-                    sys.exit(0)
+                    # sys.exit(0)
                 if not positive:
                     print("Hessian is not positive definite! Will give troubles during optimization!")
                     sys.exit(0)
                 if symmetric and positive:
+                    print("Hessian is symmetric and positive definite")
                     return  preconditioned_hessian
 
     if task == "initial":
@@ -1504,11 +1509,12 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
             symmetric, positive = check_positive_symmetric(preconditioned_hessian)
             if not symmetric:
                 print("Hessian is not symmetric! Will give troubles during optimization!")
-                sys.exit(0)
+                # sys.exit(0)
             if not positive:
                 print("Hessian is not positive definite! Will give troubles during optimization!")
                 sys.exit(0)
             if symmetric and positive:
+                print("Hessian is symmetric and positive definite")
                 return  preconditioned_hessian
 
 

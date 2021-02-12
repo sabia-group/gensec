@@ -1,6 +1,7 @@
 
 from gensec.optimize import BFGS_mod
 from gensec.optimize import TRM_BFGS
+from gensec.optimize import TRM_BFGS_IPI
 from gensec.optimize import BFGSLineSearch_mod
 from gensec.optimize import LBFGS_Linesearch_mod
 from ase.optimize import BFGSLineSearch
@@ -15,11 +16,14 @@ import imp
 import numpy as np
 from ase.io import read
 from gensec.neighbors import estimate_nearest_neighbour_distance
-
+from ase.utils import longsum
 import gensec.precon as precon
 import random
 from subprocess import Popen
 import shutil
+
+
+from ase.optimize.precon import Exp
 
 from ase.io.trajectory import Trajectory
 
@@ -112,39 +116,8 @@ class Calculator:
 
             atoms = all_atoms[[atom.index for atom in all_atoms if atom.index in list(set(inds))]].copy()
             atoms.set_calculator(self.calculator)
-            self.set_constrains(atoms, parameters)
-            # Step 1: get energies and forces for initial configuration
-            forces_initial = atoms.get_forces()
-            coords_initial = atoms.get_positions()
-            # # Step 2: make displacements
-            # lengths of lattice vectors
-            cell_vectors = atoms.get_cell()
-            Lx = np.linalg.norm(cell_vectors[0])
-            Ly = np.linalg.norm(cell_vectors[1])
-            Lz = np.linalg.norm(cell_vectors[2])
-            # r_nn - estimation for nearest neighbours
-            r_nn = estimate_nearest_neighbour_distance(atoms)
-            # Exponential preconditioner with mu=1 and A=1
-            P = precon.ExpHessian_P(atoms, mu=1, A=1)
-            # Create matrix M=0.01*r_nn*I
-            M = r_nn*0.01
-            # Displacements
-            v = []
-            for coord in coords_initial:
-                v.append([M*np.sin(coord[0]/Lx), 
-                                      M*np.sin(coord[1]/Ly), 
-                                      M*np.sin(coord[2]/Lz)])
-            v = np.array(v)
-            # apply displacements
-            atoms.set_positions(coords_initial + v)
-            forces_after = atoms.get_forces()
-            # forces differences
-            force_diff = (forces_after - forces_initial).sum(axis=1)
-            v = v.sum(axis=1)
-            A = np.dot(v.T, force_diff)
-            B = np.dot(v.T, np.dot(P, v))
-            mu = A / B
-            # calculator.close()
+
+            mu = Exp(A=3, r_cut=10).estimate_mu(atoms)
         else:
             mu = 1.0
         return mu
@@ -179,29 +152,36 @@ class Calculator:
             structure.A = 1        
         H0 = np.eye(3 * len(atoms)) * 70
         H0_init= precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
-        # opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.04, 
+        # opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.004, 
         #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
         #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
         #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
         #                     restart=os.path.join(directory, 'qn.pckl'))  
 
-        opt = BFGSLineSearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
-                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, maxstep=0.2, 
-                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
-                            mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
-                            restart=os.path.join(directory, 'qn.pckl'), c1=0.23, c2=0.46, alpha=10.0, stpmax=50.0, 
-                            force_consistent=False) 
-        # opt = LBFGS_Linesearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        # opt = BFGSLineSearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
         #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, maxstep=0.2, 
         #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
         #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+        #                     restart=os.path.join(directory, 'qn.pckl'), c1=0.23, c2=0.46, alpha=1.0, stpmax=50.0, 
+        #                     force_consistent=True) 
+
+        # opt = LBFGS_Linesearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, maxstep=0.2, 
+        #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0_init=H0_init,
+        #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
         #                     restart=os.path.join(directory, 'qn.pckl'), force_consistent=True) 
 
-        # opt = TRM_BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.2, 
+        opt = TRM_BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.2, 
+                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
+                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+                            mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+                            restart=os.path.join(directory, 'qn.pckl'))  
+
+        # opt = TRM_BFGS_IPI(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.4, 
         #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
         #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
         #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
-        #                     restart=os.path.join(directory, 'qn.pckl'))  
+        #                     restart=os.path.join(directory, 'qn.pckl'))
 
         # REFERENSE ASE
         # print("This is referense calculation with ASE")
@@ -211,7 +191,7 @@ class Calculator:
         #             logfile=os.path.join(directory, "logfile.log"))
 
         # opt = BFGSLineSearch(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
-        #                     logfile=os.path.join(directory, "logfile.log"))
+                            # logfile=os.path.join(directory, "logfile.log"))
         # opt = LBFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
         #                     logfile=os.path.join(directory, "logfile.log"))
 

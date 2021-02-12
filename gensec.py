@@ -465,7 +465,7 @@ if "single" in parameters["calculator"]["optimize"]:
             # output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
             dirs.find_last_dir(parameters)
             # output.write_parameters(parameters, structure, known, dirs)
-            # structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
+            structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
             dirs.create_directory(parameters)
             dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
             calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
