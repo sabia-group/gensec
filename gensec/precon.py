@@ -1323,7 +1323,6 @@ def testmod():
 def LindhHessian(atoms):
 
     cutoff = 15.
-    add_unity = 0.005
 
     atom = atoms.get_positions()
     atom_name = atoms.get_chemical_symbols()
@@ -1417,6 +1416,17 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
         "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"][task]
     }
     precon_names = [list(precons_parameters.values())[i] for i in range(len(routine)) if list(routine.values())[i]]
+
+    # find for which atoms Lindh should be calculated
+    # find for which atoms vdW should be calculated
+    # find for which atoms Exp should be calculated
+    # find for which atoms ID should be calculated
+
+
+
+
+
+
 
     if "Lindh" in precon_names:
         precons["Lindh"] = LindhHessian(atoms)

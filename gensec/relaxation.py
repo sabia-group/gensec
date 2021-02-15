@@ -117,9 +117,10 @@ class Calculator:
             atoms = all_atoms[[atom.index for atom in all_atoms if atom.index in list(set(inds))]].copy()
             atoms.set_calculator(self.calculator)
 
-            mu = Exp(A=3, r_cut=10).estimate_mu(atoms)
-        else:
-            mu = 1.0
+            try:
+                mu = Exp(A=3, r_cut=10).estimate_mu(atoms)
+            except:
+                mu = 1.0
         return mu
 
     def relax(self, structure, fixed_frame, parameters, directory, known):
@@ -165,17 +166,17 @@ class Calculator:
         #                     restart=os.path.join(directory, 'qn.pckl'), c1=0.23, c2=0.46, alpha=1.0, stpmax=50.0, 
         #                     force_consistent=True) 
 
-        # opt = LBFGS_Linesearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
-        #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, maxstep=0.2, 
-        #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0_init=H0_init,
-        #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
-        #                     restart=os.path.join(directory, 'qn.pckl'), force_consistent=True) 
-
-        opt = TRM_BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.2, 
-                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
-                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+        opt = LBFGS_Linesearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, maxstep=0.2, 
+                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0_init=H0_init,
                             mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
-                            restart=os.path.join(directory, 'qn.pckl'))  
+                            restart=os.path.join(directory, 'qn.pckl'), force_consistent=False) 
+
+        # opt = TRM_BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.2, 
+        #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
+        #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+        #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+        #                     restart=os.path.join(directory, 'qn.pckl'))  
 
         # opt = TRM_BFGS_IPI(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.4, 
         #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 

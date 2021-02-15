@@ -259,6 +259,14 @@ class LBFGS_Linesearch_mod(LBFGS):
         self.fmax_last = None
         self.steps_in_row = 0
 
+    def reset_hessian(self):
+        """
+        Delete the history of the Hessian
+        """
+        self.s = []
+        self.y = []
+        self.rho = []  
+        self.iteration = 0
 
     def step(self, f=None):
         """Take a single step
@@ -285,6 +293,7 @@ class LBFGS_Linesearch_mod(LBFGS):
 
         # ## The algorithm itself:
         q = -f.reshape(-1)
+        
         for i in range(loopmax - 1, -1, -1):
             a[i] = rho[i] * np.dot(s[i], q)
             q -= a[i] * y[i]
@@ -315,6 +324,7 @@ class LBFGS_Linesearch_mod(LBFGS):
         
                 a0=self.atoms.copy()
                 self.initial=a0
+                # self.reset_hessian()
 
         for i in range(loopmax):
             b = rho[i] * np.dot(y[i], z)
