@@ -226,84 +226,9 @@ if "search" in parameters["calculator"]["optimize"]:
             output.write_to_report("Terminating algorithm")
             sys.exit(0)
 
-# if parameters["calculator"]["optimize"] == "generate":
-#     dirs = Directories(parameters)
-#     output = Output("report_generate.out")
-#     workflow = Workflow()
-#     structure = Structure(parameters)
-#     fixed_frame = Fixed_frame(parameters)
-#     calculator = Calculator(parameters)
-#     known = Known(structure, parameters)
-#     os.chdir(parameters["calculator"]["optimize"])
-#     dirs.find_last_dir(parameters)
-#     known.check_calculated(dirs, parameters)
-#     known.analyze_calculated(structure, fixed_frame, parameters)
-#     dirs.find_last_generated_dir(parameters)
-#     output.write_parameters(parameters, structure, known, dirs)
-#     calculated_dir = os.path.join(os.getcwd(), "search") 
-#     # snapshots = len(os.listdir(calculated_dir))
-#     print("GENERATE")
-#     workflow.success = dirs.dir_num
-#     print(workflow.success)
-#     while workflow.trials < parameters["trials"]:
-#         while workflow.success < parameters["success"]:
-#             # Generate the vector in internal degrees of freedom
-#             configuration = structure.create_configuration(parameters)
-#             structure.apply_configuration(configuration)
-#             if all_right(structure, fixed_frame):
-#                 known.update_known(known.names, os.listdir(known.dir), structure, fixed_frame)
-#                 # print(known.known)
-#                 print("\n\n\n", len(known.known), "\n\n\n")
-#                 found = known.find_in_known(structure.torsions_from_conf(configuration), criteria=known.criteria, t=known.torsional_diff_degree)
-#                 # found = False
-#                 if not found:
-#                     dirs.create_directory(parameters)
-#                     dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
-#                     known.add_to_known(structure.torsions_from_conf(configuration))
-#                     workflow.success += 1
-#                     workflow.trials = 0
-#                     output.write_successfull_generate(parameters, structure.torsions_from_conf(configuration), dirs)
-#                 else:
-#                     workflow.trials += 1 
-#                     print("Trial {}".format(workflow.trials))
-#                     # if dirs.dir_num > snapshots:
-#                     #     need_to_visit = range(snapshots+1, len(os.listdir(calculated_dir))+1)
-#                     #     for d in need_to_visit:
-#                     #         d_name = os.path.join(os.getcwd(), "search", "{:010d}".format(d))
-#                     #         if "finished" in os.listdir(d_name):
-#                     #             output.write_to_report("Adding trajectory from {} to known.\n".format(d_name))
-#                     #             known.add_to_known_traj(structure, fixed_frame, d_name)
-#                     #             snapshots += 1 
-#                     if workflow.trials == parameters["trials"]:
-#                         if known.torsional_diff_degree > 10:
-#                             known.torsional_diff_degree -= 5
-#                             output.write_to_report("\nDecreasing the criteria for torsional angles to {}\n".format(known.torsional_diff_degree))
-#                             workflow.trials = 0
-#                             pass
-#                         else:
-#                             print("Swithing to all criteria:\n")
-#                             if known.criteria == "any":
-#                                 known.criteria = "all"
-#                                 known.torsional_diff_degree = 180
-#                                 output.write_to_report("Start to look with all criteria\n")
-#                                 workflow.trials = 0
-#                                 pass
-#                             else:
-#                                output.write_to_report("Cannot find new structures\n")
-#                                sys.exit(0)
-#                     else:
-#                         pass
-#             else:
-#                 write("bad_luck.xyz", merge_together(structure, fixed_frame), format="xyz")
-#                 pass
-#         else:
-#             output.write_to_report("{} number of structures was successfully generated!\n".format(parameters["success"]))
-#             output.write_to_report("Terminating algorithm\n")
-#             sys.exit(0)
-#     sys.exit(0)
-
 
 if parameters["calculator"]["optimize"] == "generate":
+	# Generates unique structures
     dirs = Directories(parameters)
     output = Output("report_generate.out")
     workflow = Workflow()
@@ -376,69 +301,8 @@ if parameters["calculator"]["optimize"] == "generate":
     sys.exit(0)
 
 
-
-        # for i in range(len(structure.molecules)):
-        #     print(len(structure.molecules[i]))
-        # print(len(fixed_frame.fixed_frame))
-        # print(configuration)
-        # print("something not cool")
-
-        # if len(structure.molecules) > 1:
-        #     a0 = structure.molecules[0]
-        #     for i in range(1, len(structure.molecules)):
-        #         a0+=structure.molecules[i]
-        # else:
-        #     a0 = structure.molecules[0]
-
-        # all_atoms = a0 + fixed_frame.fixed_frame
-        # write("bad_configuration.in", all_atoms,format="aims" )
-
-    # else:
-    #     # output.write("Next trial, found in known")
-    #     continue
-
-# Write the enesemble into file 
-# add the fixed frame also
-# Extend method can be used instead this:
-
-
-
-
-
-## Identify the periodic boundary conditions (PBC)
-
-# Start generating of the ensembles
-## Check for intermolecular clashes
-## Check for intramolecular clashes
-## Check for PBC clashes
-# 
-# Optional Pre    loration of the conformational space
-## RMSD knowning
-## Internal degrees of freedom knowning
-## SOAP knowning
-
-# Potential evaluation
-## known check
-## Run Minimization
-## known check
-
-# Next Trial
-# # import random
-# # random.seed(3)
-# # estimate_mu
-# # while workflow.trials < parameters["trials"]:
-# #     workflow.trials += 1
-# #     print("New Trial", workflow.trials)
-# #     configuration = structure.create_configuration(parameters)
-# #     structure.apply_configuration(configuration)
-# #     if all_right(structure, fixed_frame):
-# #         structure.mu = calculator.estimate_mu(structure, fixed_frame, parameters)
-# #         structure.A = 1
-# #         print(structure.mu)
-# #         break
-
 if "single" in parameters["calculator"]["optimize"]:
-
+	# Relaxes all the structures in the generate folder
     if len(os.listdir(parameters["calculator"]["generate_folder"])) > 0:
         dirs = Directories(parameters)   
         workflow = Workflow()
@@ -465,6 +329,7 @@ if "single" in parameters["calculator"]["optimize"]:
             # output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
             dirs.find_last_dir(parameters)
             # output.write_parameters(parameters, structure, known, dirs)
+            # Estimate parameter mu if needed:
             structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
             dirs.create_directory(parameters)
             dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
@@ -474,7 +339,7 @@ if "single" in parameters["calculator"]["optimize"]:
 
 
     else:
-
+    	# Performs relaxation of the structure specified in the parameters file
         dirs = Directories(parameters)   
         workflow = Workflow()
         structure = Structure(parameters)
@@ -486,16 +351,13 @@ if "single" in parameters["calculator"]["optimize"]:
         os.chdir(parameters["calculator"]["optimize"])
         # output = Output(os.path.join(os.getcwd(), "report_{}.out".format(parameters["calculator"]["optimize"])))
         dirs.find_last_dir(parameters)
-
         # output.write_parameters(parameters, structure, known, dirs)
+        # Estimate parameter mu if needed:
         structure.mu = np.abs(calculator.estimate_mu(structure, fixed_frame, parameters))
         dirs.create_directory(parameters)
         dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
         calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters), known)                           
         dirs.finished(parameters)
-
-#         # os.system("rm /tmp/ipi_*")
-#     sys.exit(0)
 
 # if parameters["calculator"]["optimize"] == "generate_and_relax_Diff":
 #     os.system("rm /tmp/ipi_*")
@@ -561,36 +423,3 @@ if "single" in parameters["calculator"]["optimize"]:
 #             print("{} structures were generated".format(parameters["success"]))
 #             sys.exit(0)
 
-
-# # if parameters["calculator"]["optimize"] == "generate":
-# #     os.system("rm /tmp/ipi_*")
-# #     while workflow.trials < parameters["trials"]:
-# #         while workflow.success < parameters["success"]:
-# #             workflow.trials += 1
-# #             print("New Trial", workflow.trials)
-# #             # output.write("Start the new Trial {}\n".format(workflow.trials))
-# #             # Generate the vector in internal degrees of freedom
-# #             configuration = structure.create_configuration(parameters)
-# #             structure.apply_configuration(configuration)
-# #             if all_right(structure, fixed_frame):
-# #                 workflow.success +=1
-# #                 print("Structuers is ok")
-# #                 dirs.create_directory()
-# #                 ensemble = merge_together(structure, fixed_frame)
-# #                 dirs.save_to_directory(ensemble, parameters)
-# #             else:
-# #                 ensemble = merge_together(structure, fixed_frame)
-# #                 write("bad_luck.xyz", ensemble, format="xyz")
-# #                 pass
-# #         else:
-# #             print("{} structures were generated".format(parameters["success"]))
-# #             sys.exit(0)
-
-# def try_relax(structure, fixed_frame, parameters, dir):
-#     relaxed = True
-#     while True:
-#         try:
-#             calculator.relax(structure, fixed_frame, parameters, dirs.current_dir(parameters))
-#         except:
-#             relaxed = False
-#     return relaxed

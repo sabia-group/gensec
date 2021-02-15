@@ -409,7 +409,8 @@ import tkinter
 import matplotlib
 
 def ExpHessian(atoms, mu=1, A=3):
-    return Exp(mu=mu, A=A, r_cut=10).make_precon(atoms).todense()
+    # If needed mu is estimated in the beginning and never changed
+    return Exp(mu=mu, A=A, r_cut=10, recalc_mu=False).make_precon(atoms).todense()
 
     # N  = len(atoms)
     # # A=options.A

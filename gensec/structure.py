@@ -20,6 +20,7 @@ class Structure:
             self.mic = True
             self.atoms.set_cell(self.pbc)
             self.atoms.set_pbc(True)
+            self.mu = None # Parameter mu for exponential preconditioner
         self.molecules = [self.atoms.copy() for i in range(parameters["number_of_replicas"])]
 
         # self.cycles = detect_cycles(self.connectivity_matrix_full)
