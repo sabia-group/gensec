@@ -80,42 +80,44 @@ class Calculator:
             else:
                 all_atoms = a0
 
-            hessian_indices = []
-            for i in range(len(structure.molecules)):
-                hessian_indices.append(["mol{}".format(i) for k in range(len(structure.molecules[i]))])
-            if hasattr(fixed_frame, "fixed_frame"):
-                hessian_indices.append(["fixed_frame" for k in range(len(fixed_frame.fixed_frame))])
-            hessian_indices = sum(hessian_indices, [])
+            # hessian_indices = []
+            # for i in range(len(structure.molecules)):
+            #     hessian_indices.append(["mol{}".format(i) for k in range(len(structure.molecules[i]))])
+            # if hasattr(fixed_frame, "fixed_frame"):
+            #     hessian_indices.append(["fixed_frame" for k in range(len(fixed_frame.fixed_frame))])
+            # hessian_indices = sum(hessian_indices, [])
 
-            inds = []
+            # inds = []
 
-            for j in range(len(all_atoms)):
-                # print(j, hessian_indices[j])
-                if "mol" == hessian_indices[j] and precons_parameters["mol"]=="Exp":
-                    inds.append(j)
-                elif "fixed_frame" == hessian_indices[j] and precons_parameters["fixed_frame"]=="Exp":
-                    inds.append(j)
-                elif "mol-mol" == hessian_indices[j] and precons_parameters["mol-mol"]=="Exp":
-                    inds.append(j)
-                if "mol-fixed_frame" == hessian_indices[j] and precons_parameters["mol-fixed_frame"]=="Exp":
-                    inds.append(j)
+            # for j in range(len(all_atoms)):
+            #     # print(j, hessian_indices[j])
+            #     if "mol" == hessian_indices[j] and precons_parameters["mol"]=="Exp":
+            #         inds.append(j)
+            #     elif "fixed_frame" == hessian_indices[j] and precons_parameters["fixed_frame"]=="Exp":
+            #         inds.append(j)
+            #     elif "mol-mol" == hessian_indices[j] and precons_parameters["mol-mol"]=="Exp":
+            #         inds.append(j)
+            #     if "mol-fixed_frame" == hessian_indices[j] and precons_parameters["mol-fixed_frame"]=="Exp":
+            #         inds.append(j)
 
 
-            for i in range(len(all_atoms)):
-                for j in range(len(all_atoms)):
-                    if hessian_indices[i] == hessian_indices[j]:
-                        if "fixed_frame" in hessian_indices[j] and precons_parameters["fixed_frame"]:
-                            inds.append(j)
-                        elif "mol" in hessian_indices[j] and precons_parameters["mol"]=="Exp":
-                            inds.append(j)
-                    else:
-                        if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]] and precons_parameters["mol-mol"]=="Exp":
-                            inds.append(j)
-                        elif precons_parameters["mol-fixed_frame"]=="Exp":               
-                            inds.append(j)
+            # for i in range(len(all_atoms)):
+            #     for j in range(len(all_atoms)):
+            #         if hessian_indices[i] == hessian_indices[j]:
+            #             if "fixed_frame" in hessian_indices[j] and precons_parameters["fixed_frame"]:
+            #                 inds.append(j)
+            #             elif "mol" in hessian_indices[j] and precons_parameters["mol"]=="Exp":
+            #                 inds.append(j)
+            #         else:
+            #             if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]] and precons_parameters["mol-mol"]=="Exp":
+            #                 inds.append(j)
+            #             elif precons_parameters["mol-fixed_frame"]=="Exp":               
+            #                 inds.append(j)
 
-            atoms = all_atoms[[atom.index for atom in all_atoms if atom.index in list(set(inds))]].copy()
+            # atoms = all_atoms[[atom.index for atom in all_atoms if atom.index in list(set(inds))]].copy()
+            atoms = all_atoms.copy()
             atoms.set_calculator(self.calculator)
+            self.set_constrains(atoms, parameters)
 
             try:
                 mu = Exp(A=3, r_cut=10).estimate_mu(atoms)
