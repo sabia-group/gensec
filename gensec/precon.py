@@ -22,6 +22,12 @@ import operator
 import os
 
 from gensec.defaults import alphas_vdW
+from ase.constraints import FixAtoms
+
+def set_constrains(atoms, parameters):
+    z = parameters["calculator"]["constraints"]["z-coord"]
+    c = FixAtoms(indices=[atom.index for atom in atoms if atom.position[2]<=z[-1]])
+    atoms.set_constraint(c)
 
 def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
 
@@ -408,9 +414,11 @@ import matplotlib.pyplot as plt
 import tkinter
 import matplotlib
 
-def ExpHessian(atoms, mu=1, A=3):
+def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
     # If needed mu is estimated in the beginning and never changed
-    return Exp(mu=mu, A=A, r_cut=10, recalc_mu=False).make_precon(atoms).todense()
+    precon = Exp(mu=mu, A=3.0, recalc_mu=False)
+    precon.make_precon(atoms)
+    return precon.P.todense()
 
     # N  = len(atoms)
     # # A=options.A
@@ -1386,6 +1394,7 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
     symbol = all_atoms.get_chemical_symbols()[0]  
     atoms = all_atoms.copy()
     atoms.set_positions(atoms_current.get_positions())
+    set_constrains(atoms, parameters)
 
 
     ### Preconditioner part
@@ -1431,7 +1440,7 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
     if "Lindh" in precon_names:
         precons["Lindh"] = LindhHessian(atoms)
     if "Exp" in precon_names:
-        precons["Exp"] = ExpHessian(atoms, mu=1.0, A=3.0)
+        precons["Exp"] = ExpHessian(atoms, mu=structure.mu, A=3.0, recalc_mu=False)
     if "vdW" in precon_names:
         precons["vdW"] = vdwHessian(atoms) 
     if "ID" in precon_names:
@@ -1473,7 +1482,7 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
                 # Calculate Acoustic sum rule
                 preconditioned_hessian = ASR(preconditioned_hessian) 
                 # Add stabilization to the diagonal
-                jitter = 0.005
+                jitter = 0.1
                 preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
                 # Check if positive and symmetric:
                 symmetric, positive = check_positive_symmetric(preconditioned_hessian)
@@ -1510,11 +1519,12 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
             return preconditioned_hessian
         else:
             # Fill the down triangle
+            
             preconditioned_hessian = preconditioned_hessian + preconditioned_hessian.T    
             # Calculate Acoustic sum rule
             preconditioned_hessian = ASR(preconditioned_hessian) 
             # Add stabilization to the diagonal
-            jitter = 0.005
+            jitter = 0.1
             preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
             # Check if positive and symmetric:
             symmetric, positive = check_positive_symmetric(preconditioned_hessian)
@@ -1525,7 +1535,7 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
                 print("Hessian is not positive definite! Will give troubles during optimization!")
                 sys.exit(0)
             if symmetric and positive:
-                print("Hessian is symmetric and positive definite")
+                # print("Hessian is symmetric and positive definite")
                 return  preconditioned_hessian
 
 

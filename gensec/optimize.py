@@ -30,6 +30,173 @@ from ase.optimize import LBFGS
 # from ase.utils.linesearch import LineSearch
 
 from gensec.precon import ASR, add_jitter, check_positive_symmetric
+from ase.optimize.precon import Exp, C1, Pfrommer
+
+
+from ase.optimize.precon import PreconLBFGS
+from scipy.sparse.linalg import spsolve
+from scipy import sparse
+
+import numpy as np
+import matplotlib.pyplot as plt
+import tkinter
+import matplotlib
+
+
+# def heatmap(mat):
+#     matplotlib.use( 'tkagg' )
+#     fig, ax = plt.subplots()
+#     im = ax.imshow(mat)
+#     plt.colorbar(im)
+#     # np.savetxt(f+"Exp_after.hes", self.H)
+#     # ax.set_title("Difference in the Hessians")
+#     # fig.tight_layout()
+#     # plt.savefig("diff_approx.png", dpi=300)
+#     plt.show()
+
+
+class PreconLBFGS_mod(PreconLBFGS):
+    def __init__(self, atoms, restart=None, logfile='-', trajectory=None,
+                 maxstep=None, memory=100, damping=1.0, alpha=70.0,
+                 master=None, precon='ID', variable_cell=False,
+                 use_armijo=False, c1=0.23, c2=0.46, a_min=None,
+                 rigid_units=None, rotation_factors=None, Hinv=None,
+                 structure=None, H0=None, fixed_frame=None, parameters=None,
+                 initial=None, rmsd_dev=1000.0, molindixes=None):
+        PreconLBFGS.__init__(self, atoms, use_armijo=use_armijo, precon=precon, restart=restart, logfile=logfile, trajectory=trajectory, maxstep=maxstep, master=None)
+        
+        self.Hinv = np.linalg.inv(H0) # initial hessian 
+        # self.Hinv = None 
+        self.structure = structure
+        self.fixed_frame = fixed_frame
+        self.parameters = parameters
+        self.precon = Exp(mu=self.structure.mu, A=3.0, recalc_mu=False)
+        self.initial=initial
+        self.rmsd_dev=rmsd_dev
+        self.molindixes = molindixes
+
+    def step(self, f=None):
+        """Take a single step
+
+        Use the given forces, update the history and calculate the next step --
+        then take it"""
+        r = self.atoms.get_positions()
+
+        if f is None:
+            f = self.atoms.get_forces()
+
+        print(self._just_reset_hessian)
+        previously_reset_hessian = self._just_reset_hessian
+        self.update(r, f, self.r0, self.f0)
+
+        s = self.s
+        y = self.y
+        rho = self.rho
+        H0 = self.H0
+
+        loopmax = np.min([self.memory, len(self.y)])
+        a = np.empty((loopmax,), dtype=np.float64)
+
+        # The algorithm itself:
+        q = -f.reshape(-1)
+        for i in range(loopmax - 1, -1, -1):
+            a[i] = rho[i] * np.dot(s[i], q)
+            q -= a[i] * y[i]
+
+
+        # if self.initial: # Update the Hessian (not inverse!!!)
+            # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
+            # Calculate RMSD between current and initial steps:
+        if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
+            print("################################Applying update")
+            self.Hinv = np.linalg.inv(preconditioned_hessian(self.structure, 
+                                            self.fixed_frame, 
+                                            self.parameters,
+                                            self.atoms,
+                                            np.eye(3*len(self.atoms)),
+                                            task="initial"))
+
+            z = np.dot(self.Hinv, q)       
+            a0=self.atoms.copy()
+            self.initial=a0
+            self.reset_hessian()
+        else:
+            z = np.dot(self.Hinv, q)
+
+        # if self.precon is None:
+        #     if self.Hinv is not None:
+        #         z = np.dot(self.Hinv, q)
+        #     else:
+        #         z = H0 * q
+        # else:
+        #     self.precon.make_precon(self.atoms)
+        #     z = self.precon.solve(q)   
+
+        # z = np.dot(np.linalg.inv(preconditioned_hessian(self.structure, 
+        #                                 self.fixed_frame, 
+        #                                 self.parameters,
+        #                                 self.atoms,
+        #                                 np.eye(3*len(self.atoms)),
+        #                                 task="initial")), q)
+
+        # self.precon.make_precon(self.atoms)
+        # z = self.precon.solve(q)   
+
+
+        # fname = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/Packwood/outputs/precon_Packwood.txt"
+        # np.savetxt(fname, self.precon.P.todense())
+
+        # fname = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/Packwood/outputs/precon_with ASR.txt"
+        # np.savetxt(fname, P)
+
+        # fdiff = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/Packwood/outputs/precon_diff.txt"
+        # np.savetxt(fdiff, P-self.precon.P)
+
+        # heatmap(P-self.precon.P)
+
+
+        # sys.exit(0)
+            # k = np.dot(np.linalg.inv(self.precon.P.todense()), q)
+            # z = np.dot(np.linalg.inv(P), q)
+        # print("MyPrec")
+        # print(sparse.csr_matrix(P))
+        # print("myz")
+        # print(k)
+        # print("From routine")
+        # print(KK[-1, -1])
+        # print(P[-1, -1])
+        # print(np.diag(self.precon.P.todense()))
+        # print(np.diag(P))
+        # print(np.diag(P) - np.diag(self.precon.P.todense()))
+        # print()
+        # print(z)
+        # print(k)
+        # print(P)
+        # sys.exit(0)
+        for i in range(loopmax):
+            b = rho[i] * np.dot(y[i], z)
+            z += s[i] * (a[i] - b)
+
+        self.p = - z.reshape((-1, 3))
+        ###
+
+        g = -f
+        if self.e1 is not None:
+            e = self.e1
+        else:
+            e = self.func(r)
+        self.line_search(r, g, e, previously_reset_hessian)
+        dr = (self.alpha_k * self.p).reshape(len(self.atoms), -1)
+
+        if self.alpha_k != 0.0:
+            self.atoms.set_positions(r + dr)
+
+        self.iteration += 1
+        self.r0 = r
+        self.f0 = -g
+        self.dump((self.iteration, self.s, self.y,
+                   self.rho, self.r0, self.f0, self.e0, self.task))
+
 
 
 class BFGS_mod(BFGS):
@@ -79,10 +246,7 @@ class BFGS_mod(BFGS):
                 self.initial=a0
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-import tkinter
-import matplotlib
+
 
 
 class BFGSLineSearch_mod(BFGSLineSearch):

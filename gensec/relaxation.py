@@ -4,6 +4,7 @@ from gensec.optimize import TRM_BFGS
 from gensec.optimize import TRM_BFGS_IPI
 from gensec.optimize import BFGSLineSearch_mod
 from gensec.optimize import LBFGS_Linesearch_mod
+from gensec.optimize import PreconLBFGS_mod
 from ase.optimize import BFGSLineSearch
 from ase.optimize import BFGS
 from ase.optimize import LBFGS
@@ -67,7 +68,7 @@ class Calculator:
             if list(precons_parameters.values())[i] == "Exp":
                 if list(precons_parameters_init.values())[i] or list(precons_parameters_update.values())[i]:
                     need_for_exp = True
-
+        mu = 1.0
         if need_for_exp:
             if len(structure.molecules) > 1:
                 a0 = structure.molecules[0].copy()
@@ -118,11 +119,11 @@ class Calculator:
             atoms = all_atoms.copy()
             atoms.set_calculator(self.calculator)
             self.set_constrains(atoms, parameters)
-
+            r_NN = estimate_nearest_neighbour_distance(atoms)
             try:
-                mu = Exp(A=3, r_cut=10).estimate_mu(atoms)
+                mu = Exp(r_cut = 2.0 * r_NN, A=3.0).estimate_mu(atoms)[0]
             except:
-                mu = 1.0
+                print("Something is wrong!")
         return mu
 
     def relax(self, structure, fixed_frame, parameters, directory, known):
@@ -154,7 +155,13 @@ class Calculator:
         if not hasattr(structure, "A"):
             structure.A = 1        
         H0 = np.eye(3 * len(atoms)) * 70
+        print("Creating of initial precon")
         H0_init= precon.preconditioned_hessian(structure, fixed_frame, parameters, atoms, H0, task="initial")
+        opt = PreconLBFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.004, 
+                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
+                            logfile=os.path.join(directory, "logfile.log"), restart=os.path.join(directory, 'qn.pckl'))
+
         # opt = BFGS_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.004, 
         #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
         #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
@@ -168,11 +175,11 @@ class Calculator:
         #                     restart=os.path.join(directory, 'qn.pckl'), c1=0.23, c2=0.46, alpha=1.0, stpmax=50.0, 
         #                     force_consistent=True) 
 
-        opt = LBFGS_Linesearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
-                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, maxstep=0.2, 
-                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0_init=H0_init,
-                            mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
-                            restart=os.path.join(directory, 'qn.pckl'), force_consistent=False) 
+        # opt = LBFGS_Linesearch_mod(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), 
+        #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, maxstep=0.2, 
+        #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0_init=H0_init,
+        #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+        #                     restart=os.path.join(directory, 'qn.pckl'), force_consistent=False) 
 
         # opt = TRM_BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.2, 
         #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
@@ -203,7 +210,7 @@ class Calculator:
         # opt.H0 = H0_init        
         # np.savetxt(os.path.join(directory, "hes_{}.hes".format(name)), opt.H0)
         fmax = parameters["calculator"]["fmax"]
-        opt.run(fmax=fmax, steps=1000)
+        opt.run(fmax=fmax, steps=3000)
         write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms,format="aims" )
         # np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
         try:
