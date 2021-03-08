@@ -70,7 +70,7 @@ class PreconLBFGS_mod(PreconLBFGS):
         self.structure = structure
         self.fixed_frame = fixed_frame
         self.parameters = parameters
-        self.precon = Exp(mu=self.structure.mu, A=3.0, recalc_mu=False)
+        # self.precon = Exp(mu=self.structure.mu, A=3.0, recalc_mu=False)
         self.initial=initial
         self.rmsd_dev=rmsd_dev
         self.molindixes = molindixes
@@ -107,7 +107,7 @@ class PreconLBFGS_mod(PreconLBFGS):
         # if self.initial: # Update the Hessian (not inverse!!!)
             # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
             # Calculate RMSD between current and initial steps:
-        if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
+        if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev and self.parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:
             print("################################Applying update")
             self.Hinv = np.linalg.inv(preconditioned_hessian(self.structure, 
                                             self.fixed_frame, 
@@ -462,10 +462,10 @@ class LBFGS_Linesearch_mod(LBFGS):
             a[i] = rho[i] * np.dot(s[i], q)
             q -= a[i] * y[i]
 
-        if self.Hinv is not None:
-            z = np.dot(self.Hinv, q)
-        else:
-            z = H0 * q
+        # if self.Hinv is not None:
+        #     z = np.dot(self.Hinv, q)
+        # else:
+        #     z = H0 * q
 
         if self.parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:
             # self.steps_in_raw+=1
@@ -479,16 +479,22 @@ class LBFGS_Linesearch_mod(LBFGS):
                 self.fmax_last = current_fmax
                 # self.steps_in_raw = 0
                 # Need to pass the inverse Hessian!!!
-                z = np.dot(np.linalg.inv(preconditioned_hessian(self.structure, 
+                self.Hinv = np.linalg.inv(preconditioned_hessian(self.structure, 
                                                 self.fixed_frame, 
                                                 self.parameters,
                                                 self.atoms,
                                                 np.eye(3*len(self.atoms)),
-                                                task="update")), q)
+                                                task="initial"))
+                
+                z = np.dot(self.Hinv, q)
         
                 a0=self.atoms.copy()
                 self.initial=a0
                 # self.reset_hessian()
+            else:
+                z = np.dot(self.Hinv, q)
+        else:
+            z = np.dot(self.Hinv, q)
 
         for i in range(loopmax):
             b = rho[i] * np.dot(y[i], z)

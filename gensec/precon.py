@@ -1482,13 +1482,13 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
                 # Calculate Acoustic sum rule
                 preconditioned_hessian = ASR(preconditioned_hessian) 
                 # Add stabilization to the diagonal
-                jitter = 0.1
+                jitter = 0.005
                 preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
                 # Check if positive and symmetric:
                 symmetric, positive = check_positive_symmetric(preconditioned_hessian)
                 if not symmetric:
                     print("Hessian is not symmetric! Will give troubles during optimization!")
-                    # sys.exit(0)
+                    sys.exit(0)
                 if not positive:
                     print("Hessian is not positive definite! Will give troubles during optimization!")
                     sys.exit(0)
@@ -1524,13 +1524,13 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
             # Calculate Acoustic sum rule
             preconditioned_hessian = ASR(preconditioned_hessian) 
             # Add stabilization to the diagonal
-            jitter = 0.1
+            jitter = 0.005
             preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
             # Check if positive and symmetric:
             symmetric, positive = check_positive_symmetric(preconditioned_hessian)
             if not symmetric:
                 print("Hessian is not symmetric! Will give troubles during optimization!")
-                # sys.exit(0)
+                sys.exit(0)
             if not positive:
                 print("Hessian is not positive definite! Will give troubles during optimization!")
                 sys.exit(0)
