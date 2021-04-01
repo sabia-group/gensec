@@ -41,6 +41,8 @@ class Directories:
     def save_to_directory(self, ensemble, parameters):      
         dir = os.path.join(os.getcwd(), format(self.dir_num, "010d"))
         write(os.path.join(dir, "{:010d}.in".format(self.dir_num)), ensemble, format="aims")
+        # write(os.path.join(dir, "{:010d}.xyz".format(self.dir_num)), ensemble, format="xyz")
+        # write(os.path.join(dir, "{:010d}.poscar".format(self.dir_num)), ensemble, format="vasp")
 
     def finished(self, parameters):
         dir = self.current_dir(parameters)

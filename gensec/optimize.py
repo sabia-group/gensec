@@ -603,22 +603,6 @@ class TRM_BFGS(BFGS):
         b = np.dot(dr, dg)
         self.H -= np.outer(df, df) / a + np.outer(dg, dg) / b
 
-        if self.initial: # Update the Hessian (not inverse!!!)
-            # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
-        # # Calculate RMSD between current and initial steps:
-            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
-                print("################################Applying update")
-                self.H = preconditioned_hessian(self.structure, 
-                                                self.fixed_frame, 
-                                                self.parameters,
-                                                self.atoms,
-                                                self.H,
-                                                task="update") 
-            
-                a0=self.atoms.copy()
-                self.initial=a0
-
-
     def step(self, f=None):
         atoms = self.atoms
 
@@ -629,6 +613,23 @@ class TRM_BFGS(BFGS):
         f = f.reshape(-1)
         u0 = atoms.get_potential_energy()
         accept = False
+
+        if self.initial : # Update the Hessian (not inverse!!!)
+        # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
+        # # Calculate RMSD between current and initial steps:
+            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
+                print("################################Applying update")
+                self.H = preconditioned_hessian(self.structure, 
+                                                self.fixed_frame, 
+                                                self.parameters,
+                                                self.atoms,
+                                                self.H,
+                                                task="initial") 
+            
+                a0=self.atoms.copy()
+                self.initial=a0
+                self.tr = self.maxstep
+
         while not accept:
             # Step 1: r - positions, f - forces, self.H - Hessian, tr - trust region
             # Calculate test displacemets
@@ -695,16 +696,22 @@ class TRM_BFGS(BFGS):
                 print("Not update")
                 pass
 
-            if quality > 0.75:
-                if s_norm <= 0.8 * self.tr:
-                    self.tr = self.tr
-                else:
-                    self.tr = 2 * self.tr
-            elif 0.1 < quality <= 0.75:
-                self.tr = self.tr
-            else:
-                self.tr = 0.5 * self.tr
+            # if quality > 0.75:
+            #     if s_norm <= 0.8 * self.tr:
+            #         self.tr = self.tr
+            #     else:
+            #         self.tr = 2 * self.tr
+            # elif 0.1 < quality <= 0.75:
+            #     self.tr = self.tr
+            # else:
+            #     self.tr = 0.5 * self.tr
 
+            if quality < 0.25:
+                self.tr = 0.5 * s_norm
+            elif quality > 0.75 and s_norm > 0.9 * self.tr:
+                self.tr = 2.0 * self.tr
+                if self.tr > self.maxstep:
+                    self.tr = self.maxstep
 
         # If accepted: Update Hessian
         # print("Updating Hessian")
@@ -716,20 +723,7 @@ class TRM_BFGS(BFGS):
         f = f1.copy()
         r = (r.reshape(-1,3) + s.reshape(-1,3)).copy()
         # self.update(s, y)
-        if self.initial : # Update the Hessian (not inverse!!!)
-        # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
-        # # Calculate RMSD between current and initial steps:
-            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
-                print("################################Applying update")
-                self.H = preconditioned_hessian(self.structure, 
-                                                self.fixed_frame, 
-                                                self.parameters,
-                                                self.atoms,
-                                                self.H,
-                                                task="update") 
-            
-                a0=self.atoms.copy()
-                self.initial=a0
+
         # self.update_H(s.flatten(), y.flatten())
         # self.update_BFGS(r, f, self.r0, self.f0)
         self.dump((self.H, self.r0, self.f0, self.maxstep))
@@ -950,9 +944,9 @@ class TRM_BFGS(BFGS):
 
 
 class TRM_BFGS_IPI(BFGS):
-    def __init__ (self, atoms, restart=None, logfile='-', trajectory=None, maxstep=0.99, 
+    def __init__ (self, atoms, restart=None, logfile='-', trajectory=None, maxstep=0.15, 
                 master=None, initial=None, rmsd_dev=1000.0, molindixes=None, structure=None, 
-                H0=None, fixed_frame=None, parameters=None, mu=None, A=None, known=None, tr=0.4, eta=0.001, r=0.5):
+                H0=None, fixed_frame=None, parameters=None, mu=None, A=None, known=None, tr=0.04, eta=0.001, r=0.5):
 
         BFGS.__init__(self, atoms, restart=restart, logfile=logfile, trajectory=trajectory, maxstep=maxstep, master=None)              
         
@@ -967,8 +961,11 @@ class TRM_BFGS_IPI(BFGS):
         self.fixed_frame = fixed_frame
         self.parameters = parameters
         self.tr = tr
+        self.tr_init = tr
         self.maxstep = maxstep
         self.log_accept = True
+        self.steps = 0
+        self.lastforce = None
 
         if self.H is None:
             self.H = self.H0
@@ -999,55 +996,41 @@ class TRM_BFGS_IPI(BFGS):
 
         self.H += h1 - h2
 
-    def update_BFGS(self, r, f, r0, f0):
+    def step(self, f=None):
+        atoms = self.atoms
 
-        dr = (r - r0).flat
+        if f is None:
+            f = atoms.get_forces()
+            self.lastforce=sqrt((f ** 2).sum(axis=1).max())
 
-        if np.abs(dr).max() < 1e-7:
-            # Same configuration again (maybe a restart):
-            return
+        r = atoms.get_positions()
+        # print("Energy")
+        current = sqrt((f ** 2).sum(axis=1).max())
+        f = f.reshape(-1)
+        # print(f)
 
-        df = f - f0
-        a = np.dot(dr, df)
-        dg = np.dot(self.H, dr)
-        b = np.dot(dr, dg)
-        self.H -= np.outer(df, df) / a + np.outer(dg, dg) / b
+        u0 = atoms.get_potential_energy()
 
-        if self.initial: # Update the Hessian (not inverse!!!)
-            # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
-        # # Calculate RMSD between current and initial steps:
-            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
+        self.steps+=1
+        
+
+        if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev and self.parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:
+            if self.steps > 10 and self.lastforce/current < 2.7:
                 print("################################Applying update")
                 self.H = preconditioned_hessian(self.structure, 
                                                 self.fixed_frame, 
                                                 self.parameters,
                                                 self.atoms,
                                                 self.H,
-                                                task="update") 
-            
+                                                task="update")
+
                 a0=self.atoms.copy()
                 self.initial=a0
+                self.steps=0
+                self.lastforce=current
+                self.tr = self.tr_init
 
-    def step(self, f=None):
-        atoms = self.atoms
 
-        if f is None:
-            f = atoms.get_forces()
-
-        r = atoms.get_positions()
-        # print("Energy")
-
-        f = f.reshape(-1)
-        # print(f)
-
-        u0 = atoms.get_potential_energy()
-        # print(u0)
-
-        # print("forces")
-        # print(f)
-        # print("Coordinates")
-        # print(r)
-        # sys.exit(0)
         accept = False
         while not accept:
             # Step 1: r - positions, f - forces, self.H - Hessian, tr - trust region
@@ -1072,16 +1055,18 @@ class TRM_BFGS_IPI(BFGS):
             # Compute quality:
             s_norm = np.linalg.norm(s)
 
-            if s_norm > 0.02:
+            if s_norm > 0.025:
                 quality = true_gain / expected_gain
             else:
                 quality = harmonic_gain / expected_gain
+
             accept = quality > 0.1
 
             # Update TrustRadius (self.tr)
+
             if quality < 0.25:
                 self.tr = 0.5 * s_norm
-            elif quality > 0.75 and s_norm > 0.45 * self.tr:
+            elif quality > 0.75 and s_norm > 0.9 * self.tr:
                 self.tr = 2.0 * self.tr
                 if self.tr > self.maxstep:
                     self.tr = self.maxstep
@@ -1101,9 +1086,6 @@ class TRM_BFGS_IPI(BFGS):
         self.f0 = f.copy()
         f = f1.copy()
         r = (r.reshape(-1,3) + s.reshape(-1,3)).copy()
-
-
-
         self.dump((self.H, self.r0, self.f0, self.maxstep))
 
 

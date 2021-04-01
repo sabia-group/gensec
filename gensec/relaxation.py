@@ -124,7 +124,6 @@ class Calculator:
                 mu = Exp(r_cut = 2.0 * r_NN, A=3.0).estimate_mu(atoms)[0]
             except:
                 print("Something is wrong!")
-        print("Mu is", mu)
         return mu
 
     def relax(self, structure, fixed_frame, parameters, directory, known):
@@ -182,17 +181,17 @@ class Calculator:
         #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
         #                     restart=os.path.join(directory, 'qn.pckl'), force_consistent=False) 
 
-        opt = TRM_BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.2, 
-                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
-                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
-                            mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
-                            restart=os.path.join(directory, 'qn.pckl'))  
-
-        # opt = TRM_BFGS_IPI(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.4, 
+        # opt = TRM_BFGS(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.2, 
         #                     initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
         #                     structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
         #                     mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
-        #                     restart=os.path.join(directory, 'qn.pckl'))
+        #                     restart=os.path.join(directory, 'qn.pckl'))  
+
+        opt = TRM_BFGS_IPI(atoms, trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)), maxstep=0.15, 
+                            initial=a0, molindixes=list(range(len(a0))), rmsd_dev=rmsd_threshhold, 
+                            structure=structure, fixed_frame=fixed_frame, parameters=parameters, H0=H0_init,
+                            mu=structure.mu, A=structure.A, logfile=os.path.join(directory, "logfile.log"),
+                            restart=os.path.join(directory, 'qn.pckl'))
 
         # REFERENSE ASE
         # print("This is referense calculation with ASE")

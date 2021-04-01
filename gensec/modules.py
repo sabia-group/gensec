@@ -207,8 +207,22 @@ def getroots(aNeigh):
     return mytoret
 
 def insertbreak(graph, atom1, atom2):
+    """Insert the break in the graph
+    
+    Creates two disconnected graphs from one connected graph
+    
+    Arguments:
+        graph {graph} -- Graph representation of the system
+        atom1 {atom number} -- Terminate atom fro the first graph
+        atom2 {atom number} -- Terminate atom for the second graph
+    
+    Returns:
+        Graph -- Now the graph will not have connection between atom1 and atom2
+    """
+
     graph[atom1].pop(graph[atom1].index(atom2))
     graph[atom2].pop(graph[atom2].index(atom1))
+    
     return graph
 
 def carried_atoms(connectivity_matrix_isolated, positions):

@@ -49,7 +49,8 @@ class Structure:
             elif parameters["configuration"]["orientations"]["values"] == "discretized":
                 # Discretizes the values for the main vector of the molecuele
                 # for the angle part the number of allowed rotations
-                turns = 360.0//parameters["configuration"]["orientations"]["angle"]
+                turns = int(360.0//parameters["configuration"]["orientations"]["angle"])
+
                 angles = np.linspace(0, 360, num=turns+1)
                 if parameters["configuration"]["orientations"]["vector"]["Type"] == "exclusion":
                     exclude = np.eye(3)[choice([1, 2])]
@@ -164,6 +165,7 @@ class Structure:
                                                         configuration[z+4]])),
                                                 0, len(self.molecules[i])-1)
             # Set center of mass
+            print("Center of mass set")
             set_centre_of_mass(self.molecules[i], np.array([configuration[z+5], 
                                                             configuration[z+6], 
                                                             configuration[z+7]]))
@@ -197,10 +199,10 @@ class Structure:
                 torsions.append(configuration[z])
         return torsions       
 
-    def read_configuration(self, structure, fixed_frame, gen):
+    def read_configuration(self, structure, fixed_frame, atoms):
         t = structure.list_of_torsions
-        configuration = read(gen, format="aims")
-        template = merge_together(structure, fixed_frame)
+        configuration = atoms.copy()
+        template = merge_together(configuration, fixed_frame)
         template.set_positions(configuration.get_positions())
         for i in range(len(structure.molecules)):
             len_mol = len(structure.molecules[i])

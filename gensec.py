@@ -108,6 +108,7 @@ if "search" in parameters["calculator"]["optimize"]:
                     generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
                     d = os.path.join(dirs.generate_folder, sorted(generated_dirs)[0])
                     gen = os.path.join(d, sorted(generated_dirs)[0]+".in")
+                    print(gen)
                     configuration = structure.read_configuration(structure, fixed_frame, gen)
                     shutil.rmtree(d)
                 except:
@@ -228,7 +229,7 @@ if "search" in parameters["calculator"]["optimize"]:
 
 
 if parameters["calculator"]["optimize"] == "generate":
-	# Generates unique structures
+    # Generates unique structures
     dirs = Directories(parameters)
     output = Output("report_generate.out")
     workflow = Workflow()
@@ -271,7 +272,7 @@ if parameters["calculator"]["optimize"] == "generate":
                 if not found:
                     calculator.set_constrains(current_coords, parameters) 
                     dirs.create_directory(parameters)
-                    dirs.save_to_directory(prepare_for_saving(structure), parameters)
+                    dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
                     t, o, c = known.get_internal_vector(current_coords, structure, fixed_frame, parameters)
                     known.add_to_known(t, o, c)
                     workflow.success += 1
@@ -302,7 +303,7 @@ if parameters["calculator"]["optimize"] == "generate":
 
 
 if "single" in parameters["calculator"]["optimize"]:
-	# Relaxes all the structures in the generate folder
+    # Relaxes all the structures in the generate folder
     if len(os.listdir(parameters["calculator"]["generate_folder"])) > 0:
         dirs = Directories(parameters)   
         workflow = Workflow()
@@ -339,7 +340,7 @@ if "single" in parameters["calculator"]["optimize"]:
 
 
     else:
-    	# Performs relaxation of the structure specified in the parameters file
+        # Performs relaxation of the structure specified in the parameters file
         dirs = Directories(parameters)   
         workflow = Workflow()
         structure = Structure(parameters)
