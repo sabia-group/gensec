@@ -1,7 +1,7 @@
 """ Generate and Search"""
 
 __author__ = "GenSec"
-__copyright__ = "Copyright (C) 2020 Dmitrii Maksimov"
+__copyright__ = "Copyright (C) 2021 Dmitrii Maksimov"
 __license__ = "Public Domain"
 __version__ = "0.1.1"
 
@@ -12,6 +12,7 @@ from gensec.outputs import *
 from gensec.structure import *
 from gensec.relaxation import *
 from gensec.modules import measure_torsion_of_last
+from gensec.general import *
 
 import numpy as np
 import sys
@@ -22,17 +23,27 @@ from random import randint, random, uniform
 from ase.io.trajectory import Trajectory
 from ase.io import write
 
+from optparse import OptionParser
 parser = OptionParser()
-parser.add_option("-t", "--test"); 
+parser.add_option("-p", "--parameters", dest="parameters",
+                  help="File with parameters", metavar="FILE", default=None)
+
 (options, args) = parser.parse_args()
 
-""" Prefase"""
+
+from gensec.protocols import *
+
+""" Load the parameters from parameter file """
 if len(sys.argv)>0:
-    print(sys.argv[1])
     parameters = load_parameters(sys.argv[1])
 else:
     parameters = load_parameters("parameters.json")
-print(parameters["calculator"]["optimize"])
+
+protocol = Protocol()
+protocol.run(parameters) 
+
+sys.exit(0)
+
 
 if "search" in parameters["calculator"]["optimize"]:
     dirs = Directories(parameters)   
@@ -103,12 +114,11 @@ if "search" in parameters["calculator"]["optimize"]:
             generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
             if len(generated_dirs)>0:
                 # generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
-                output.write_to_report("\nThere are {} candidate structures to relax\n".format(len(generated_dirs)))
+                # output.write_to_report("\nThere are {} candidate structures to relax\n".format(len(generated_dirs)))
                 try:
                     generated_dirs = [z for z in os.listdir(dirs.generate_folder) if os.path.isdir(os.path.join(dirs.generate_folder, z))]
                     d = os.path.join(dirs.generate_folder, sorted(generated_dirs)[0])
-                    gen = os.path.join(d, sorted(generated_dirs)[0]+".in")
-                    print(gen)
+                    gen = read(os.path.join(d, sorted(generated_dirs)[0]+".in"), format="aims")
                     configuration = structure.read_configuration(structure, fixed_frame, gen)
                     shutil.rmtree(d)
                 except:
@@ -228,6 +238,7 @@ if "search" in parameters["calculator"]["optimize"]:
             sys.exit(0)
 
 
+
 if parameters["calculator"]["optimize"] == "generate":
     # Generates unique structures
     dirs = Directories(parameters)
@@ -239,7 +250,7 @@ if parameters["calculator"]["optimize"] == "generate":
     known = Known(structure, parameters)
     os.chdir(parameters["calculator"]["optimize"])
     dirs.find_last_dir(parameters)
-    known.check_calculated(dirs, parameters)
+    # known.check_calculated(dirs, parameters)
     known.analyze_calculated(structure, fixed_frame, parameters)
     dirs.find_last_generated_dir(parameters)
     output.write_parameters(parameters, structure, known, dirs)
@@ -248,6 +259,8 @@ if parameters["calculator"]["optimize"] == "generate":
     print("Initialize")
     workflow.success = dirs.dir_num
     print(workflow.success)
+
+
 
     from ase.constraints import FixAtoms
     while workflow.trials < parameters["trials"]:
@@ -272,12 +285,25 @@ if parameters["calculator"]["optimize"] == "generate":
                 if not found:
                     calculator.set_constrains(current_coords, parameters) 
                     dirs.create_directory(parameters)
-                    dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
+                    # dirs.save_to_directory(merge_together(structure, fixed_frame), parameters)
+                    dirs.save_to_directory(structure.molecules, parameters)
                     t, o, c = known.get_internal_vector(current_coords, structure, fixed_frame, parameters)
                     known.add_to_known(t, o, c)
                     workflow.success += 1
                     workflow.trials = 0
                     output.write_successfull_generate(parameters, structure.torsions_from_conf(configuration), dirs)
+                    
+                    # write function that takes all the configuration parameters
+                    database.write(current_coords, relaxed=False, **dd)
+                    # print("Last ID", len(database))
+                    # for row in database.select():
+                    #     print(row.data.configuration)
+                    #     for key in row:
+                    #         print(key)
+                    #         print(row[key])
+                    # print(dir(database))
+                    # sys.exit(0) 
+                    # database.write(current_coords, relaxed=False, data={"configuration" : configuration})
                 else:
                     workflow.trials += 1 
                     print("Trial {}".format(workflow.trials))

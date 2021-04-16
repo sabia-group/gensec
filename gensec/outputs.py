@@ -22,7 +22,6 @@ class Directories:
 
     def create_directory(self, parameters):
 
-
         self.dir_num+=1
         dir = os.path.join(os.getcwd(), format(self.dir_num, "010d"))
         if not os.path.exists(dir):
@@ -38,7 +37,7 @@ class Directories:
             pass
         self.dir_num-=1
 
-    def save_to_directory(self, ensemble, parameters):      
+    def save_to_directory(self, ensemble, parameters):  
         dir = os.path.join(os.getcwd(), format(self.dir_num, "010d"))
         write(os.path.join(dir, "{:010d}.in".format(self.dir_num)), ensemble, format="aims")
         # write(os.path.join(dir, "{:010d}.xyz".format(self.dir_num)), ensemble, format="xyz")

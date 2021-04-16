@@ -966,10 +966,13 @@ class TRM_BFGS_IPI(BFGS):
         self.log_accept = True
         self.steps = 0
         self.lastforce = None
+        self.restart = restart
+
 
         if self.H is None:
             self.H = self.H0
             # self.H=np.eye(3*len(self.atoms))*100
+
 
         # print(self.tr, self.maxstep)
         # sys.exit(0)

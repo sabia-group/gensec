@@ -225,6 +225,7 @@ class Known:
         calculated_dir = os.getcwd()
         num_run = parameters["calculator"]["optimize"].split("_")[-1]
         if dirs.dir_num > 0:
+            # first_dir = 
             for i in range(1, dirs.dir_num+1):
                 traj_name = "{:010d}".format(i)
                 calculated_names = [z.split("_")[0] for z in os.listdir(self.dir)]
@@ -255,25 +256,26 @@ class Known:
 
     def get_internal_vector(self, configuration, structure, fixed_frame, parameters):
         # get the internal vector
-        template = merge_together(structure, fixed_frame)
-        template.set_positions(configuration.get_positions())
+        # template = merge_together(structure, fixed_frame)
+        # template = merge_together(structure, fixed_frame)
+        # template.set_positions(configuration.get_positions())
         full_vector = {}
         t = []
         o = []
         c = []
         for i in range(len(structure.molecules)):
             len_mol = len(structure.molecules[i])
-            coords = template.get_positions()[i*len_mol:i*len_mol+len_mol, :]
+            coords = configuration.get_positions()[i*len_mol:i*len_mol+len_mol, :]
             structure.molecules[i].set_positions(coords)
             orientation = measure_quaternion(structure.molecules[i], 0, -1)
             com = structure.molecules[i].get_center_of_mass()
             torsions = []
             for torsion in structure.list_of_torsions:
                 torsions.append(structure.molecules[i].get_dihedral(
-                                                a1=torsion[0],
-                                                a2=torsion[1],
-                                                a3=torsion[2],
-                                                a4=torsion[3]))
+                                                a0=torsion[0],
+                                                a1=torsion[1],
+                                                a2=torsion[2], 
+                                                a3=torsion[3]))
             t.append(torsions)
             o.append(orientation)
             c.append(com)

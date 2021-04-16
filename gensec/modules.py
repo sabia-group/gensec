@@ -482,10 +482,10 @@ def measure_molecules(molecules, list_of_torsions):
     for i in range(len(molecules)):
         for torsion in list_of_torsions:
             vector.append(molecules[i].get_dihedral(
-                                      a1=torsion[0],
-                                      a2=torsion[1],
-                                      a3=torsion[2],
-                                      a4=torsion[3]))
+                                      a0=torsion[0],
+                                      a1=torsion[1],
+                                      a2=torsion[2],
+                                      a3=torsion[3]))
         # Set orientation
         vector.append(measure_quaternion(molecules[i], 0, len(molecules[i])-1))
         # Set center of mass
@@ -496,10 +496,10 @@ def measure_torsion_of_last(atoms, list_of_torsions):
     torsions = []
     for torsion in list_of_torsions:
         torsions.append(atoms.get_dihedral(
-                                  a1=torsion[0],
-                                  a2=torsion[1],
-                                  a3=torsion[2],
-                                  a4=torsion[3]))
+                                  a0=torsion[0],
+                                  a1=torsion[1],
+                                  a2=torsion[2],
+                                  a3=torsion[3]))
     return torsions
 
 
@@ -508,10 +508,10 @@ def assign_random_state(molecule, list_of_torsions):
         value = randint(0, 360)
         fixed_indices = carried_atoms(connectivity_matrix_isolated, torsion)
         molecules[i].set_dihedral(angle=value,
-                                  a1=torsion[0],
-                                  a2=torsion[1],
-                                  a3=torsion[2],
-                                  a4=torsion[3],
+                                  a0=torsion[0],
+                                  a1=torsion[1],
+                                  a2=torsion[2],
+                                  a3=torsion[3],
                                   indices=fixed_indices)
     quaternion_set(molecules[i], produce_quaternion(value, np.array([value, value, value])), 0, len(atoms)-1)
     value_com = np.array([randint(0, 13),
