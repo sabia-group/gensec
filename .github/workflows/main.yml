@@ -34,10 +34,7 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
-
-on: [push]
-
-jobs:
+          
   paper:
     runs-on: ubuntu-latest
     name: Paper Draft
