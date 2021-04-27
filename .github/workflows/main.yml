@@ -41,6 +41,6 @@ jobs:
         uses: openjournals/openjournals-draft-action@v.1.0
         with:
           # Target journal, must be either "joss" or "jose"
-          journal: # optional, default is joss
+          journal: joss # optional, default is joss
           # Path to the main paper Markdown file, relative to the project's root directory.
-          paper-path: # optional, default is paper.md
+          paper-path: .github/workflows/paper.md # optional, default is paper.md
