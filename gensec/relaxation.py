@@ -218,10 +218,10 @@ class Calculator:
         relax the structure.
         
         Arguments:
-            structure {[type]} -- [description]
-            fixed_frame {[type]} -- [description]
-            parameters {[type]} -- [description]
-            directory {[type]} -- [description]
+            structure {[type]} -- Structure object
+            fixed_frame {[type]} -- Fixed frame object
+            parameters {[type]} -- parameters file 
+            directory {[type]} -- the directory with unfinished calculation
         """
 
         def unfinished_directories(working_dir):
