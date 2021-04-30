@@ -13,7 +13,7 @@ class TestStructure(unittest.TestCase):
         Checking of the identified torsions for the molecule
         """
 
-        list_of_torsions_ref = [[1, 0, 2, 4], [2, 0, 1, 3], [0, 1, 3, 5, 7]]       
+        list_of_torsions_ref = [[1, 0, 2, 4], [2, 0, 1, 3], [0, 1, 3, 5]]       
         dirname, filename = os.path.split(os.path.abspath(__file__))
         atoms = read(os.path.join(dirname, "supporting", "molecules", "hexane.xyz"), format="xyz")
         connectivity = create_connectivity_matrix(atoms, bothways=False)
