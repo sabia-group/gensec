@@ -1,22 +1,25 @@
 import unittest
-import gensec.structure as structure
+from gensec.modules import create_connectivity_matrix, detect_rotatble
+
+from ase.io import read
+import os, sys
+
 
 class TestStructure(unittest.TestCase):
     
-    def test_upper(self):
-        self.assertEqual('foo'.upper(), 'FOO')
+    def test_read_hexane(self):
+        """Import of Hexane molecule in xyz format
+        
+        Checking of the identified torsions for the molecule
+        """
 
-    def test_isupper(self):
-        self.assertTrue('FOO'.isupper())
-        self.assertFalse('Foo'.isupper())
-
-    def test_split(self):
-        s = 'hello world'
-        self.assertEqual(s.split(), ['hello', 'world'])
-        # check that s.split fails when the separator is not a string
-        with self.assertRaises(TypeError):
-            s.split(2)
+        list_of_torsions_ref = [[1, 0, 2, 4], [2, 0, 1, 3], [0, 1, 3, 5]]       
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        atoms = read(os.path.join(dirname, "supporting", "molecules", "hexane.xyz"), format="xyz")
+        connectivity = create_connectivity_matrix(atoms, bothways=False)
+        list_of_torsions = detect_rotatble(connectivity, atoms)
+        self.assertEqual(list_of_torsions_ref, list_of_torsions)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     unittest.main()
