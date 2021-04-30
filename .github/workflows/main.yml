@@ -30,10 +30,13 @@ jobs:
         run: echo Hello, world!
 
       # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Install dependencies
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install numpy
+          pip install ase
+          pip install scipy
           
   paper:
     runs-on: ubuntu-latest
