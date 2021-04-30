@@ -39,7 +39,11 @@ jobs:
         run: |
           python -m unittest discover -s ./tests -p single_molecule.py
 
-
+      - name: Code Coverage Report
+        uses: romeovs/lcov-reporter-action@v0.2.16
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          lcov-file: ./coverage/lcov.info
 
   paper:
     runs-on: ubuntu-latest
