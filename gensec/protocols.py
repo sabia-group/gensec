@@ -55,7 +55,6 @@ class Protocol:
             db_trajectories = ase.db.connect("db_trajectories.db")
 
 
-
             self.trials = 0
             self.success = db_generated.count()
             print("Generated structures", db_generated.count())

@@ -298,11 +298,22 @@ class Structure:
     #     return torsions
 
     def atoms_object(self):
+        """Convert Structure object to ASE Atoms object
+        
+        Goes through Molecules in Structure object and join
+        them to one ASE Atoms object
+        
+        Returns:
+            [ASE Atoms] -- ASE Atoms object
+        """
+        
         temp = self.atoms.copy()
+        # Create empty list of the appropriate type
         del temp[[atom.index for atom in self.atoms]]
         for molecule in self.molecules:
             temp+=molecule
         return temp
+
 
     def set_structure_positions(self, atoms):
         """Apply the coordinates from atoms object 
@@ -341,13 +352,13 @@ class Structure:
             periodic_query = {}
             for i in periodic_keys:
                 if conf[i]+thresh<=360:
-                    # The value is big
+                    # The value is close to 360
                     periodic_query[i] = {   
                                             0 : '{}<{}'.format(i, thresh+conf[i]), 
                                             1 : '{}>{}'.format(i,360-thresh+conf[i])
                                         }
                 else:
-                    # the value is small
+                    # the value is close to 0
                     periodic_query[i] = {   
                                             0 : '{}>{}'.format(i, conf[i]-thresh), 
                                             1 : '{}<{}'.format(i,conf[i]+thresh-360)
@@ -360,6 +371,9 @@ class Structure:
 
         found = False
         for q in quries:
+            # Check if from query the occurances can be found
+            # If the rows are more than 1 then the structure found
+            # in terms of torsion angles combination.
             rows = database.select(selection=q)
             for row in rows:
                 # Need to implement check for orientations and centres of mass.
