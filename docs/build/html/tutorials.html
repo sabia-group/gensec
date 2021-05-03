@@ -85,7 +85,10 @@
             
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting started</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
 <li class="toctree-l1"><a class="reference internal" href="citation.html">Citing GenSec</a></li>
 <li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
@@ -157,7 +160,17 @@
             
   <div class="section" id="tutorials">
 <h1>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this headline">¶</a></h1>
-<p>Here will be tutorials</p>
+<div class="section" id="getting-started">
+<h2>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<p>In order to sample conformationa space of the flexible molecule you will need the following files:
+1. template of the moecule in 3D format for example XYZ, PDB, SDF and so on…
+2. “parameters.file” with the configuration of the search
+3. ASE calculator file with which you can perform the geometry optimization routines.</p>
+<p>To run the structure search:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>/path_to_GenSec/gensec.py parameters.txt
+</pre></div>
+</div>
+</div>
 </div>
 
 
