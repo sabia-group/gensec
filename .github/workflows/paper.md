@@ -1,33 +1,30 @@
 ---
-title: 'Gala: A Python package for galactic dynamics'
+title: 'GenSec: A Python package for sampling of the conformation space'
 tags:
   - Python
-  - astronomy
-  - dynamics
-  - galactic dynamics
-  - milky way
+  - Interfaces
+  - Sampling conformation spaces
+  - flexible molecules
+  - self-assemblies
 authors:
-  - name: Dmitrii Maksimov, Mariana Rossi^[Custom footnotes for e.g. denoting who the corresponding author is can be included like this.]
-    orcid: 0000-0003-0872-7098
+  - name: Dmitrii Maksimov^[Custom footnotes for e.g. denoting who the corresponding author is can be included like this.]
+    orcid: 0000-0003-4448-8848
     affiliation: "1, 2" # (Multiple affiliations must be quoted)
-  - name: Author Without ORCID
-    affiliation: 2
-  - name: Author with no affiliation
-    affiliation: 3
+  - name: Mariana Rossi
+    orcid: 0000-0002-3552-0677
+    affiliation: "1, 2"
 affiliations:
- - name: Lyman Spitzer, Jr. Fellow, Princeton University
+ - name: Fritz Haber Institute of the Max PlanckSociety, Berlin, Germany
    index: 1
- - name: Institution Name
+ - name: Max Planck Institute for Structure andDynamics of Matter, Hamburg, Germany
    index: 2
- - name: Independent Researcher
-   index: 3
-date: 13 August 2017
+date: 1 May 2021
 bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
 # https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-aas-journal: Astrophysical Journal <- The name of the AAS journal.
+#aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
+#aas-journal: Astrophysical Journal <- The name of the AAS journal.
 ---
 
 # Summary
