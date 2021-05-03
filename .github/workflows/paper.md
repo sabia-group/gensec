@@ -14,9 +14,9 @@ authors:
     orcid: 0000-0002-3552-0677
     affiliation: "1, 2"
 affiliations:
- - name: Fritz Haber Institute of the Max PlanckSociety, Berlin, Germany
+ - name: Fritz Haber Institute of the Max Planck Society, Berlin, Germany
    index: 1
- - name: Max Planck Institute for Structure andDynamics of Matter, Hamburg, Germany
+ - name: Max Planck Institute for Structure and Dynamics of Matter, Hamburg, Germany
    index: 2
 date: 1 May 2021
 bibliography: paper.bib
@@ -29,7 +29,8 @@ bibliography: paper.bib
 
 # Summary
 
-The forces on stars, galaxies, and dark matter under external gravitational
+Summary
+<!-- The forces on stars, galaxies, and dark matter under external gravitational
 fields lead to the dynamical evolution of structures in the universe. The orbits
 of these bodies are therefore key to understanding the formation, history, and
 future state of galaxies. The field of "galactic dynamics," which aims to model
@@ -37,11 +38,12 @@ the gravitating components of galaxies to study their structure and evolution,
 is now well-established, commonly taught, and frequently used in astronomy.
 Aside from toy problems and demonstrations, the majority of problems require
 efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration).
+performing numerical orbit integration). -->
 
 # Statement of need
 
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
+`GenSec` is an package that uses ASE [@ASE] 
+<!-- Astropy-affiliated Python package for galactic dynamics. Python
 enables wrapping low-level languages (e.g., C) for speed without losing
 flexibility or ease-of-use in the user-interface. The API for `Gala` was
 designed to provide a class-based and user-friendly interface to fast (C or
@@ -59,7 +61,7 @@ used in graduate courses on Galactic dynamics to, e.g., provide interactive
 visualizations of textbook material [@Binney:2008]. The combination of speed,
 design, and support for Astropy functionality in `Gala` will enable exciting
 scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
+[@gaia] by students and experts alike. -->
 
 # Mathematics
 
@@ -103,7 +105,6 @@ For a quick reference, the following citation commands can be used:
 
 # Acknowledgements
 
-We acknowledge contributions from Brigitta Sipocz, Syrtis Major, and Semyeong
-Oh, and support from Kathryn Johnston during the genesis of this project.
+We acknowledge Michele Ceriotti.
 
 # References
