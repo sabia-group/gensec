@@ -1,9 +1,10 @@
 import os, sys
-import numpy as np 
+import numpy as np
 from gensec.modules import *
 from ase.io.trajectory import Trajectory
 from ase.io import read, write
 import shutil
+
 
 class Known:
     """ Handling of the known structures
@@ -12,24 +13,27 @@ class Known:
     in order to avoid repetative calculations
     and generate unique structures.
     """
+
     def __init__(self, structure, parameters):
 
-        if not any(parameters["configuration"][i]["known"] for i in parameters["configuration"]):
+        if not any(
+            parameters["configuration"][i]["known"] for i in parameters["configuration"]
+        ):
             print("Keeping history is disabled")
             sys.exit(0)
 
         # full_vector = []
         t = []  # torsions
         o = []  # orientations
-        c = []  # centres of masses  
+        c = []  # centres of masses
         for i in range(len(structure.molecules)):
-            tt = np.empty(shape = len(structure.list_of_torsions))
-            oo = np.array([0,0,0,0])
+            tt = np.empty(shape=len(structure.list_of_torsions))
+            oo = np.array([0, 0, 0, 0])
             cc = np.array([0, 0, 0])
 
-            t.append(tt) 
-            o.append(oo) 
-            c.append(cc) 
+            t.append(tt)
+            o.append(oo)
+            c.append(cc)
 
         torsions = np.hstack(t)
         orientations = np.hstack(o)
@@ -57,13 +61,12 @@ class Known:
 
         self.names = os.listdir(self.dir)
 
-
     def add_to_known_torsions(self, t):
         self.torsions = np.vstack((self.torsions, t))
- 
+
     def add_to_known_orientations(self, o):
         self.orientations = np.vstack((self.orientations, o))
- 
+
     def add_to_known_coms(self, c):
         self.coms = np.vstack((self.coms, c))
 
@@ -74,28 +77,30 @@ class Known:
 
     @staticmethod
     def minimal_angle(x, y):
-        rad = min((2 * np.pi) - abs(np.deg2rad(x) - np.deg2rad(y)), 
-                                abs(np.deg2rad(x) - np.deg2rad(y)))
+        rad = min(
+            (2 * np.pi) - abs(np.deg2rad(x) - np.deg2rad(y)),
+            abs(np.deg2rad(x) - np.deg2rad(y)),
+        )
         return np.rad2deg(rad)
 
     def torsional_diff(self, point, vector, criteria, t):
-        
-        diff_angles = [self.minimal_angle(x, y) for x,y in zip(vector, point)]
+
+        diff_angles = [self.minimal_angle(x, y) for x, y in zip(vector, point)]
         # Checking if structures are similar depending on
         # torsional differences of angles:
         if criteria == "any":
-            # If even one torsion angle is less than specified angle 
+            # If even one torsion angle is less than specified angle
             # Structures are considered similar
             if any(a < t for a in diff_angles):
-                similar = True 
+                similar = True
             else:
                 similar = False
 
         elif criteria == "all":
-            # If all torsion angles areany less than specified angle 
+            # If all torsion angles areany less than specified angle
             # Structures are considered similar
             if all(a < t for a in diff_angles):
-                similar = True 
+                similar = True
             else:
                 similar = False
         return similar
@@ -118,26 +123,28 @@ class Known:
             similar = True
         return similar
 
-
-
     def find_in_known(self, coords, parameters, structure, fixed_frame, criteria, t):
-        found = False # For now permutations are not implemented for several molecules.
+        found = False  # For now permutations are not implemented for several molecules.
 
         # Goes through all the vectors except first one that was generated for template.
 
-        tt, oo, cc = self.get_internal_vector(coords, structure, fixed_frame, parameters)
+        tt, oo, cc = self.get_internal_vector(
+            coords, structure, fixed_frame, parameters
+        )
 
         # Goes first throug torsions
         if parameters["configuration"]["torsions"]["known"]:
             if len(self.torsions.shape) > 1:
                 for point in range(1, len(self.torsions)):
-                    if self.torsional_diff(self.torsions[point], tt, criteria=criteria, t=t):
+                    if self.torsional_diff(
+                        self.torsions[point], tt, criteria=criteria, t=t
+                    ):
                         found = True
                         index = point
                         break
             else:
                 pass
-            # if found in torsions then goes through orientation ofr 
+            # if found in torsions then goes through orientation ofr
             # the same point as was found for torsions
             if found:
                 print("Found in torsions")
@@ -147,7 +154,9 @@ class Known:
                         print("Found in orientations")
                         pass
                     else:
-                        print("Even though the torsions are the same the orientations are different")
+                        print(
+                            "Even though the torsions are the same the orientations are different"
+                        )
                         found = False
             if found:
                 # If torsions are the same and orientations are the same, check for coms
@@ -201,9 +210,8 @@ class Known:
                                 break
                     else:
                         print("This is the first structure")
-                        pass                
-        return found                   
-        
+                        pass
+        return found
 
     def get_known(self):
         for vec in self.known:
@@ -225,8 +233,8 @@ class Known:
         calculated_dir = os.getcwd()
         num_run = parameters["calculator"]["optimize"].split("_")[-1]
         if dirs.dir_num > 0:
-            # first_dir = 
-            for i in range(1, dirs.dir_num+1):
+            # first_dir =
+            for i in range(1, dirs.dir_num + 1):
                 traj_name = "{:010d}".format(i)
                 calculated_names = [z.split("_")[0] for z in os.listdir(self.dir)]
                 traj = self.find_traj(os.path.join(calculated_dir, traj_name))
@@ -234,7 +242,9 @@ class Known:
                     t = Trajectory(os.path.join(calculated_dir, traj_name, traj))
                     if len(t) != calculated_names.count(str(traj_name)):
                         for k in range(len(t)):
-                            n = os.path.join(self.dir, "{:010d}_{}_{}.in".format(i, k, num_run))
+                            n = os.path.join(
+                                self.dir, "{:010d}_{}_{}.in".format(i, k, num_run)
+                            )
                             write(n, t[k], format="aims")
 
     def send_traj_to_known_folder(self, dirs, parameters):
@@ -250,9 +260,10 @@ class Known:
             t = Trajectory(os.path.join(calculated_dir, traj_name, traj))
             if len(t) != calculated_names.count(str(traj_name)):
                 for k in range(len(t)):
-                    n = os.path.join(self.dir, "{:010d}_{}_{}.in".format(dirs.dir_num, k, num_run))
+                    n = os.path.join(
+                        self.dir, "{:010d}_{}_{}.in".format(dirs.dir_num, k, num_run)
+                    )
                     write(n, t[k], format="aims")
-
 
     def get_internal_vector(self, configuration, structure, fixed_frame, parameters):
         # get the internal vector
@@ -265,22 +276,23 @@ class Known:
         c = []
         for i in range(len(structure.molecules)):
             len_mol = len(structure.molecules[i])
-            coords = configuration.get_positions()[i*len_mol:i*len_mol+len_mol, :]
+            coords = configuration.get_positions()[
+                i * len_mol : i * len_mol + len_mol, :
+            ]
             structure.molecules[i].set_positions(coords)
             orientation = measure_quaternion(structure.molecules[i], 0, -1)
             com = structure.molecules[i].get_center_of_mass()
             torsions = []
             for torsion in structure.list_of_torsions:
-                torsions.append(structure.molecules[i].get_dihedral(
-                                                a0=torsion[0],
-                                                a1=torsion[1],
-                                                a2=torsion[2], 
-                                                a3=torsion[3]))
+                torsions.append(
+                    structure.molecules[i].get_dihedral(
+                        a0=torsion[0], a1=torsion[1], a2=torsion[2], a3=torsion[3]
+                    )
+                )
             t.append(torsions)
             o.append(orientation)
             c.append(com)
         return np.hstack(np.array(t)), np.hstack(np.array(o)), np.hstack(np.array(c))
-
 
     def analyze_calculated(self, structure, fixed_frame, parameters):
 
@@ -288,7 +300,9 @@ class Known:
             # Check if structures in the known:
             for m in os.listdir(self.dir):
                 configuration = read(os.path.join(self.dir, m), format="aims")
-                t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+                t, o, c = self.get_internal_vector(
+                    configuration, structure, fixed_frame, parameters
+                )
                 self.add_to_known_torsions(t)
                 self.add_to_known_orientations(o)
                 self.add_to_known_coms(c)
@@ -297,8 +311,10 @@ class Known:
             if len(os.path.split(dir)[0]) == 0:
                 dir = os.path.join(os.getcwd(), dir)
             for m in list(filter(os.path.isdir, os.listdir(dir))):
-                configuration = read(os.path.join(dir, m, m+".in"), format="aims")
-                t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+                configuration = read(os.path.join(dir, m, m + ".in"), format="aims")
+                t, o, c = self.get_internal_vector(
+                    configuration, structure, fixed_frame, parameters
+                )
                 self.add_to_known_torsions(t)
                 self.add_to_known_orientations(o)
                 self.add_to_known_coms(c)
@@ -307,7 +323,9 @@ class Known:
             # Go through working directory
             for m in os.listdir(self.dir):
                 configuration = read(os.path.join(self.dir, m), format="aims")
-                t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+                t, o, c = self.get_internal_vector(
+                    configuration, structure, fixed_frame, parameters
+                )
                 self.add_to_known_torsions(t)
                 self.add_to_known_orientations(o)
                 self.add_to_known_coms(c)
@@ -317,7 +335,9 @@ class Known:
         traj = Trajectory(os.path.join(current_dir, self.find_traj(current_dir)))
         for m in range(len(traj)):
             configuration = traj[m]
-            t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+            t, o, c = self.get_internal_vector(
+                configuration, structure, fixed_frame, parameters
+            )
             self.add_to_known_torsions(t)
             self.add_to_known_orientations(o)
             self.add_to_known_coms(c)
@@ -329,16 +349,17 @@ class Known:
             bigger = set(list_a)
         else:
             smaller = set(list_a)
-            bigger = set(list_b)            
+            bigger = set(list_b)
 
         diff = [item for item in bigger if item not in smaller]
         if len(diff) > 0:
             t = structure.list_of_torsions
             for m in diff:
                 configuration = read(os.path.join(self.dir, m), format="aims")
-                t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+                t, o, c = self.get_internal_vector(
+                    configuration, structure, fixed_frame, parameters
+                )
                 self.add_to_known_torsions(t)
                 self.add_to_known_orientations(o)
                 self.add_to_known_coms(c)
         self.names = bigger
-
