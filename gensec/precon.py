@@ -1,33 +1,28 @@
 """ Make vdW preconditioner. """
 
 import sys
-import pickle
-import time
 from math import sqrt
 from os.path import isfile
-
 from ase.calculators.calculator import PropertyNotImplementedError
-from ase.parallel import world, barrier
 from ase.io.trajectory import Trajectory
-import collections
-
 from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
 from ase.neighborlist import neighbor_list
 from ase.optimize.precon import Exp
-
 import numpy as np
 from numpy.linalg import norm
 from itertools import product
 import operator
-import os
-
 from gensec.defaults import alphas_vdW
 from ase.constraints import FixAtoms
+import matplotlib.pyplot as plt
+import matplotlib
+
 
 def set_constrains(atoms, parameters):
     z = parameters["calculator"]["constraints"]["z-coord"]
     c = FixAtoms(indices=[atom.index for atom in atoms if atom.position[2]<=z[-1]])
     atoms.set_constraint(c)
+
 
 def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
 
@@ -87,6 +82,7 @@ def ASR(hessian):
         hessian[z, y] = hessian[y, z] 
     return hessian
 
+
 def add_jitter(hessian, jitter):
     """Add jitter to the diagonal 
     
@@ -125,7 +121,7 @@ def check_positive_symmetric(hessian):
 
 BOHR_to_angstr = 0.52917721   # in AA
 HARTREE_to_eV = 27.211383  # in eV
-HARTREE_to_kcal_mol = 627.509 # in kcal * mol^(-1)
+HARTREE_to_kcal_mol = 627.509  # in kcal * mol^(-1)
 
 # Ground state polarizabilities α0 (in atomic units) of noble gases and isoelectronic ions. 
 # https://iopscience.iop.org/article/10.1088/0953-4075/43/20/202001/pdf
@@ -249,7 +245,6 @@ def vector_separation(cell_h, cell_ih, qi, qj):
     # i-PI Copyright (C) 2014-2015 i-PI developers
     # See the "licenses" directory for full license information.
 
-
     """Calculates the vector separating two atoms.
 
     Note that minimum image convention is used, so only the image of
@@ -280,8 +275,7 @@ def vector_separation(cell_h, cell_ih, qi, qj):
     rij = np.linalg.norm(dij, axis=1)
 
     return dij, rij
-    
-    
+
 
 def vdwHessian(atoms):
 
@@ -368,9 +362,6 @@ def vdwHessian(atoms):
             a4 = 0
         return a1 + a2 + a3 + a4
 
-
-
-
     for i in atomsRange:
         for j in atomsRange:
             if j>i:
@@ -409,10 +400,6 @@ def vdwHessian(atoms):
         sys.exit(0)
     return hessian 
 
-import numpy as np
-import matplotlib.pyplot as plt
-import tkinter
-import matplotlib
 
 def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
     # If needed mu is estimated in the beginning and never changed
@@ -501,6 +488,11 @@ def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
 #     return hessian
 
 
+"""
+Contribution from Jürgen Wieferink regarding the Lindh preconditioner
+"""
+
+
 def _acc_dict(key, d, val):
     """If key in dict, accumulate, otherwise set."""
     if key not in d:
@@ -528,7 +520,6 @@ def isposvec(vec, eps=1e-10, noself=True):
         raise ValueError("Self-referencer")
     else:
         return None
-    
 
 
 def canonize(atom_name):
@@ -550,6 +541,7 @@ def canonize(atom_name):
         name = name[0:1]
     return name
 
+
 def name2row(atom_name):
     """Return row number of atom type (starting with 0, max 2)."""
     name = canonize(atom_name)
@@ -559,6 +551,7 @@ def name2row(atom_name):
         return 1
     else:
         return 2
+
 
 class Damper(object):
     """Damper interface documentation
@@ -578,6 +571,7 @@ class Damper(object):
     def Rcut(self, max_exponent):
         """Return the maximum distance leading to max_exponent."""
 
+
 class SimpleDamper(Damper):
     """Damper for maximum chain lenght (exponent==bondlength)."""
     def __init__(self, atom2any=None):
@@ -587,6 +581,7 @@ class SimpleDamper(Damper):
     def Rcut(self, max_exponent):
         """Return the maximum distance leading to max_exponent."""
         return max_exponent
+
 
 class CovalenceDamper(Damper):
     """Damper class for covalent bonds (exponent in set([0, HUGE]))."""
@@ -727,6 +722,7 @@ class Bravais(object):
         def _norm_of_abc(abc): return norm(self.latvec(abc))
         return sorted(abcs, key=_norm_of_abc)
 
+
 def get_pairs(atoms1, atoms2, Rcut, use_scipy=True):
     if use_scipy:
         try:
@@ -753,7 +749,6 @@ def get_pairs(atoms1, atoms2, Rcut, use_scipy=True):
             pairs.append(this_pairs)
         sys.stderr.write("Searching done.\n")
     return pairs
-
 
 
 class Pairs(object):
@@ -877,6 +872,7 @@ class Pairs(object):
                         res.append((tot_chain_damp, shifted_atlist))
         return sorted(res)
 
+
 class HessianBuilder(object):
     """Builder object for Hessians by rank-one additions.
 
@@ -945,6 +941,7 @@ class HessianBuilder(object):
         for i_atom, j_atom in self.Hdict:
             H[i_atom, :, j_atom, :] = self.Hdict[(i_atom, j_atom)]
         return H
+
 
 def format_atlist(atlist, is_periodic):
     """Nicely format an atom list (atlist).

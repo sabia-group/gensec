@@ -12,11 +12,11 @@ class Directories:
     def __init__(self, parameters):
 
         self.dir_num = 0
-        self.generate_folder = parameters["calculator"]["generate_folder"]
-        if len(os.path.split(self.generate_folder)[0]) == 0:
-            self.generate_folder = os.path.join(os.getcwd(), self.generate_folder)
-            if not os.path.exists(self.generate_folder):
-                os.mkdir(self.generate_folder)
+        # self.generate_folder = parameters["calculator"]["generate_folder"]
+        # if len(os.path.split(self.generate_folder)[0]) == 0:
+        #     self.generate_folder = os.path.join(os.getcwd(), self.generate_folder)
+        #     if not os.path.exists(self.generate_folder):
+        #         os.mkdir(self.generate_folder)
 
 
 
@@ -69,12 +69,12 @@ class Directories:
         else:
             self.dir_num = 0
         
-    def find_last_generated_dir(self, parameters):
-        dirs = list(filter(os.path.isdir, os.listdir(self.generate_folder)))
-        if len(dirs)>0:
-            self.dir_num = max([int(i) for i in dirs])
-        else:
-            self.dir_num = 0
+    # def find_last_generated_dir(self, parameters):
+    #     dirs = list(filter(os.path.isdir, os.listdir(self.generate_folder)))
+    #     if len(dirs)>0:
+    #         self.dir_num = max([int(i) for i in dirs])
+    #     else:
+    #         self.dir_num = 0
 
     def current_dir(self, parameters):
         dir = os.path.join(os.getcwd(), format(self.dir_num, "010d"))
@@ -128,7 +128,7 @@ class Output:
             report.write("{} values of orientations will be sampled.\n".format(parameters["configuration"]["orientations"]["values"]))
         if parameters["configuration"]["coms"]["activate"]:
             report.write("{} values of centres of masses will be sampled.\n".format(parameters["configuration"]["coms"]["values"]))
-        report.write("Folder with suporting files is in {}.\n".format(parameters["calculator"]["supporting_files_folder"]))
+        # report.write("Folder with suporting files is in {}.\n".format(parameters["calculator"]["supporting_files_folder"]))
         report.write("ASE calculator is in {}.\n".format(parameters["calculator"]["ase_parameters_file"]))
         if parameters["calculator"]["optimize"] == "generate":
             report.write("GenSec wil generate structures in \"generate\" folder without relaxation\n")

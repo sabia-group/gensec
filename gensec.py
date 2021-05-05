@@ -40,7 +40,7 @@ else:
     parameters = load_parameters("parameters.json")
 
 protocol = Protocol()
-protocol.run(parameters) 
+protocol.run(parameters)
 
 sys.exit(0)
 

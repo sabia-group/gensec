@@ -41,21 +41,21 @@ class Known:
 
         self.torsional_diff_degree = 20
         self.criteria = "any"
-        self.dir = parameters["calculator"]["known_folder"]
+        # self.dir = parameters["calculator"]["known_folder"] # Old mmodule need to delete after revision
 
-        if len(os.path.split(self.dir)[0]) == 0:
-            self.dir = os.path.join(os.getcwd(), self.dir)
-            # Means taht known folder in the same directory with os.getcwd()
-            if not os.path.exists(self.dir):
-                os.mkdir(self.dir)
-            else:
-                pass
-        else:
-            # Means taht known folder specified with full path
-            if not os.path.exists(self.dir):
-                os.mkdir(self.dir)
+        # if len(os.path.split(self.dir)[0]) == 0:
+        #     self.dir = os.path.join(os.getcwd(), self.dir)
+        #     # Means taht known folder in the same directory with os.getcwd()
+        #     if not os.path.exists(self.dir):
+        #         os.mkdir(self.dir)
+        #     else:
+        #         pass
+        # else:
+        #     # Means taht known folder specified with full path
+        #     if not os.path.exists(self.dir):
+        #         os.mkdir(self.dir)
 
-        self.names = os.listdir(self.dir)
+        # self.names = os.listdir(self.dir)
 
 
     def add_to_known_torsions(self, t):
@@ -220,38 +220,38 @@ class Known:
         else:
             return None
 
-    def check_calculated(self, dirs, parameters):
+    # def check_calculated(self, dirs, parameters):
+    #     # Old mmodule need to delete after revision
+    #     calculated_dir = os.getcwd()
+    #     num_run = parameters["calculator"]["optimize"].split("_")[-1]
+    #     if dirs.dir_num > 0:
+    #         # first_dir = 
+    #         for i in range(1, dirs.dir_num+1):
+    #             traj_name = "{:010d}".format(i)
+    #             calculated_names = [z.split("_")[0] for z in os.listdir(self.dir)]
+    #             traj = self.find_traj(os.path.join(calculated_dir, traj_name))
+    #             if traj is not None:
+    #                 t = Trajectory(os.path.join(calculated_dir, traj_name, traj))
+    #                 if len(t) != calculated_names.count(str(traj_name)):
+    #                     for k in range(len(t)):
+    #                         n = os.path.join(self.dir, "{:010d}_{}_{}.in".format(i, k, num_run))
+    #                         write(n, t[k], format="aims")
 
-        calculated_dir = os.getcwd()
-        num_run = parameters["calculator"]["optimize"].split("_")[-1]
-        if dirs.dir_num > 0:
-            # first_dir = 
-            for i in range(1, dirs.dir_num+1):
-                traj_name = "{:010d}".format(i)
-                calculated_names = [z.split("_")[0] for z in os.listdir(self.dir)]
-                traj = self.find_traj(os.path.join(calculated_dir, traj_name))
-                if traj is not None:
-                    t = Trajectory(os.path.join(calculated_dir, traj_name, traj))
-                    if len(t) != calculated_names.count(str(traj_name)):
-                        for k in range(len(t)):
-                            n = os.path.join(self.dir, "{:010d}_{}_{}.in".format(i, k, num_run))
-                            write(n, t[k], format="aims")
-
-    def send_traj_to_known_folder(self, dirs, parameters):
-
-        calculated_dir = os.getcwd()
-        num_run = parameters["calculator"]["optimize"].split("_")[-1]
-        print(parameters["calculator"]["optimize"].split("_")[-1])
-        # for i in range(1, dirs.dir_num+1):
-        traj_name = "{:010d}".format(dirs.dir_num)
-        calculated_names = [z.split("_")[0] for z in os.listdir(self.dir)]
-        traj = self.find_traj(os.path.join(calculated_dir, traj_name))
-        if traj is not None:
-            t = Trajectory(os.path.join(calculated_dir, traj_name, traj))
-            if len(t) != calculated_names.count(str(traj_name)):
-                for k in range(len(t)):
-                    n = os.path.join(self.dir, "{:010d}_{}_{}.in".format(dirs.dir_num, k, num_run))
-                    write(n, t[k], format="aims")
+    # def send_traj_to_known_folder(self, dirs, parameters):
+    #     # Old mmodule need to delete after revision
+    #     calculated_dir = os.getcwd()
+    #     num_run = parameters["calculator"]["optimize"].split("_")[-1]
+    #     print(parameters["calculator"]["optimize"].split("_")[-1])
+    #     # for i in range(1, dirs.dir_num+1):
+    #     traj_name = "{:010d}".format(dirs.dir_num)
+    #     calculated_names = [z.split("_")[0] for z in os.listdir(self.dir)]
+    #     traj = self.find_traj(os.path.join(calculated_dir, traj_name))
+    #     if traj is not None:
+    #         t = Trajectory(os.path.join(calculated_dir, traj_name, traj))
+    #         if len(t) != calculated_names.count(str(traj_name)):
+    #             for k in range(len(t)):
+    #                 n = os.path.join(self.dir, "{:010d}_{}_{}.in".format(dirs.dir_num, k, num_run))
+    #                 write(n, t[k], format="aims")
 
 
     def get_internal_vector(self, configuration, structure, fixed_frame, parameters):
@@ -282,63 +282,64 @@ class Known:
         return np.hstack(np.array(t)), np.hstack(np.array(o)), np.hstack(np.array(c))
 
 
-    def analyze_calculated(self, structure, fixed_frame, parameters):
+    # def analyze_calculated(self, structure, fixed_frame, parameters):
+    #     # Old mmodule need to delete after revision
+    #     if parameters["calculator"]["optimize"] == "generate":
+    #         # Check if structures in the known:
+    #         for m in os.listdir(self.dir):
+    #             configuration = read(os.path.join(self.dir, m), format="aims")
+    #             t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+    #             self.add_to_known_torsions(t)
+    #             self.add_to_known_orientations(o)
+    #             self.add_to_known_coms(c)
+    #         # Go through generated structures:
+    #         dir = os.getcwd()
+    #         if len(os.path.split(dir)[0]) == 0:
+    #             dir = os.path.join(os.getcwd(), dir)
+    #         for m in list(filter(os.path.isdir, os.listdir(dir))):
+    #             configuration = read(os.path.join(dir, m, m+".in"), format="aims")
+    #             t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+    #             self.add_to_known_torsions(t)
+    #             self.add_to_known_orientations(o)
+    #             self.add_to_known_coms(c)
 
-        if parameters["calculator"]["optimize"] == "generate":
-            # Check if structures in the known:
-            for m in os.listdir(self.dir):
-                configuration = read(os.path.join(self.dir, m), format="aims")
-                t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
-                self.add_to_known_torsions(t)
-                self.add_to_known_orientations(o)
-                self.add_to_known_coms(c)
-            # Go through generated structures:
-            dir = os.getcwd()
-            if len(os.path.split(dir)[0]) == 0:
-                dir = os.path.join(os.getcwd(), dir)
-            for m in list(filter(os.path.isdir, os.listdir(dir))):
-                configuration = read(os.path.join(dir, m, m+".in"), format="aims")
-                t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
-                self.add_to_known_torsions(t)
-                self.add_to_known_orientations(o)
-                self.add_to_known_coms(c)
+    #     else:
+    #         # Go through working directory
+    #         for m in os.listdir(self.dir):
+    #             configuration = read(os.path.join(self.dir, m), format="aims")
+    #             t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+    #             self.add_to_known_torsions(t)
+    #             self.add_to_known_orientations(o)
+    #             self.add_to_known_coms(c)
 
-        else:
-            # Go through working directory
-            for m in os.listdir(self.dir):
-                configuration = read(os.path.join(self.dir, m), format="aims")
-                t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
-                self.add_to_known_torsions(t)
-                self.add_to_known_orientations(o)
-                self.add_to_known_coms(c)
+    # def add_to_known_traj(self, structure, fixed_frame, current_dir):
+    #     # Old mmodule need to delete after revision
+    #     t = structure.list_of_torsions
+    #     traj = Trajectory(os.path.join(current_dir, self.find_traj(current_dir)))
+    #     for m in range(len(traj)):
+    #         configuration = traj[m]
+    #         t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+    #         self.add_to_known_torsions(t)
+    #         self.add_to_known_orientations(o)
+    #         self.add_to_known_coms(c)
 
-    def add_to_known_traj(self, structure, fixed_frame, current_dir):
-        t = structure.list_of_torsions
-        traj = Trajectory(os.path.join(current_dir, self.find_traj(current_dir)))
-        for m in range(len(traj)):
-            configuration = traj[m]
-            t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
-            self.add_to_known_torsions(t)
-            self.add_to_known_orientations(o)
-            self.add_to_known_coms(c)
+    # def update_known(self, list_a, list_b, structure, fixed_frame, parameters):
+    #     # Old mmodule need to delete after revision
+    #     if len(list_a) > len(list_b):
+    #         smaller = set(list_b)
+    #         bigger = set(list_a)
+    #     else:
+    #         smaller = set(list_a)
+    #         bigger = set(list_b)            
 
-    def update_known(self, list_a, list_b, structure, fixed_frame, parameters):
-
-        if len(list_a) > len(list_b):
-            smaller = set(list_b)
-            bigger = set(list_a)
-        else:
-            smaller = set(list_a)
-            bigger = set(list_b)            
-
-        diff = [item for item in bigger if item not in smaller]
-        if len(diff) > 0:
-            t = structure.list_of_torsions
-            for m in diff:
-                configuration = read(os.path.join(self.dir, m), format="aims")
-                t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
-                self.add_to_known_torsions(t)
-                self.add_to_known_orientations(o)
-                self.add_to_known_coms(c)
-        self.names = bigger
+    #     diff = [item for item in bigger if item not in smaller]
+    #     if len(diff) > 0:
+    #         t = structure.list_of_torsions
+    #         for m in diff:
+    #             configuration = read(os.path.join(self.dir, m), format="aims")
+    #             t, o, c = self.get_internal_vector(configuration, structure, fixed_frame, parameters)
+    #             self.add_to_known_torsions(t)
+    #             self.add_to_known_orientations(o)
+    #             self.add_to_known_coms(c)
+    #     self.names = bigger
 

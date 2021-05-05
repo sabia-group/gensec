@@ -165,6 +165,18 @@ class Structure:
         return configuration, full_conf
 
     def extract_conf_keys_from_row(self):
+        """Extract configurtion keys 
+        
+        From the row of the database all keys are read and the 
+        configuration is returned as list of keys that correspond to 
+        the torsional, rotational and positional degrees of freedom
+        of the structure object
+        
+        Returns:
+            [list] -- list of keys reflectin the configuration 
+                        on internal degrees of freedom
+        """
+
         full_conf = {}
         t = np.zeros(len(self.list_of_torsions))
         q = [0,0,0,1]
@@ -174,9 +186,23 @@ class Structure:
             q_temp = {"m{}q{}".format(i, k) : q for k in range(len(q))}
             c_temp = {"m{}c{}".format(i, k) : c for k in range(len(c))}
             full_conf.update(**t_temp, **q_temp, **c_temp)  
+
         return list(full_conf.keys())
 
     def read_configuration(self, atoms_positions):
+        """Read the configuration from atoms positions 
+        
+        Read the atoms positions and calculate the values of degrees of freedom
+        using the template and list of torsions stored in the structure object 
+        
+        Arguments:
+            atoms_positions {ASE Atoms} -- ASE Atoms object
+        
+        Returns:
+            [dictionary] -- Dictionary reflecting the cinfiguration on internal
+            degrees of freedom
+        """
+
         full_conf = {}
         for ii in range(len(self.molecules)):
             atoms = self.molecules[0].get_positions()
@@ -195,10 +221,11 @@ class Structure:
             q_temp = {"m{}q{}".format(ii, k) : orientations[k] for k in range(len(orientations))}
             c_temp = {"m{}c{}".format(ii, k) : com[k] for k in range(len(com))}
             full_conf.update(**t_temp, **q_temp, **c_temp) 
+
         return full_conf
 
     def apply_configuration(self, configuration):
-    # molecules, configuration, list_of_torsions, connectivity_matrix_isolated):
+        # Old mmodule need to delete after revision
         for i in range(len(self.molecules)):
             k=-1
             for torsion in self.list_of_torsions:
@@ -226,7 +253,15 @@ class Structure:
                                                             configuration[z+7]]))
 
     def apply_conf(self, conf):
-        # molecules, configuration, list_of_torsions, connectivity_matrix_isolated):
+        """Apply confiruration to the structure object
+        
+        Getting the configuration in the form of dictionary and applies 
+        it to the structure object
+        
+        Arguments:
+            conf {dictionary} -- Dictionary with configuration stored
+        """
+
         for i in range(len(self.molecules)):
             mol_dict = dict(filter(lambda item: "m{}".format(i) in item[0], conf.items()))
             t_dict = dict(filter(lambda item: "m{}t".format(i) in item[0], mol_dict.items()))
@@ -250,7 +285,7 @@ class Structure:
 
 
     def apply_torsions(self, configuration):
-    # molecules, configuration, list_of_torsions, connectivity_matrix_isolated):
+        # Old mmodule need to delete after revision
         for i in range(len(self.molecules)):
             k=-1
             for torsion in self.list_of_torsions:
@@ -268,6 +303,7 @@ class Structure:
 
 
     def torsions_from_conf(self, configuration):
+        # Old mmodule need to delete after revision
         torsions = []
         for i in range(len(self.molecules)):
             k=-1
@@ -332,7 +368,18 @@ class Structure:
 
 
     def find_in_database(self, conf, database, parameters):
-        # Finding the configuration in database
+        """Check if the configuration is stored in database
+        
+        [description]
+        
+        Arguments:
+            conf {dictionary} -- Conformation stored in dictionary
+            database {ASE database} -- ASE database with other configurations
+            parameters {file} -- Parameters file
+        
+        Returns:
+            [boolean] -- True if the configuration found in database
+        """
 
         mol_dict = dict(filter(lambda item: "t" in item[0], conf.items()))
         thresh = 15
