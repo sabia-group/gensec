@@ -1,4 +1,5 @@
-"""Structure optimization. """
+"""Structure optimization. 
+"""
 
 import sys
 import pickle
@@ -57,6 +58,22 @@ import matplotlib
 
 
 class PreconLBFGS_mod(PreconLBFGS):
+
+    """Summary
+
+    Attributes:
+        f0 (TYPE): Description
+        fixed_frame (TYPE): Description
+        Hinv (TYPE): Description
+        initial (TYPE): Description
+        molindixes (TYPE): Description
+        p (TYPE): Description
+        parameters (TYPE): Description
+        r0 (TYPE): Description
+        rmsd_dev (TYPE): Description
+        structure (TYPE): Description
+    """
+
     def __init__(
         self,
         atoms,
@@ -85,6 +102,35 @@ class PreconLBFGS_mod(PreconLBFGS):
         rmsd_dev=1000.0,
         molindixes=None,
     ):
+        """Summary
+
+        Args:
+            atoms (TYPE): Description
+            restart (None, optional): Description
+            logfile (str, optional): Description
+            trajectory (None, optional): Description
+            maxstep (None, optional): Description
+            memory (int, optional): Description
+            damping (float, optional): Description
+            alpha (float, optional): Description
+            master (None, optional): Description
+            precon (str, optional): Description
+            variable_cell (bool, optional): Description
+            use_armijo (bool, optional): Description
+            c1 (float, optional): Description
+            c2 (float, optional): Description
+            a_min (None, optional): Description
+            rigid_units (None, optional): Description
+            rotation_factors (None, optional): Description
+            Hinv (None, optional): Description
+            structure (None, optional): Description
+            H0 (None, optional): Description
+            fixed_frame (None, optional): Description
+            parameters (None, optional): Description
+            initial (None, optional): Description
+            rmsd_dev (float, optional): Description
+            molindixes (None, optional): Description
+        """
         PreconLBFGS.__init__(
             self,
             atoms,
@@ -111,7 +157,11 @@ class PreconLBFGS_mod(PreconLBFGS):
         """Take a single step
 
         Use the given forces, update the history and calculate the next step --
-        then take it"""
+        then take it
+
+        Args:
+            f (None, optional): Description
+        """
         r = self.atoms.get_positions()
 
         if f is None:
@@ -248,6 +298,20 @@ class PreconLBFGS_mod(PreconLBFGS):
 
 
 class BFGS_mod(BFGS):
+
+    """Summary
+
+    Attributes:
+        fixed_frame (TYPE): Description
+        H (TYPE): Description
+        H0 (TYPE): Description
+        initial (TYPE): Description
+        molindixes (TYPE): Description
+        parameters (TYPE): Description
+        rmsd_dev (TYPE): Description
+        structure (TYPE): Description
+    """
+
     def __init__(
         self,
         atoms,
@@ -267,6 +331,26 @@ class BFGS_mod(BFGS):
         A=None,
         known=None,
     ):
+        """Summary
+
+        Args:
+            atoms (TYPE): Description
+            restart (None, optional): Description
+            logfile (str, optional): Description
+            trajectory (None, optional): Description
+            maxstep (float, optional): Description
+            master (None, optional): Description
+            initial (None, optional): Description
+            rmsd_dev (float, optional): Description
+            molindixes (None, optional): Description
+            structure (None, optional): Description
+            H0 (None, optional): Description
+            fixed_frame (None, optional): Description
+            parameters (None, optional): Description
+            mu (None, optional): Description
+            A (None, optional): Description
+            known (None, optional): Description
+        """
         BFGS.__init__(
             self,
             atoms,
@@ -286,6 +370,17 @@ class BFGS_mod(BFGS):
         self.parameters = parameters
 
     def update(self, r, f, r0, f0):
+        """Summary
+
+        Args:
+            r (TYPE): Description
+            f (TYPE): Description
+            r0 (TYPE): Description
+            f0 (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         if self.H is None:
             self.H = self.H0  # This is Heeian - not inverse!!!
             return
@@ -323,6 +418,23 @@ class BFGS_mod(BFGS):
 
 
 class BFGSLineSearch_mod(BFGSLineSearch):
+
+    """Summary
+
+    Attributes:
+        fixed_frame (TYPE): Description
+        fmax_last (TYPE): Description
+        H (TYPE): Description
+        H0 (TYPE): Description
+        I (TYPE): Description
+        initial (TYPE): Description
+        molindixes (TYPE): Description
+        parameters (TYPE): Description
+        rmsd_dev (TYPE): Description
+        steps_in_row (int): Description
+        structure (TYPE): Description
+    """
+
     def __init__(
         self,
         atoms,
@@ -347,7 +459,31 @@ class BFGSLineSearch_mod(BFGSLineSearch):
         stpmax=50.0,
         force_consistent=True,
     ):
+        """Summary
 
+        Args:
+            atoms (TYPE): Description
+            restart (None, optional): Description
+            logfile (str, optional): Description
+            trajectory (None, optional): Description
+            maxstep (None, optional): Description
+            master (None, optional): Description
+            initial (None, optional): Description
+            rmsd_dev (float, optional): Description
+            molindixes (None, optional): Description
+            structure (None, optional): Description
+            H0 (None, optional): Description
+            fixed_frame (None, optional): Description
+            parameters (None, optional): Description
+            mu (None, optional): Description
+            A (None, optional): Description
+            known (None, optional): Description
+            c1 (float, optional): Description
+            c2 (float, optional): Description
+            alpha (float, optional): Description
+            stpmax (float, optional): Description
+            force_consistent (bool, optional): Description
+        """
         BFGSLineSearch.__init__(
             self,
             atoms,
@@ -374,6 +510,18 @@ class BFGSLineSearch_mod(BFGSLineSearch):
         self.fmax_last = None
 
     def update(self, r, g, r0, g0, p0):
+        """Summary
+
+        Args:
+            r (TYPE): Description
+            g (TYPE): Description
+            r0 (TYPE): Description
+            g0 (TYPE): Description
+            p0 (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         self.I = eye(len(self.atoms) * 3, dtype=int)
         if self.H is None:
             self.H = np.linalg.inv(self.H0)  # This is inverse Hessian!!!
@@ -489,6 +637,28 @@ class BFGSLineSearch_mod(BFGSLineSearch):
 
 
 class LBFGS_Linesearch_mod(LBFGS):
+
+    """Summary
+
+    Attributes:
+        f0 (TYPE): Description
+        fixed_frame (TYPE): Description
+        fmax_last (TYPE): Description
+        Hinv (TYPE): Description
+        initial (TYPE): Description
+        iteration (int): Description
+        molindixes (TYPE): Description
+        p (TYPE): Description
+        parameters (TYPE): Description
+        r0 (TYPE): Description
+        rho (list): Description
+        rmsd_dev (TYPE): Description
+        s (list): Description
+        steps_in_row (int): Description
+        structure (TYPE): Description
+        y (list): Description
+    """
+
     def __init__(
         self,
         atoms,
@@ -513,7 +683,31 @@ class LBFGS_Linesearch_mod(LBFGS):
         force_consistent=True,
         use_line_search=True,
     ):
+        """Summary
 
+        Args:
+            atoms (TYPE): Description
+            restart (None, optional): Description
+            logfile (str, optional): Description
+            trajectory (None, optional): Description
+            maxstep (None, optional): Description
+            master (None, optional): Description
+            initial (None, optional): Description
+            rmsd_dev (float, optional): Description
+            molindixes (None, optional): Description
+            structure (None, optional): Description
+            H0_init (None, optional): Description
+            fixed_frame (None, optional): Description
+            parameters (None, optional): Description
+            mu (None, optional): Description
+            A (None, optional): Description
+            known (None, optional): Description
+            alpha (float, optional): Description
+            damping (float, optional): Description
+            memory (int, optional): Description
+            force_consistent (bool, optional): Description
+            use_line_search (bool, optional): Description
+        """
         LBFGS.__init__(
             self,
             atoms,
@@ -554,7 +748,11 @@ class LBFGS_Linesearch_mod(LBFGS):
         """Take a single step
 
         Use the given forces, update the history and calculate the next step --
-        then take it"""
+        then take it
+
+        Args:
+            f (None, optional): Description
+        """
 
         if f is None:
             f = self.atoms.get_forces()
@@ -660,6 +858,14 @@ class LBFGS_Linesearch_mod(LBFGS):
         )
 
     def log(self, forces=None):
+        """Summary
+
+        Args:
+            forces (None, optional): Description
+
+        Returns:
+            TYPE: Description
+        """
         if self.logfile is None:
             return
         if forces is None:
@@ -696,6 +902,25 @@ class LBFGS_Linesearch_mod(LBFGS):
 
 
 class TRM_BFGS(BFGS):
+
+    """Summary
+
+    Attributes:
+        f0 (TYPE): Description
+        fixed_frame (TYPE): Description
+        H (TYPE): Description
+        H0 (TYPE): Description
+        initial (TYPE): Description
+        log_accept (bool): Description
+        maxstep (TYPE): Description
+        molindixes (TYPE): Description
+        parameters (TYPE): Description
+        r0 (TYPE): Description
+        rmsd_dev (TYPE): Description
+        structure (TYPE): Description
+        tr (TYPE): Description
+    """
+
     def __init__(
         self,
         atoms,
@@ -718,7 +943,29 @@ class TRM_BFGS(BFGS):
         eta=0.001,
         r=0.5,
     ):
+        """Summary
 
+        Args:
+            atoms (TYPE): Description
+            restart (None, optional): Description
+            logfile (str, optional): Description
+            trajectory (None, optional): Description
+            maxstep (float, optional): Description
+            master (None, optional): Description
+            initial (None, optional): Description
+            rmsd_dev (float, optional): Description
+            molindixes (None, optional): Description
+            structure (None, optional): Description
+            H0 (None, optional): Description
+            fixed_frame (None, optional): Description
+            parameters (None, optional): Description
+            mu (None, optional): Description
+            A (None, optional): Description
+            known (None, optional): Description
+            tr (float, optional): Description
+            eta (float, optional): Description
+            r (float, optional): Description
+        """
         BFGS.__init__(
             self,
             atoms,
@@ -748,7 +995,12 @@ class TRM_BFGS(BFGS):
                DF = F -F_old
                DG = -DF
                H  = hessian
-        Task: updated hessian"""
+        Task: updated hessian
+
+        Args:
+            dx (TYPE): Description
+            df (TYPE): Description
+        """
 
         dx = dx[:, np.newaxis]  # dimension nx1
         dx_t = dx.T  # dimension 1xn
@@ -766,6 +1018,17 @@ class TRM_BFGS(BFGS):
         self.H += h1 - h2
 
     def update_BFGS(self, r, f, r0, f0):
+        """Summary
+
+        Args:
+            r (TYPE): Description
+            f (TYPE): Description
+            r0 (TYPE): Description
+            f0 (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         if self.H is None:
             self.H = self.H0  # This is Heeian - not inverse!!!
             return
@@ -782,6 +1045,11 @@ class TRM_BFGS(BFGS):
         self.H -= np.outer(df, df) / a + np.outer(dg, dg) / b
 
     def step(self, f=None):
+        """Summary
+
+        Args:
+            f (None, optional): Description
+        """
         atoms = self.atoms
 
         if f is None:
@@ -990,6 +1258,14 @@ class TRM_BFGS(BFGS):
                  gE   = gradient in eigenvector basis
                  DX   = displacement in cartesian basis
                  DXE  = displacement in eigenvector basis
+
+        Args:
+            f (TYPE): Description
+            H (TYPE): Description
+            tr (TYPE): Description
+
+        Returns:
+            TYPE: Description
         """
 
         # Resize
@@ -1062,6 +1338,11 @@ class TRM_BFGS(BFGS):
         return DX
 
     def log(self, forces=None):
+        """Summary
+
+        Args:
+            forces (None, optional): Description
+        """
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
@@ -1106,7 +1387,11 @@ class TRM_BFGS(BFGS):
             self.logfile.flush()
 
     def log_rejected(self, forces=None):
+        """Summary
 
+        Args:
+            forces (None, optional): Description
+        """
         self.nsteps += 1
         if forces is None:
             forces = self.atoms.get_forces()
@@ -1153,6 +1438,29 @@ class TRM_BFGS(BFGS):
 
 
 class TRM_BFGS_IPI(BFGS):
+
+    """Summary
+
+    Attributes:
+        f0 (TYPE): Description
+        fixed_frame (TYPE): Description
+        H (TYPE): Description
+        H0 (TYPE): Description
+        initial (TYPE): Description
+        lastforce (TYPE): Description
+        log_accept (bool): Description
+        maxstep (TYPE): Description
+        molindixes (TYPE): Description
+        parameters (TYPE): Description
+        r0 (TYPE): Description
+        restart (TYPE): Description
+        rmsd_dev (TYPE): Description
+        steps (int): Description
+        structure (TYPE): Description
+        tr (TYPE): Description
+        tr_init (TYPE): Description
+    """
+
     def __init__(
         self,
         atoms,
@@ -1175,7 +1483,29 @@ class TRM_BFGS_IPI(BFGS):
         eta=0.001,
         r=0.5,
     ):
+        """Summary
 
+        Args:
+            atoms (TYPE): Description
+            restart (None, optional): Description
+            logfile (str, optional): Description
+            trajectory (None, optional): Description
+            maxstep (float, optional): Description
+            master (None, optional): Description
+            initial (None, optional): Description
+            rmsd_dev (float, optional): Description
+            molindixes (None, optional): Description
+            structure (None, optional): Description
+            H0 (None, optional): Description
+            fixed_frame (None, optional): Description
+            parameters (None, optional): Description
+            mu (None, optional): Description
+            A (None, optional): Description
+            known (None, optional): Description
+            tr (float, optional): Description
+            eta (float, optional): Description
+            r (float, optional): Description
+        """
         BFGS.__init__(
             self,
             atoms,
@@ -1216,7 +1546,12 @@ class TRM_BFGS_IPI(BFGS):
                DF = F -F_old
                DG = -DF
                H  = hessian
-        Task: updated hessian"""
+        Task: updated hessian
+
+        Args:
+            dx (TYPE): Description
+            df (TYPE): Description
+        """
 
         dx = dx[:, np.newaxis]  # dimension nx1
         dx_t = dx.T  # dimension 1xn
@@ -1234,6 +1569,11 @@ class TRM_BFGS_IPI(BFGS):
         self.H += h1 - h2
 
     def step(self, f=None):
+        """Summary
+
+        Args:
+            f (None, optional): Description
+        """
         atoms = self.atoms
 
         if f is None:
@@ -1352,6 +1692,14 @@ class TRM_BFGS_IPI(BFGS):
                  gE   = gradient in eigenvector basis
                  DX   = displacement in cartesian basis
                  DXE  = displacement in eigenvector basis
+
+        Args:
+            f (TYPE): Description
+            h (TYPE): Description
+            tr (TYPE): Description
+
+        Returns:
+            TYPE: Description
         """
 
         # Resize
@@ -1425,6 +1773,11 @@ class TRM_BFGS_IPI(BFGS):
         return DX
 
     def log(self, forces=None):
+        """Summary
+
+        Args:
+            forces (None, optional): Description
+        """
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
@@ -1469,7 +1822,11 @@ class TRM_BFGS_IPI(BFGS):
             self.logfile.flush()
 
     def log_rejected(self, forces=None):
+        """Summary
 
+        Args:
+            forces (None, optional): Description
+        """
         self.nsteps += 1
         if forces is None:
             forces = self.atoms.get_forces()

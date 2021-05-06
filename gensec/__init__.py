@@ -7,4 +7,3 @@ if sys.version_info[0] == 2:
 
 __version__ = '0.1.5a'
 
-#from gensec.modules import *

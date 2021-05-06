@@ -1,39 +1,29 @@
-"""Make vdW preconditioner. 
+"""Create the preconditioner based on the geometry.
 
 Attributes:
-    ABOHR (float): Description
-    ALPHA_vdW (TYPE): Description
-    ALPHAS (TYPE): Description
-    BOHR_to_angstr (float): Description
-    C6_vdW (TYPE): Description
-    COVRADS (TYPE): Description
-    HARTREE (float): Description
-    HARTREE_to_eV (float): Description
-    HARTREE_to_kcal_mol (float): Description
-    HUGE (float): Description
+    abohr (float): convert Bohr to Angstrom
+    hartree (float): convert Hartree to eV
     ID (TYPE): Description
-    K_BENDING (TYPE): Description
-    K_BOND (TYPE): Description
-    K_TORSION (TYPE): Description
-    REF_DS (TYPE): Description
-    VDW_radii (TYPE): Description
+    k_bending (TYPE): Description
+    k_bond (TYPE): Description
+    k_torsion (TYPE): Description
+    ref_ds (TYPE): Description
     ZERO (TYPE): Description
 """
 
 import sys
-from math import sqrt
-from os.path import isfile
-from ase.io.trajectory import Trajectory
-from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
 from ase.optimize.precon import Exp
 import numpy as np
 from numpy.linalg import norm
-from itertools import product
 import operator
-from gensec.defaults import alphas_vdW
 from ase.constraints import FixAtoms
-import matplotlib.pyplot as plt
-import matplotlib
+from gensec.coefficients import (
+    COVRADS,
+    VDW_radii,
+    C6_vdW,
+    ALPHA_vdW,
+    alphas_vdW,
+)
 
 
 def set_constrains(atoms, parameters):
@@ -162,6 +152,9 @@ def check_positive_symmetric(hessian):
 
     The function in quazi-Newton's method has to be strongly convex
     which is true if Hessian is positive definite and symmetric matrix.
+    Symmetric if all the values of the Hessian after substracting
+    of it's transpose are smaller than 1e-10.
+    Positive definite if all the eigenvalues are positive.
 
     Arguments:
         hessian (matrix): 3Nx3N where N is lenght of atoms
@@ -177,353 +170,16 @@ def check_positive_symmetric(hessian):
     return symmetric, positive
 
 
-#    VALUES for ALPHA-vdW and C6_vdW:
-#    !VVG: The majority of values such as isotropic static polarizability
-#    !(in bohr^3), the homo-atomic van der Waals coefficient(in hartree*bohr^6),
-#    !and vdW Radii (in bohr) for neutral free atoms are taken from Ref. Chu, X. & Dalgarno,
-#    !J. Chem. Phys. 121, 4083 (2004) and Mitroy, et al.
-#    !J. Phys. B: At. Mol. Opt. Phys. 43, 202001 (2010)
-#    !and for rest of the elements they are calculated using linear response coupled cluster
-#    !single double theory with accrate basis. The vdW radii for respective element are
-#    !defined as discussed in Tkatchenko, A. & Scheffler, M. Phys. Rev. Lett. 102, 073005 (2009).
-
-BOHR_to_angstr = 0.52917721  # in AA
-HARTREE_to_eV = 27.211383  # in eV
-HARTREE_to_kcal_mol = 627.509  # in kcal * mol^(-1)
-
-# Ground state polarizabilities α0 (in atomic units) of noble gases and isoelectronic ions.
-# https://iopscience.iop.org/article/10.1088/0953-4075/43/20/202001/pdf
-ALPHA_vdW = {
-    "H": 4.5000,
-    "He": 1.3800,
-    "Li": 164.2000,
-    "Be": 38.0000,
-    "B": 21.0000,
-    "C": 12.0000,
-    "N": 7.4000,
-    "O": 5.4000,
-    "F": 3.8000,
-    "Ne": 2.6700,
-    "Na": 162.7000,
-    "Mg": 71.0000,
-    "Al": 60.0000,
-    "Si": 37.0000,
-    "P": 25.0000,
-    "S": 19.6000,
-    "Cl": 15.0000,
-    "Ar": 11.1000,
-    "K": 292.9000,
-    "Ca": 160.0000,
-    "Sc": 120.0000,
-    "Ti": 98.0000,
-    "V": 84.0000,
-    "Cr": 78.0000,
-    "Mn": 63.0000,
-    "Fe": 56.0000,
-    "Co": 50.0000,
-    "Ni": 48.0000,
-    "Cu": 42.0000,
-    "Zn": 40.0000,
-    "Ga": 60.0000,
-    "Ge": 41.0000,
-    "As": 29.0000,
-    "Se": 25.0000,
-    "Br": 20.0000,
-    "Kr": 16.8000,
-    "Rb": 319.2000,
-    "Sr": 199.0000,
-    "Y": 126.7370,
-    "Zr": 119.9700,
-    "Nb": 101.6030,
-    "Mo": 88.4225,
-    "Tc": 80.0830,
-    "Ru": 65.8950,
-    "Rh": 56.1000,
-    "Pd": 23.6800,
-    "Ag": 50.6000,
-    "Cd": 39.7000,
-    "In": 70.2200,
-    "Sn": 55.9500,
-    "Sb": 43.6719,
-    "Te": 37.65,
-    "I": 35.0000,
-    "Xe": 27.3000,
-    "Cs": 427.12,
-    "Ba": 275.0,
-    "La": 213.70,
-    "Ce": 204.7,
-    "Pr": 215.8,
-    "Nd": 208.4,
-    "Pm": 200.2,
-    "Sm": 192.1,
-    "Eu": 184.2,
-    "Gd": 158.3,
-    "Tb": 169.5,
-    "Dy": 164.64,
-    "Ho": 156.3,
-    "Er": 150.2,
-    "Tm": 144.3,
-    "Yb": 138.9,
-    "Lu": 137.2,
-    "Hf": 99.52,
-    "Ta": 82.53,
-    "W": 71.041,
-    "Re": 63.04,
-    "Os": 55.055,
-    "Ir": 42.51,
-    "Pt": 39.68,
-    "Au": 36.5,
-    "Hg": 33.9,
-    "Tl": 69.92,
-    "Pb": 61.8,
-    "Bi": 49.02,
-    "Po": 45.013,
-    "At": 38.93,
-    "Rn": 33.54,
-    "Fr": 317.8,
-    "Ra": 246.2,
-    "Ac": 203.3,
-    "Th": 217.0,
-    "Pa": 154.4,
-    "U": 127.8,
-    "Np": 150.5,
-    "Pu": 132.2,
-    "Am": 131.20,
-    "Cm": 143.6,
-    "Bk": 125.3,
-    "Cf": 121.5,
-    "Es": 117.5,
-    "Fm": 113.4,
-    "Md": 109.4,
-    "No": 105.4,
-}
-
-
-# Ground state polarizabilities α0 (in atomic units) of noble gases and isoelectronic ions.
-# https://iopscience.iop.org/article/10.1088/0953-4075/43/20/202001/pdf
-C6_vdW = {
-    "H": 6.5000,
-    "He": 1.4600,
-    "Li": 1387.0000,
-    "Be": 214.0000,
-    "B": 99.5000,
-    "C": 46.6000,
-    "N": 24.2000,
-    "O": 15.6000,
-    "F": 9.5200,
-    "Ne": 6.3800,
-    "Na": 1556.0000,
-    "Mg": 627.0000,
-    "Al": 528.0000,
-    "Si": 305.0000,
-    "P": 185.0000,
-    "S": 134.0000,
-    "Cl": 94.6000,
-    "Ar": 64.3000,
-    "K": 3897.0000,
-    "Ca": 2221.0000,
-    "Sc": 1383.0000,
-    "Ti": 1044.0000,
-    "V": 832.0000,
-    "Cr": 602.0000,
-    "Mn": 552.0000,
-    "Fe": 482.0000,
-    "Co": 408.0000,
-    "Ni": 373.0000,
-    "Cu": 253.0000,
-    "Zn": 284.0000,
-    "Ga": 498.0000,
-    "Ge": 354.0000,
-    "As": 246.0000,
-    "Se": 210.0000,
-    "Br": 162.0000,
-    "Kr": 129.6000,
-    "Rb": 4691.0000,
-    "Sr": 3170.0000,
-    "Y": 1968.580,
-    "Zr": 1677.91,
-    "Nb": 1263.61,
-    "Mo": 1028.73,
-    "Tc": 1390.87,
-    "Ru": 609.754,
-    "Rh": 469.0,
-    "Pd": 157.5000,
-    "Ag": 339.0000,
-    "Cd": 452.0,
-    "In": 707.0460,
-    "Sn": 587.4170,
-    "Sb": 459.322,
-    "Te": 396.0,
-    "I": 385.0000,
-    "Xe": 285.9000,
-    "Cs": 6582.08,
-    "Ba": 5727.0,
-    "La": 3884.5,
-    "Ce": 3708.33,
-    "Pr": 3911.84,
-    "Nd": 3908.75,
-    "Pm": 3847.68,
-    "Sm": 3708.69,
-    "Eu": 3511.71,
-    "Gd": 2781.53,
-    "Tb": 3124.41,
-    "Dy": 2984.29,
-    "Ho": 2839.95,
-    "Er": 2724.12,
-    "Tm": 2576.78,
-    "Yb": 2387.53,
-    "Lu": 2371.80,
-    "Hf": 1274.8,
-    "Ta": 1019.92,
-    "W": 847.93,
-    "Re": 710.2,
-    "Os": 596.67,
-    "Ir": 359.1,
-    "Pt": 347.1,
-    "Au": 298.0,
-    "Hg": 392.0,
-    "Tl": 717.44,
-    "Pb": 697.0,
-    "Bi": 571.0,
-    "Po": 530.92,
-    "At": 457.53,
-    "Rn": 390.63,
-    "Fr": 4224.44,
-    "Ra": 4851.32,
-    "Ac": 3604.41,
-    "Th": 4047.54,
-    "Pa": 2367.42,
-    "U": 1877.10,
-    "Np": 2507.88,
-    "Pu": 2117.27,
-    "Am": 2110.98,
-    "Cm": 2403.22,
-    "Bk": 1985.82,
-    "Cf": 1891.92,
-    "Es": 1851.1,
-    "Fm": 1787.07,
-    "Md": 1701.0,
-    "No": 1578.18,
-}
-
-# VdW radii in Bohr
-VDW_radii = {
-    "H": 3.1000,
-    "He": 2.6500,
-    "Li": 4.1600,
-    "Be": 4.1700,
-    "B": 3.8900,
-    "C": 3.5900,
-    "N": 3.3400,
-    "O": 3.1900,
-    "F": 3.0400,
-    "Ne": 2.9100,
-    "Na": 3.7300,
-    "Mg": 4.2700,
-    "Al": 4.3300,
-    "Si": 4.2000,
-    "P": 4.0100,
-    "S": 3.8600,
-    "Cl": 3.7100,
-    "Ar": 3.5500,
-    "K": 3.7100,
-    "Ca": 4.6500,
-    "Sc": 4.5900,
-    "Ti": 4.5100,
-    "V": 4.4400,
-    "Cr": 3.9900,
-    "Mn": 3.9700,
-    "Fe": 4.2300,
-    "Co": 4.1800,
-    "Ni": 3.8200,
-    "Cu": 3.7600,
-    "Zn": 4.0200,
-    "Ga": 4.1900,
-    "Ge": 4.1900,
-    "As": 4.1100,
-    "Se": 4.0400,
-    "Br": 3.9300,
-    "Kr": 3.8200,
-    "Rb": 3.7200,
-    "Sr": 4.5400,
-    "Y": 4.8151,
-    "Zr": 4.53,
-    "Nb": 4.2365,
-    "Mo": 4.099,
-    "Tc": 4.076,
-    "Ru": 3.9953,
-    "Rh": 3.95,
-    "Pd": 3.6600,
-    "Ag": 3.8200,
-    "Cd": 3.99,
-    "In": 4.2319,
-    "Sn": 4.3030,
-    "Sb": 4.2760,
-    "Te": 4.22,
-    "I": 4.1700,
-    "Xe": 4.0800,
-    "Cs": 3.78,
-    "Ba": 4.77,
-    "La": 3.14,
-    "Ce": 3.26,
-    "Pr": 3.28,
-    "Nd": 3.3,
-    "Pm": 3.27,
-    "Sm": 3.32,
-    "Eu": 3.40,
-    "Gd": 3.62,
-    "Tb": 3.42,
-    "Dy": 3.26,
-    "Ho": 3.24,
-    "Er": 3.30,
-    "Tm": 3.26,
-    "Yb": 3.22,
-    "Lu": 3.20,
-    "Hf": 4.21,
-    "Ta": 4.15,
-    "W": 4.08,
-    "Re": 4.02,
-    "Os": 3.84,
-    "Ir": 4.00,
-    "Pt": 3.92,
-    "Au": 3.86,
-    "Hg": 3.98,
-    "Tl": 3.91,
-    "Pb": 4.31,
-    "Bi": 4.32,
-    "Po": 4.097,
-    "At": 4.07,
-    "Rn": 4.23,
-    "Fr": 3.90,
-    "Ra": 4.98,
-    "Ac": 2.75,
-    "Th": 2.85,
-    "Pa": 2.71,
-    "U": 3.00,
-    "Np": 3.28,
-    "Pu": 3.45,
-    "Am": 3.51,
-    "Cm": 3.47,
-    "Bk": 3.56,
-    "Cf": 3.55,
-    "Es": 3.76,
-    "Fm": 3.89,
-    "Md": 3.93,
-    "No": 3.78,
-}
-
-
 # Preambule from Lindh.py pthon sctipt
-HUGE = 1e10
 
-ABOHR = 0.52917721  # in AA
-HARTREE = 27.211383  # in eV
+abohr = 0.52917721  # in AA
+hartree = 27.211383  # in eV
 
-K_BOND = 0.450 * HARTREE / ABOHR ** 2
-K_BENDING = 0.150 * HARTREE
-K_TORSION = 0.005 * HARTREE
+k_bond = 0.450 * hartree / abohr ** 2
+k_bending = 0.150 * hartree
+k_torsion = 0.005 * hartree
 
-ALPHAS = (
+alphas = (
     np.array(
         [
             [1.0000, 0.3949, 0.3949],
@@ -531,108 +187,12 @@ ALPHAS = (
             [0.3949, 0.2800, 0.2800],
         ]
     )
-    * ABOHR ** (-2)
+    * abohr ** (-2)
 )
-REF_DS = (
+ref_ds = (
     np.array([[1.35, 2.10, 2.53], [2.10, 2.87, 3.40], [2.53, 3.40, 3.40]])
-    * ABOHR
+    * abohr
 )
-
-COVRADS = dict(
-    H=0.320,
-    He=0.310,
-    Li=1.630,
-    Be=0.900,
-    B=0.820,
-    C=0.770,
-    N=0.750,
-    O=0.730,
-    F=0.720,
-    Ne=0.710,
-    Na=1.540,
-    Mg=1.360,
-    Al=1.180,
-    Si=1.110,
-    P=1.060,
-    S=1.020,
-    Cl=0.990,
-    Ar=0.980,
-    K=2.030,
-    Ca=1.740,
-    Sc=1.440,
-    Ti=1.320,
-    V=1.220,
-    Cr=1.180,
-    Mn=1.170,
-    Fe=1.170,
-    Co=1.160,
-    Ni=1.150,
-    Cu=1.170,
-    Zn=1.250,
-    Ga=1.260,
-    Ge=1.220,
-    As=1.200,
-    Se=1.160,
-    Br=1.140,
-    Kr=1.120,
-    Rb=2.160,
-    Sr=1.910,
-    Y=1.620,
-    Zr=1.450,
-    Nb=1.340,
-    Mo=1.300,
-    Tc=1.270,
-    Ru=1.250,
-    Rh=1.250,
-    Pd=1.280,
-    Ag=1.340,
-    Cd=1.480,
-    In=1.440,
-    Sn=1.410,
-    Sb=1.400,
-    Te=1.360,
-    I=1.330,
-    Xe=1.310,
-    Cs=2.350,
-    Ba=1.980,
-    La=1.690,
-    Ce=1.650,
-    Pr=1.650,
-    Nd=1.840,
-    Pm=1.630,
-    Sm=1.620,
-    Eu=1.850,
-    Gd=1.610,
-    Tb=1.590,
-    Dy=1.590,
-    Ho=1.580,
-    Er=1.570,
-    Tm=1.560,
-    Yb=2.000,
-    Lu=1.560,
-    Hf=1.440,
-    Ta=1.340,
-    W=1.300,
-    Re=1.280,
-    Os=1.260,
-    Ir=1.270,
-    Pt=1.300,
-    Au=1.340,
-    Hg=1.490,
-    Tl=1.480,
-    Pb=1.470,
-    Bi=1.460,
-    Po=1.460,
-    At=2.000,
-    Rn=2.000,
-    Fr=2.000,
-    Ra=2.000,
-    Ac=2.000,
-    Th=1.650,
-    Pa=2.000,
-    U=1.420,
-)
-
 
 ID = np.identity(3)
 ZERO = np.zeros((3, 3))
@@ -721,7 +281,7 @@ def vdwHessian(atoms):
     cell_ih = atoms.get_reciprocal_cell()[:]
     hessian = np.zeros(shape=(3 * N, 3 * N))
     atomsRange = list(range(N))
-    units = (BOHR_to_angstr ** 6) * HARTREE_to_eV
+    units = (abohr ** 6) * hartree
 
     def C6AB(A, B):
         """Summary
@@ -756,9 +316,7 @@ def vdwHessian(atoms):
         Returns:
             TYPE: Description
         """
-        return (
-            (VDW_radii[B] + VDW_radii[A]) * 0.5 * BOHR_to_angstr
-        )  # in Angstroms
+        return (VDW_radii[B] + VDW_radii[A]) * 0.5 * abohr  # in Angstroms
 
     def rho_ij(A, B, R):
         """Summary
@@ -789,8 +347,6 @@ def vdwHessian(atoms):
             else:
                 return 2
 
-        k = name2row(A)
-        l = name2row(B)
         R0_vdW_AB = get_R0AB(A, B)
         alpha = alphas_vdW[A][B]
         return np.exp(alpha * (R0_vdW_AB ** 2 - R ** 2))
@@ -942,86 +498,6 @@ def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
     precon = Exp(mu=mu, A=3.0, recalc_mu=False)
     precon.make_precon(atoms)
     return precon.P.todense()
-
-    # N  = len(atoms)
-    # # A=options.A
-    # r_NN = estimate_nearest_neighbour_distance(atoms)
-    # r_cut = 2.0 * r_NN
-    # coordinates = atoms.get_positions()
-    # cell_h = atoms.get_cell()[:]
-    # cell_ih = atoms.get_reciprocal_cell()[:]
-
-    # hessian = np.zeros(shape = (3 * N, 3 * N))
-    # atomsRange = list(range(N))
-    # for i in atomsRange:
-    #     qi = coordinates[i].reshape(1,3)
-    #     qj = coordinates.reshape(-1,3)
-    #     if np.array_equal(cell_h,np.zeros([3, 3])):
-    #         rij = np.array([np.linalg.norm(qi-Qj) for Qj in qj])
-    #     else:
-    #         dij, rij = vector_separation(cell_h, cell_ih, qi, qj)
-
-    #     coeff = -mu * np.exp(-A * (rij / r_NN - 1))
-    #     mask = np.array(rij>=r_cut)
-    #     coeff[mask] = 0
-
-    #     stack = np.hstack([np.identity(3)*coef for coef in coeff])
-    #     hessian[3 * i + 0, :] = stack[0]
-    #     hessian[3 * i + 1, :] = stack[1]
-    #     hessian[3 * i + 2, :] = stack[2]
-
-    # # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
-    # hessian = ASR(hessian)
-    # # Add stabilization to the diagonal
-    # jitter = 0.1
-    # hessian = add_jitter(hessian, jitter)
-    # # Check if positive and symmetric:
-    # symmetric, positive = check_positive_symmetric(hessian)
-    # if not symmetric:
-    #     print("Hessian is not symmetric! Will give troubles during optimization!")
-    #     sys.exit(0)
-    # if not positive:
-    #     print("Hessian is not positive definite! Will give troubles during optimization!")
-    #     # sys.exit(0)
-    # return hessian
-
-
-# def ExpHessian_P(atoms, mu=1, A=3):
-
-#     N  = len(atoms)
-#     # A=options.A
-#     r_NN = estimate_nearest_neighbour_distance(atoms)
-#     r_cut = 2.0 * r_NN
-#     coordinates = atoms.get_positions()
-#     cell_h = atoms.get_cell()[:]
-#     cell_ih = atoms.get_reciprocal_cell()[:]
-
-#     hessian = np.zeros(shape = ( N, N))
-#     atomsRange = list(range(N))
-#     for i in atomsRange:
-#         qi = coordinates[i].reshape(1,3)
-#         qj = coordinates.reshape(-1,3)
-
-#         if np.array_equal(cell_h,np.zeros([3, 3])):
-#             rij = np.array([np.linalg.norm(qi-Qj) for Qj in qj])
-#         else:
-#             dij, rij = vector_separation(cell_h, cell_ih, qi, qj)
-
-#         coeff = -mu * np.exp(-A * (rij / r_NN - 1))
-#         mask = np.array(rij>=r_cut)
-#         coeff[mask] = 0
-
-#         stack = np.hstack([np.identity(3)*coef for coef in coeff])
-
-#         hessian[3 * i + 0, :] = stack[0]
-#         hessian[3 * i + 1, :] = stack[1]
-#         hessian[3 * i + 2, :] = stack[2]
-#     hessian = ASR(hessian)
-#     # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
-#     # for ind in range(len(hessian)):
-#         # hessian[ind, ind] = -np.sum(hessian[ind])
-
-#     return hessian
 
 
 """
@@ -1226,7 +702,7 @@ class CovalenceDamper(Damper):
         if norm(AB) < 1.3 * (cr_i + cr_j):
             return 0.0
         else:
-            return HUGE
+            return 1e10
 
     def Rcut(self, max_exponent):
         """Return the maximum distance leading to max_exponent.
@@ -1249,7 +725,7 @@ class LindhExponent(Damper):
         ref_ds (TYPE): Description
     """
 
-    def __init__(self, atom2row, alphas=ALPHAS, ref_ds=REF_DS):
+    def __init__(self, atom2row, alphas=alphas, ref_ds=ref_ds):
         """Summary
 
         Args:
@@ -1837,7 +1313,7 @@ def model_matrix(bra, atom, builder, damper, thres, logfile=None):
     Returns:
         TYPE: Description
     """
-    thres_fac = np.exp(-thres) * K_BOND
+    thres_fac = np.exp(-thres) * k_bond
     if logfile is not None:
         logfile.write(
             "# Neglecting anything with a prefac < %8.3g "
@@ -1849,7 +1325,7 @@ def model_matrix(bra, atom, builder, damper, thres, logfile=None):
 
     # bonds:
     for damp, atlist in pairs.chains(2, thres):
-        fac = np.exp(-damp) * K_BOND
+        fac = np.exp(-damp) * k_bond
         if fac < thres_fac:
             continue
         vecs = [pairs.getvec(at) for at in atlist]
@@ -1866,7 +1342,7 @@ def model_matrix(bra, atom, builder, damper, thres, logfile=None):
 
     # bendings:
     for damp, atlist in pairs.chains(3, thres):
-        fac = np.exp(-damp) * K_BENDING
+        fac = np.exp(-damp) * k_bending
         if fac < thres_fac:
             continue
         vecs = [pairs.getvec(at) for at in atlist]
@@ -1893,7 +1369,7 @@ def model_matrix(bra, atom, builder, damper, thres, logfile=None):
 
     # torsions
     for damp, atlist in pairs.chains(4, thres):
-        fac = np.exp(-damp) * K_TORSION
+        fac = np.exp(-damp) * k_torsion
         if fac < thres_fac:
             continue
         vecs = [pairs.getvec(at) for at in atlist]
@@ -2727,15 +2203,6 @@ def preconditioned_hessian(
                     preconditioned_hessian = add_jitter(
                         preconditioned_hessian, jitter
                     )
-
-                    # print(preconditioned_hessian - p)
-
-                    matplotlib.use("tkagg")
-                    z = preconditioned_hessian - p
-                    fig, ax = plt.subplots()
-                    im = ax.imshow(z)
-                    plt.colorbar(im)
-                    plt.show()
 
                 symmetric, positive = check_positive_symmetric(
                     preconditioned_hessian
