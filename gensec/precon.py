@@ -1,12 +1,30 @@
-""" Make vdW preconditioner. """
+"""Make vdW preconditioner. 
+
+Attributes:
+    ABOHR (float): Description
+    ALPHA_vdW (TYPE): Description
+    ALPHAS (TYPE): Description
+    BOHR_to_angstr (float): Description
+    C6_vdW (TYPE): Description
+    COVRADS (TYPE): Description
+    HARTREE (float): Description
+    HARTREE_to_eV (float): Description
+    HARTREE_to_kcal_mol (float): Description
+    HUGE (float): Description
+    ID (TYPE): Description
+    K_BENDING (TYPE): Description
+    K_BOND (TYPE): Description
+    K_TORSION (TYPE): Description
+    REF_DS (TYPE): Description
+    VDW_radii (TYPE): Description
+    ZERO (TYPE): Description
+"""
 
 import sys
 from math import sqrt
 from os.path import isfile
-from ase.calculators.calculator import PropertyNotImplementedError
 from ase.io.trajectory import Trajectory
 from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
-from ase.neighborlist import neighbor_list
 from ase.optimize.precon import Exp
 import numpy as np
 from numpy.linalg import norm
@@ -19,23 +37,57 @@ import matplotlib
 
 
 def set_constrains(atoms, parameters):
+    """Set the constrains
+
+    Adds the constrains for geometry optimizations to the Atoms object.
+    During geometry optimization the forces on the constrained atoms
+    will be always zero.
+
+    Args:
+        atoms (ASE Atoms object): Geometry to optimize
+        parameters (file): file with parameters for constrainings
+    """
+
     z = parameters["calculator"]["constraints"]["z-coord"]
-    c = FixAtoms(indices=[atom.index for atom in atoms if atom.position[2]<=z[-1]])
+    c = FixAtoms(
+        indices=[atom.index for atom in atoms if atom.position[2] <= z[-1]]
+    )
     atoms.set_constraint(c)
 
 
 def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
+    """Root-mean-square deviation (RMSD) between tructures
 
-    coords1 = np.array([atoms.get_positions()[i] for i in molindixes])
-    coords2 = np.array([initial.get_positions()[i] for i in molindixes])
+    Finds the optimal rotation for alignment of two structures
+    with use of Kabsh algorithm and then calculates RMSD
+    between all the corresponding atoms.
 
-    #COM1 = get_centre_of_mass_from_sdf(sdf_string1, removeHs = True)
-    #COM2 = get_centre_of_mass_from_sdf(sdf_string2, removeHs = True)
-    #"""Return the optimal RMS after aligning two structures."""
+    Args:
+        atoms (ASE Atoms object): The structure to calculate RMSD with the
+        reference geometry.
+        initial (ASE Atoms object): The reference geometry
+        molindixes (list): list of indexes of the atoms object that
+        should be taken into consideration while calculation of RMSD value
+        removeHs (bool, optional): True if Hydrogens should be taken into
+        consideration
 
-    #coords1 = coords_and_masses_from_sdf(sdf_string1, removeHs = True)[:,:3] - COM1
-    #coords2 = coords_and_masses_from_sdf(sdf_string2, removeHs = True)[:,:3] - COM2
-    #'''Kabsh'''
+    Returns:
+        float: Root-mean-square deviation value between two structures
+    """
+
+    # Extract the necessary atoms
+    mol = atoms[[atom.index for atom in atoms if atom.index in molindixes]]
+    ref = initial[[atom.index for atom in initial if atom.index in molindixes]]
+    if removeHs:
+        mol = mol[[atom.index for atom in mol if atom.index != "H"]]
+        ref = ref[[atom.index for atom in ref if atom.index != "H"]]
+    # Center both molecules:
+    mol.set_positions(mol.get_positions() - mol.get_center_of_mass())
+    ref.set_positions(ref.get_positions() - ref.get_center_of_mass())
+
+    coords1 = mol.get_positions()
+    coords2 = ref.get_positions()
+
     A = np.dot(coords1.T, coords2)
     V, S, W = np.linalg.svd(A)
     if np.linalg.det(np.dot(V, W)) < 0.0:
@@ -47,65 +99,81 @@ def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
     coords1 = np.dot(coords1, K)
     rmsd_kabsh = 0.0
     for v, w in zip(coords1, coords2):
-        rmsd_kabsh += sum([(v[i] - w[i])**2.0 for i in range(len(coords1[0]))])
-    return np.sqrt(rmsd_kabsh/len(coords1))
+        rmsd_kabsh += sum(
+            [(v[i] - w[i]) ** 2.0 for i in range(len(coords1[0]))]
+        )
+    return np.sqrt(rmsd_kabsh / len(coords1))
 
 
 def ASR(hessian):
-    """Acoustic sum rule
-    
-    Caluclates the acoustic sum rule for the given
-    Hessian matrix
-    
+    """Acoustic sum rule (ASR)
+
+    ASR comes from the continous translational invariance of the periodic
+    system. With translation of the whole system by a uniform
+    displacement, there should be no forces acting on the atoms.
+    This function restores the ASR for the given Hessian matrix.
+
     Arguments:
-        hessian {matrix} -- 3Nx3N where N is lenght of atoms
+        hessian (matrix): 3Nx3N where N is lenght of atoms
+
+    Returns:
+        matrix: Hessian matrix with correct ASR
 
     """
-        # Proper ASR
-
-    x_range = [3*ind for ind in range(int(len(hessian)/3))]
+    x_range = [3 * ind for ind in range(int(len(hessian) / 3))]
     for ind in range(len(x_range)):
-        elements  = np.delete(x_range, ind)
-        x, y, z = x_range[ind], x_range[ind]+1, x_range[ind]+2
-        xs, ys, zs = elements, elements+1, elements+2
+        elements = np.delete(x_range, ind)
+        x, y, z = x_range[ind], x_range[ind] + 1, x_range[ind] + 2
+        xs, ys, zs = elements, elements + 1, elements + 2
         # (0,0),  (1,1), (2,2) Block elements
-        hessian[x, x] = -np.sum(hessian[x, xs]) 
-        hessian[y, y] = -np.sum(hessian[y, ys]) 
-        hessian[z, z] = -np.sum(hessian[z, zs]) 
+        hessian[x, x] = -np.sum(hessian[x, xs])
+        hessian[y, y] = -np.sum(hessian[y, ys])
+        hessian[z, z] = -np.sum(hessian[z, zs])
         # (1,0),  (2,0), (2,1) Block elements Upper triangle
-        hessian[x, y] = -np.sum(hessian[x, ys])         
-        hessian[x, z] = -np.sum(hessian[x, zs])         
-        hessian[y, z] = -np.sum(hessian[y, zs]) 
+        hessian[x, y] = -np.sum(hessian[x, ys])
+        hessian[x, z] = -np.sum(hessian[x, zs])
+        hessian[y, z] = -np.sum(hessian[y, zs])
         # (0,1),  (0,2), (1,2) Block elements Lower Triangle
-        hessian[y, x] = hessian[x, y] 
-        hessian[z, x] = hessian[x, z] 
-        hessian[z, y] = hessian[y, z] 
+        hessian[y, x] = hessian[x, y]
+        hessian[z, x] = hessian[x, z]
+        hessian[z, y] = hessian[y, z]
     return hessian
 
 
 def add_jitter(hessian, jitter):
-    """Add jitter to the diagonal 
-    
+    """Add jitter to the diagonal
+
+    For the reasons of numerical stability adding jitter parameter to the
+    diagonal of the matrix allows inverting of the matrix without problems.
+
     Arguments:
-        hessian {matrix} -- 3Nx3N matrix where N is lenght of atoms
-        jitter {float} -- adds stabilizations
+        hessian (matrix): 3Nx3N where N is lenght of atoms
+        jitter (float): small value that is added to diagonal
+
+    Returns:
+        matrix: Hessian with jitter value added to the diagonal
     """
 
-    return hessian + np.eye(len(hessian))*jitter
+    return hessian + np.eye(len(hessian)) * jitter
 
 
 def check_positive_symmetric(hessian):
-    """
-    
-    Check for hessian to be positive definite and symmetric matrix
-    
+    """Check properties of Hessian matrix
+
+    The function in quazi-Newton's method has to be strongly convex
+    which is true if Hessian is positive definite and symmetric matrix.
+
     Arguments:
-        hessian {matrix} -- 3Nx3N where N is lenght of atoms
+        hessian (matrix): 3Nx3N where N is lenght of atoms
+
+    Returns:
+        boolean, boolean: True and True if Hessian symmetric
+        and positive definite
     """
 
-    symmetric = np.all(np.abs(hessian-hessian.T) < 1e-10)
+    symmetric = np.all(np.abs(hessian - hessian.T) < 1e-10)
     d, w = np.linalg.eigh(hessian)
-    positive =  np.all(d>0)    
+    positive = np.all(d > 0)
     return symmetric, positive
 
 
@@ -119,121 +187,451 @@ def check_positive_symmetric(hessian):
 #    !single double theory with accrate basis. The vdW radii for respective element are
 #    !defined as discussed in Tkatchenko, A. & Scheffler, M. Phys. Rev. Lett. 102, 073005 (2009).
 
-BOHR_to_angstr = 0.52917721   # in AA
+BOHR_to_angstr = 0.52917721  # in AA
 HARTREE_to_eV = 27.211383  # in eV
 HARTREE_to_kcal_mol = 627.509  # in kcal * mol^(-1)
 
-# Ground state polarizabilities α0 (in atomic units) of noble gases and isoelectronic ions. 
+# Ground state polarizabilities α0 (in atomic units) of noble gases and isoelectronic ions.
 # https://iopscience.iop.org/article/10.1088/0953-4075/43/20/202001/pdf
-ALPHA_vdW = {'H': 4.5000, 'He': 1.3800, 'Li': 164.2000, 'Be': 38.0000, 'B': 21.0000, 'C': 12.0000,
-            'N': 7.4000, 'O': 5.4000, 'F': 3.8000, 'Ne': 2.6700, 'Na': 162.7000, 'Mg': 71.0000, 'Al': 60.0000,
-            'Si': 37.0000, 'P': 25.0000, 'S': 19.6000, 'Cl': 15.0000, 'Ar': 11.1000, 'K': 292.9000,
-            'Ca': 160.0000,
-            'Sc': 120.0000, 'Ti': 98.0000, 'V': 84.0000, 'Cr': 78.0000, 'Mn': 63.0000, 'Fe': 56.0000,
-            'Co': 50.0000,
-            'Ni': 48.0000, 'Cu': 42.0000, 'Zn': 40.0000, 'Ga': 60.0000, 'Ge': 41.0000, 'As': 29.0000,
-            'Se': 25.0000,
-            'Br': 20.0000, 'Kr': 16.8000, 'Rb': 319.2000, 'Sr': 199.0000, 'Y': 126.7370, 'Zr': 119.9700,
-            'Nb': 101.6030,
-            'Mo': 88.4225, 'Tc': 80.0830, 'Ru': 65.8950, 'Rh': 56.1000, 'Pd': 23.6800, 'Ag': 50.6000,
-            'Cd': 39.7000,
-            'In': 70.2200, 'Sn': 55.9500, 'Sb': 43.6719, 'Te': 37.65, 'I': 35.0000, 'Xe': 27.3000,
-            'Cs': 427.12, 'Ba': 275.0,
-            'La': 213.70, 'Ce': 204.7, 'Pr': 215.8, 'Nd': 208.4, 'Pm': 200.2, 'Sm': 192.1, 'Eu': 184.2,
-            'Gd': 158.3, 'Tb': 169.5,
-            'Dy': 164.64, 'Ho': 156.3, 'Er': 150.2, 'Tm': 144.3, 'Yb': 138.9, 'Lu': 137.2, 'Hf': 99.52,
-            'Ta': 82.53,
-            'W': 71.041, 'Re': 63.04, 'Os': 55.055, 'Ir': 42.51, 'Pt': 39.68, 'Au': 36.5, 'Hg': 33.9,
-            'Tl': 69.92,
-            'Pb': 61.8, 'Bi': 49.02, 'Po': 45.013, 'At': 38.93, 'Rn': 33.54, 'Fr': 317.8, 'Ra': 246.2,
-            'Ac': 203.3,
-            'Th': 217.0, 'Pa': 154.4, 'U': 127.8, 'Np': 150.5, 'Pu': 132.2, 'Am': 131.20, 'Cm': 143.6,
-            'Bk': 125.3,
-            'Cf': 121.5, 'Es': 117.5, 'Fm': 113.4, 'Md': 109.4, 'No': 105.4}
+ALPHA_vdW = {
+    "H": 4.5000,
+    "He": 1.3800,
+    "Li": 164.2000,
+    "Be": 38.0000,
+    "B": 21.0000,
+    "C": 12.0000,
+    "N": 7.4000,
+    "O": 5.4000,
+    "F": 3.8000,
+    "Ne": 2.6700,
+    "Na": 162.7000,
+    "Mg": 71.0000,
+    "Al": 60.0000,
+    "Si": 37.0000,
+    "P": 25.0000,
+    "S": 19.6000,
+    "Cl": 15.0000,
+    "Ar": 11.1000,
+    "K": 292.9000,
+    "Ca": 160.0000,
+    "Sc": 120.0000,
+    "Ti": 98.0000,
+    "V": 84.0000,
+    "Cr": 78.0000,
+    "Mn": 63.0000,
+    "Fe": 56.0000,
+    "Co": 50.0000,
+    "Ni": 48.0000,
+    "Cu": 42.0000,
+    "Zn": 40.0000,
+    "Ga": 60.0000,
+    "Ge": 41.0000,
+    "As": 29.0000,
+    "Se": 25.0000,
+    "Br": 20.0000,
+    "Kr": 16.8000,
+    "Rb": 319.2000,
+    "Sr": 199.0000,
+    "Y": 126.7370,
+    "Zr": 119.9700,
+    "Nb": 101.6030,
+    "Mo": 88.4225,
+    "Tc": 80.0830,
+    "Ru": 65.8950,
+    "Rh": 56.1000,
+    "Pd": 23.6800,
+    "Ag": 50.6000,
+    "Cd": 39.7000,
+    "In": 70.2200,
+    "Sn": 55.9500,
+    "Sb": 43.6719,
+    "Te": 37.65,
+    "I": 35.0000,
+    "Xe": 27.3000,
+    "Cs": 427.12,
+    "Ba": 275.0,
+    "La": 213.70,
+    "Ce": 204.7,
+    "Pr": 215.8,
+    "Nd": 208.4,
+    "Pm": 200.2,
+    "Sm": 192.1,
+    "Eu": 184.2,
+    "Gd": 158.3,
+    "Tb": 169.5,
+    "Dy": 164.64,
+    "Ho": 156.3,
+    "Er": 150.2,
+    "Tm": 144.3,
+    "Yb": 138.9,
+    "Lu": 137.2,
+    "Hf": 99.52,
+    "Ta": 82.53,
+    "W": 71.041,
+    "Re": 63.04,
+    "Os": 55.055,
+    "Ir": 42.51,
+    "Pt": 39.68,
+    "Au": 36.5,
+    "Hg": 33.9,
+    "Tl": 69.92,
+    "Pb": 61.8,
+    "Bi": 49.02,
+    "Po": 45.013,
+    "At": 38.93,
+    "Rn": 33.54,
+    "Fr": 317.8,
+    "Ra": 246.2,
+    "Ac": 203.3,
+    "Th": 217.0,
+    "Pa": 154.4,
+    "U": 127.8,
+    "Np": 150.5,
+    "Pu": 132.2,
+    "Am": 131.20,
+    "Cm": 143.6,
+    "Bk": 125.3,
+    "Cf": 121.5,
+    "Es": 117.5,
+    "Fm": 113.4,
+    "Md": 109.4,
+    "No": 105.4,
+}
 
 
-# Ground state polarizabilities α0 (in atomic units) of noble gases and isoelectronic ions. 
+# Ground state polarizabilities α0 (in atomic units) of noble gases and isoelectronic ions.
 # https://iopscience.iop.org/article/10.1088/0953-4075/43/20/202001/pdf
-C6_vdW = {'H': 6.5000, 'He': 1.4600, 'Li': 1387.0000, 'Be': 214.0000, 'B': 99.5000, 'C': 46.6000,
-        'N': 24.2000, 'O': 15.6000, 'F': 9.5200, 'Ne': 6.3800, 'Na': 1556.0000, 'Mg': 627.0000,
-        'Al': 528.0000, 'Si': 305.0000, 'P': 185.0000, 'S': 134.0000, 'Cl': 94.6000, 'Ar': 64.3000,
-        'K': 3897.0000, 'Ca': 2221.0000, 'Sc': 1383.0000, 'Ti': 1044.0000, 'V': 832.0000, 'Cr': 602.0000,
-        'Mn': 552.0000, 'Fe': 482.0000, 'Co': 408.0000, 'Ni': 373.0000, 'Cu': 253.0000, 'Zn': 284.0000,
-        'Ga': 498.0000, 'Ge': 354.0000, 'As': 246.0000, 'Se': 210.0000, 'Br': 162.0000, 'Kr': 129.6000,
-        'Rb': 4691.0000, 'Sr': 3170.0000, 'Y': 1968.580, 'Zr': 1677.91, 'Nb': 1263.61, 'Mo': 1028.73,
-        'Tc': 1390.87,
-        'Ru': 609.754, 'Rh': 469.0, 'Pd': 157.5000, 'Ag': 339.0000, 'Cd': 452.0, 'In': 707.0460,
-        'Sn': 587.4170,
-        'Sb': 459.322, 'Te': 396.0, 'I': 385.0000, 'Xe': 285.9000, 'Cs': 6582.08, 'Ba': 5727.0, 'La': 3884.5,
-        'Ce': 3708.33, 'Pr': 3911.84, 'Nd': 3908.75, 'Pm': 3847.68, 'Sm': 3708.69, 'Eu': 3511.71,
-        'Gd': 2781.53, 'Tb': 3124.41, 'Dy': 2984.29, 'Ho': 2839.95, 'Er': 2724.12, 'Tm': 2576.78,
-        'Yb': 2387.53, 'Lu': 2371.80, 'Hf': 1274.8, 'Ta': 1019.92, 'W': 847.93, 'Re': 710.2, 'Os': 596.67,
-        'Ir': 359.1, 'Pt': 347.1, 'Au': 298.0, 'Hg': 392.0, 'Tl': 717.44, 'Pb': 697.0, 'Bi': 571.0,
-        'Po': 530.92, 'At': 457.53, 'Rn': 390.63, 'Fr': 4224.44, 'Ra': 4851.32, 'Ac': 3604.41, 'Th': 4047.54,
-        'Pa': 2367.42, 'U': 1877.10, 'Np': 2507.88, 'Pu': 2117.27, 'Am': 2110.98, 'Cm': 2403.22,
-        'Bk': 1985.82,
-        'Cf': 1891.92, 'Es': 1851.1, 'Fm': 1787.07, 'Md': 1701.0, 'No': 1578.18}
+C6_vdW = {
+    "H": 6.5000,
+    "He": 1.4600,
+    "Li": 1387.0000,
+    "Be": 214.0000,
+    "B": 99.5000,
+    "C": 46.6000,
+    "N": 24.2000,
+    "O": 15.6000,
+    "F": 9.5200,
+    "Ne": 6.3800,
+    "Na": 1556.0000,
+    "Mg": 627.0000,
+    "Al": 528.0000,
+    "Si": 305.0000,
+    "P": 185.0000,
+    "S": 134.0000,
+    "Cl": 94.6000,
+    "Ar": 64.3000,
+    "K": 3897.0000,
+    "Ca": 2221.0000,
+    "Sc": 1383.0000,
+    "Ti": 1044.0000,
+    "V": 832.0000,
+    "Cr": 602.0000,
+    "Mn": 552.0000,
+    "Fe": 482.0000,
+    "Co": 408.0000,
+    "Ni": 373.0000,
+    "Cu": 253.0000,
+    "Zn": 284.0000,
+    "Ga": 498.0000,
+    "Ge": 354.0000,
+    "As": 246.0000,
+    "Se": 210.0000,
+    "Br": 162.0000,
+    "Kr": 129.6000,
+    "Rb": 4691.0000,
+    "Sr": 3170.0000,
+    "Y": 1968.580,
+    "Zr": 1677.91,
+    "Nb": 1263.61,
+    "Mo": 1028.73,
+    "Tc": 1390.87,
+    "Ru": 609.754,
+    "Rh": 469.0,
+    "Pd": 157.5000,
+    "Ag": 339.0000,
+    "Cd": 452.0,
+    "In": 707.0460,
+    "Sn": 587.4170,
+    "Sb": 459.322,
+    "Te": 396.0,
+    "I": 385.0000,
+    "Xe": 285.9000,
+    "Cs": 6582.08,
+    "Ba": 5727.0,
+    "La": 3884.5,
+    "Ce": 3708.33,
+    "Pr": 3911.84,
+    "Nd": 3908.75,
+    "Pm": 3847.68,
+    "Sm": 3708.69,
+    "Eu": 3511.71,
+    "Gd": 2781.53,
+    "Tb": 3124.41,
+    "Dy": 2984.29,
+    "Ho": 2839.95,
+    "Er": 2724.12,
+    "Tm": 2576.78,
+    "Yb": 2387.53,
+    "Lu": 2371.80,
+    "Hf": 1274.8,
+    "Ta": 1019.92,
+    "W": 847.93,
+    "Re": 710.2,
+    "Os": 596.67,
+    "Ir": 359.1,
+    "Pt": 347.1,
+    "Au": 298.0,
+    "Hg": 392.0,
+    "Tl": 717.44,
+    "Pb": 697.0,
+    "Bi": 571.0,
+    "Po": 530.92,
+    "At": 457.53,
+    "Rn": 390.63,
+    "Fr": 4224.44,
+    "Ra": 4851.32,
+    "Ac": 3604.41,
+    "Th": 4047.54,
+    "Pa": 2367.42,
+    "U": 1877.10,
+    "Np": 2507.88,
+    "Pu": 2117.27,
+    "Am": 2110.98,
+    "Cm": 2403.22,
+    "Bk": 1985.82,
+    "Cf": 1891.92,
+    "Es": 1851.1,
+    "Fm": 1787.07,
+    "Md": 1701.0,
+    "No": 1578.18,
+}
 
 # VdW radii in Bohr
-VDW_radii = {'H': 3.1000, 'He': 2.6500, 'Li': 4.1600, 'Be': 4.1700, 'B': 3.8900, 'C': 3.5900,
-        'N': 3.3400, 'O': 3.1900, 'F': 3.0400, 'Ne': 2.9100, 'Na': 3.7300, 'Mg': 4.2700,
-        'Al': 4.3300, 'Si': 4.2000, 'P': 4.0100, 'S': 3.8600, 'Cl': 3.7100, 'Ar': 3.5500,
-        'K': 3.7100, 'Ca': 4.6500, 'Sc': 4.5900, 'Ti': 4.5100, 'V': 4.4400, 'Cr': 3.9900,
-        'Mn': 3.9700, 'Fe': 4.2300, 'Co': 4.1800, 'Ni': 3.8200, 'Cu': 3.7600, 'Zn': 4.0200,
-        'Ga': 4.1900, 'Ge': 4.1900, 'As': 4.1100, 'Se': 4.0400, 'Br': 3.9300, 'Kr': 3.8200,
-        'Rb': 3.7200, 'Sr': 4.5400, 'Y': 4.8151, 'Zr': 4.53, 'Nb': 4.2365, 'Mo': 4.099,
-        'Tc': 4.076,
-        'Ru': 3.9953, 'Rh': 3.95, 'Pd': 3.6600, 'Ag': 3.8200, 'Cd': 3.99, 'In': 4.2319,
-        'Sn': 4.3030,
-        'Sb': 4.2760, 'Te': 4.22, 'I': 4.1700, 'Xe': 4.0800, 'Cs': 3.78, 'Ba': 4.77, 'La': 3.14,
-        'Ce': 3.26, 'Pr': 3.28, 'Nd': 3.3, 'Pm': 3.27, 'Sm': 3.32, 'Eu': 3.40,
-        'Gd': 3.62, 'Tb': 3.42, 'Dy': 3.26, 'Ho': 3.24, 'Er': 3.30, 'Tm': 3.26,
-        'Yb': 3.22, 'Lu': 3.20, 'Hf': 4.21, 'Ta': 4.15, 'W': 4.08, 'Re': 4.02, 'Os': 3.84,
-        'Ir': 4.00, 'Pt': 3.92, 'Au': 3.86, 'Hg': 3.98, 'Tl': 3.91, 'Pb': 4.31, 'Bi': 4.32,
-        'Po': 4.097, 'At': 4.07, 'Rn': 4.23, 'Fr': 3.90, 'Ra': 4.98, 'Ac': 2.75, 'Th': 2.85,
-        'Pa': 2.71, 'U': 3.00, 'Np': 3.28, 'Pu': 3.45, 'Am': 3.51, 'Cm': 3.47,
-        'Bk': 3.56,
-        'Cf': 3.55, 'Es': 3.76, 'Fm': 3.89, 'Md': 3.93, 'No': 3.78}
+VDW_radii = {
+    "H": 3.1000,
+    "He": 2.6500,
+    "Li": 4.1600,
+    "Be": 4.1700,
+    "B": 3.8900,
+    "C": 3.5900,
+    "N": 3.3400,
+    "O": 3.1900,
+    "F": 3.0400,
+    "Ne": 2.9100,
+    "Na": 3.7300,
+    "Mg": 4.2700,
+    "Al": 4.3300,
+    "Si": 4.2000,
+    "P": 4.0100,
+    "S": 3.8600,
+    "Cl": 3.7100,
+    "Ar": 3.5500,
+    "K": 3.7100,
+    "Ca": 4.6500,
+    "Sc": 4.5900,
+    "Ti": 4.5100,
+    "V": 4.4400,
+    "Cr": 3.9900,
+    "Mn": 3.9700,
+    "Fe": 4.2300,
+    "Co": 4.1800,
+    "Ni": 3.8200,
+    "Cu": 3.7600,
+    "Zn": 4.0200,
+    "Ga": 4.1900,
+    "Ge": 4.1900,
+    "As": 4.1100,
+    "Se": 4.0400,
+    "Br": 3.9300,
+    "Kr": 3.8200,
+    "Rb": 3.7200,
+    "Sr": 4.5400,
+    "Y": 4.8151,
+    "Zr": 4.53,
+    "Nb": 4.2365,
+    "Mo": 4.099,
+    "Tc": 4.076,
+    "Ru": 3.9953,
+    "Rh": 3.95,
+    "Pd": 3.6600,
+    "Ag": 3.8200,
+    "Cd": 3.99,
+    "In": 4.2319,
+    "Sn": 4.3030,
+    "Sb": 4.2760,
+    "Te": 4.22,
+    "I": 4.1700,
+    "Xe": 4.0800,
+    "Cs": 3.78,
+    "Ba": 4.77,
+    "La": 3.14,
+    "Ce": 3.26,
+    "Pr": 3.28,
+    "Nd": 3.3,
+    "Pm": 3.27,
+    "Sm": 3.32,
+    "Eu": 3.40,
+    "Gd": 3.62,
+    "Tb": 3.42,
+    "Dy": 3.26,
+    "Ho": 3.24,
+    "Er": 3.30,
+    "Tm": 3.26,
+    "Yb": 3.22,
+    "Lu": 3.20,
+    "Hf": 4.21,
+    "Ta": 4.15,
+    "W": 4.08,
+    "Re": 4.02,
+    "Os": 3.84,
+    "Ir": 4.00,
+    "Pt": 3.92,
+    "Au": 3.86,
+    "Hg": 3.98,
+    "Tl": 3.91,
+    "Pb": 4.31,
+    "Bi": 4.32,
+    "Po": 4.097,
+    "At": 4.07,
+    "Rn": 4.23,
+    "Fr": 3.90,
+    "Ra": 4.98,
+    "Ac": 2.75,
+    "Th": 2.85,
+    "Pa": 2.71,
+    "U": 3.00,
+    "Np": 3.28,
+    "Pu": 3.45,
+    "Am": 3.51,
+    "Cm": 3.47,
+    "Bk": 3.56,
+    "Cf": 3.55,
+    "Es": 3.76,
+    "Fm": 3.89,
+    "Md": 3.93,
+    "No": 3.78,
+}
 
 
 # Preambule from Lindh.py pthon sctipt
 HUGE = 1e10
 
-ABOHR = 0.52917721 # in AA
-HARTREE = 27.211383 # in eV
+ABOHR = 0.52917721  # in AA
+HARTREE = 27.211383  # in eV
 
-K_BOND    = 0.450 * HARTREE / ABOHR**2
+K_BOND = 0.450 * HARTREE / ABOHR ** 2
 K_BENDING = 0.150 * HARTREE
 K_TORSION = 0.005 * HARTREE
 
-ALPHAS = np.array([[1.0000, 0.3949, 0.3949],
-                   [0.3949, 0.2800, 0.2800],
-                   [0.3949, 0.2800, 0.2800]]) * ABOHR**(-2)
-REF_DS = np.array([[1.35, 2.10, 2.53],
-                   [2.10, 2.87, 3.40],
-                   [2.53, 3.40, 3.40]]) * ABOHR
+ALPHAS = (
+    np.array(
+        [
+            [1.0000, 0.3949, 0.3949],
+            [0.3949, 0.2800, 0.2800],
+            [0.3949, 0.2800, 0.2800],
+        ]
+    )
+    * ABOHR ** (-2)
+)
+REF_DS = (
+    np.array([[1.35, 2.10, 2.53], [2.10, 2.87, 3.40], [2.53, 3.40, 3.40]])
+    * ABOHR
+)
 
 COVRADS = dict(
-    H=0.320, He=0.310,
-    Li=1.630, Be=0.900, B=0.820, C=0.770,
-    N=0.750, O=0.730, F=0.720, Ne=0.710,
-    Na=1.540, Mg=1.360, Al=1.180, Si=1.110,
-    P=1.060, S=1.020, Cl=0.990, Ar=0.980,
-    K=2.030, Ca=1.740,
-    Sc=1.440, Ti=1.320, V=1.220, Cr=1.180, Mn=1.170,
-    Fe=1.170, Co=1.160, Ni=1.150, Cu=1.170, Zn=1.250,
-    Ga=1.260, Ge=1.220, As=1.200, Se=1.160, Br=1.140, Kr=1.120,
-    Rb=2.160, Sr=1.910,
-    Y=1.620, Zr=1.450, Nb=1.340, Mo=1.300, Tc=1.270,
-    Ru=1.250, Rh=1.250, Pd=1.280, Ag=1.340, Cd=1.480,
-    In=1.440, Sn=1.410, Sb=1.400, Te=1.360, I=1.330, Xe=1.310,
-    Cs=2.350, Ba=1.980,
-    La=1.690, Ce=1.650, Pr=1.650, Nd=1.840, Pm=1.630, Sm=1.620,
-    Eu=1.850, Gd=1.610, Tb=1.590, Dy=1.590, Ho=1.580, Er=1.570,
-    Tm=1.560, Yb=2.000, Lu=1.560, Hf=1.440, Ta=1.340, W=1.300, Re=1.280,
-    Os=1.260, Ir=1.270, Pt=1.300, Au=1.340, Hg=1.490, Tl=1.480, Pb=1.470,
-    Bi=1.460, Po=1.460, At=2.000, Rn=2.000, Fr=2.000, Ra=2.000, Ac=2.000,
-    Th=1.650, Pa=2.000, U=1.420)
+    H=0.320,
+    He=0.310,
+    Li=1.630,
+    Be=0.900,
+    B=0.820,
+    C=0.770,
+    N=0.750,
+    O=0.730,
+    F=0.720,
+    Ne=0.710,
+    Na=1.540,
+    Mg=1.360,
+    Al=1.180,
+    Si=1.110,
+    P=1.060,
+    S=1.020,
+    Cl=0.990,
+    Ar=0.980,
+    K=2.030,
+    Ca=1.740,
+    Sc=1.440,
+    Ti=1.320,
+    V=1.220,
+    Cr=1.180,
+    Mn=1.170,
+    Fe=1.170,
+    Co=1.160,
+    Ni=1.150,
+    Cu=1.170,
+    Zn=1.250,
+    Ga=1.260,
+    Ge=1.220,
+    As=1.200,
+    Se=1.160,
+    Br=1.140,
+    Kr=1.120,
+    Rb=2.160,
+    Sr=1.910,
+    Y=1.620,
+    Zr=1.450,
+    Nb=1.340,
+    Mo=1.300,
+    Tc=1.270,
+    Ru=1.250,
+    Rh=1.250,
+    Pd=1.280,
+    Ag=1.340,
+    Cd=1.480,
+    In=1.440,
+    Sn=1.410,
+    Sb=1.400,
+    Te=1.360,
+    I=1.330,
+    Xe=1.310,
+    Cs=2.350,
+    Ba=1.980,
+    La=1.690,
+    Ce=1.650,
+    Pr=1.650,
+    Nd=1.840,
+    Pm=1.630,
+    Sm=1.620,
+    Eu=1.850,
+    Gd=1.610,
+    Tb=1.590,
+    Dy=1.590,
+    Ho=1.580,
+    Er=1.570,
+    Tm=1.560,
+    Yb=2.000,
+    Lu=1.560,
+    Hf=1.440,
+    Ta=1.340,
+    W=1.300,
+    Re=1.280,
+    Os=1.260,
+    Ir=1.270,
+    Pt=1.300,
+    Au=1.340,
+    Hg=1.490,
+    Tl=1.480,
+    Pb=1.470,
+    Bi=1.460,
+    Po=1.460,
+    At=2.000,
+    Rn=2.000,
+    Fr=2.000,
+    Ra=2.000,
+    Ac=2.000,
+    Th=1.650,
+    Pa=2.000,
+    U=1.420,
+)
 
 
 ID = np.identity(3)
@@ -241,6 +639,17 @@ ZERO = np.zeros((3, 3))
 
 
 def vector_separation(cell_h, cell_ih, qi, qj):
+    """Summary
+
+    Args:
+        cell_h (TYPE): Description
+        cell_ih (TYPE): Description
+        qi (TYPE): Description
+        qj (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     # This file is part of i-PI.
     # i-PI Copyright (C) 2014-2015 i-PI developers
     # See the "licenses" directory for full license information.
@@ -271,92 +680,202 @@ def vector_separation(cell_h, cell_ih, qi, qj):
     sij = np.dot(cell_ih, (qi - qj).T)  # column vectors needed
     sij -= np.rint(sij)
 
-    dij = np.dot(cell_h, sij).T         # back to i-pi shape
+    dij = np.dot(cell_h, sij).T  # back to i-pi shape
     rij = np.linalg.norm(dij, axis=1)
 
     return dij, rij
 
 
 def vdwHessian(atoms):
+    """Summary
+
+    Args:
+        atoms (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
 
     def periodic_R(cell_h, cell_ih, qi, qj):
-        sij = np.dot(cell_ih, (qi - qj).T)  
+        """Summary
+
+        Args:
+            cell_h (TYPE): Description
+            cell_ih (TYPE): Description
+            qi (TYPE): Description
+            qj (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        sij = np.dot(cell_ih, (qi - qj).T)
         sij -= np.rint(sij)
-        dij = np.dot(cell_h, sij).T        
+        dij = np.dot(cell_h, sij).T
         rij = np.linalg.norm(dij)
         return dij, rij
 
-
-    N  = len(atoms)
+    N = len(atoms)
     coordinates = atoms.get_positions()
     atom_names = atoms.get_chemical_symbols()
     cell_h = atoms.get_cell()[:]
     cell_ih = atoms.get_reciprocal_cell()[:]
-    hessian = np.zeros(shape = (3 * N, 3 * N))
+    hessian = np.zeros(shape=(3 * N, 3 * N))
     atomsRange = list(range(N))
-    units = (BOHR_to_angstr ** 6) * HARTREE_to_eV 
+    units = (BOHR_to_angstr ** 6) * HARTREE_to_eV
 
     def C6AB(A, B):
+        """Summary
 
-        C6AB = 2. * C6_vdW[A] * C6_vdW[B] / (ALPHA_vdW[B] / ALPHA_vdW[A] * C6_vdW[A] + ALPHA_vdW[A] / ALPHA_vdW[B] * C6_vdW[B]) 
+        Args:
+            A (TYPE): Description
+            B (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        C6AB = (
+            2.0
+            * C6_vdW[A]
+            * C6_vdW[B]
+            / (
+                ALPHA_vdW[B] / ALPHA_vdW[A] * C6_vdW[A]
+                + ALPHA_vdW[A] / ALPHA_vdW[B] * C6_vdW[B]
+            )
+        )
         # C6AB = 0.5 * (C6_vdW[A] + C6_vdW[B])
-        
-        return C6AB * units # in eV*Angstr^6
+
+        return C6AB * units  # in eV*Angstr^6
 
     def get_R0AB(A, B):
-        return (VDW_radii[B] + VDW_radii[A]) * 0.5 * BOHR_to_angstr  # in Angstroms
+        """Summary
+
+        Args:
+            A (TYPE): Description
+            B (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        return (
+            (VDW_radii[B] + VDW_radii[A]) * 0.5 * BOHR_to_angstr
+        )  # in Angstroms
 
     def rho_ij(A, B, R):
+        """Summary
+
+        Args:
+            A (TYPE): Description
+            B (TYPE): Description
+            R (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
 
         def name2row(atom_name):
-            """Return row number of atom type (starting with 0, max 2)."""
+            """Return row number of atom type (starting with 0, max 2).
+
+            Args:
+                atom_name (TYPE): Description
+
+            Returns:
+                TYPE: Description
+            """
             name = canonize(atom_name)
-            if name in ('H', 'He'):
+            if name in ("H", "He"):
                 return 0
-            elif name in ('Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne'):
+            elif name in ("Li", "Be", "B", "C", "N", "O", "F", "Ne"):
                 return 1
             else:
                 return 2
+
         k = name2row(A)
         l = name2row(B)
         R0_vdW_AB = get_R0AB(A, B)
         alpha = alphas_vdW[A][B]
-        return np.exp(alpha*(R0_vdW_AB**2 - R**2))
+        return np.exp(alpha * (R0_vdW_AB ** 2 - R ** 2))
 
     def C12AB(A, B, C6):
+        """Summary
 
+        Args:
+            A (TYPE): Description
+            B (TYPE): Description
+            C6 (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         R0AB = get_R0AB(A, B)
-        C12AB = 0.5*C6*(R0AB**6)    
-        return C12AB # in eV*Angstr^6
+        C12AB = 0.5 * C6 * (R0AB ** 6)
+        return C12AB  # in eV*Angstr^6
 
     def RAB(cell_h, cell_ih, qi, qj):
+        """Summary
 
+        Args:
+            cell_h (TYPE): Description
+            cell_ih (TYPE): Description
+            qi (TYPE): Description
+            qj (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         if np.array_equal(cell_h, np.zeros([3, 3])):
-            R = np.array(np.linalg.norm(qi-qj))
+            R = np.array(np.linalg.norm(qi - qj))
         else:
-            dij, R = periodic_R(cell_h, cell_ih, qi, qj) 
-        return R # in Angstroms
+            dij, R = periodic_R(cell_h, cell_ih, qi, qj)
+        return R  # in Angstroms
 
     def vdW_element(k, l, C6, C12, R0, R, qi, qj):
+        """Summary
 
-        norm = (R0/R)**2
-        a1 = 48*C6*(qi[k]-qj[k])*(qi[l]-qj[l])*norm/R0**10
-        a2 = -168*C12*(qi[k]-qj[k])*(qi[l]-qj[l])*norm/R0**16
+        Args:
+            k (TYPE): Description
+            l (TYPE): Description
+            C6 (TYPE): Description
+            C12 (TYPE): Description
+            R0 (TYPE): Description
+            R (TYPE): Description
+            qi (TYPE): Description
+            qj (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        norm = (R0 / R) ** 2
+        a1 = 48 * C6 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / R0 ** 10
+        a2 = -168 * C12 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / R0 ** 16
         if k == l:
-            a3 = -6*C6/R0**8
-            a4 = 12*C12/R0**14
+            a3 = -6 * C6 / R0 ** 8
+            a4 = 12 * C12 / R0 ** 14
         else:
             a3 = 0
             a4 = 0
         return a1 + a2 + a3 + a4
 
     def vdW_element_exact(k, l, C6, C12, R0, R, qi, qj):
-        
-        a1 = 48*C6*(qi[k]-qj[k])*(qi[l]-qj[l])/R**10
-        a2 = -168*C12*(qi[k]-qj[k])*(qi[l]-qj[l])/R**16
+        """Summary
+
+        Args:
+            k (TYPE): Description
+            l (TYPE): Description
+            C6 (TYPE): Description
+            C12 (TYPE): Description
+            R0 (TYPE): Description
+            R (TYPE): Description
+            qi (TYPE): Description
+            qj (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        a1 = 48 * C6 * (qi[k] - qj[k]) * (qi[l] - qj[l]) / R ** 10
+        a2 = -168 * C12 * (qi[k] - qj[k]) * (qi[l] - qj[l]) / R ** 16
         if k == l:
-            a3 = -6*C6/R**8
-            a4 = 12*C12/R**14
+            a3 = -6 * C6 / R ** 8
+            a4 = 12 * C12 / R ** 14
         else:
             a3 = 0
             a4 = 0
@@ -364,7 +883,7 @@ def vdwHessian(atoms):
 
     for i in atomsRange:
         for j in atomsRange:
-            if j>i:
+            if j > i:
                 for k in range(3):
                     for l in range(3):
                         # Calculate C6, C12, rij
@@ -380,28 +899,45 @@ def vdwHessian(atoms):
                         # print("rho, ",rho_ij(A, B, R))
                         # print(rho_ij(A, B, R))
                         # print(vdW_element(k, l, C6, C12, R0AB, R, qi, qj))
-                        hessian[3*i+k, 3*j+l] = vdW_element(k, l, C6, C12, R0AB, R, qi, qj) * rho_ij(A, B, R) 
-                        # hessian[3*i+k, 3*j+l] = vdW_element_exact(k, l, C6, C12, R0AB, R, qi, qj)   
+                        hessian[3 * i + k, 3 * j + l] = vdW_element(
+                            k, l, C6, C12, R0AB, R, qi, qj
+                        ) * rho_ij(A, B, R)
+                        # hessian[3*i+k, 3*j+l] = vdW_element_exact(k, l, C6, C12, R0AB, R, qi, qj)
 
     # Fill the down triangle
-    hessian = hessian + hessian.T    
+    hessian = hessian + hessian.T
     # Calculate Acoustic sum rule
-    hessian = ASR(hessian) 
+    hessian = ASR(hessian)
     # Add stabilization to the diagonal
     jitter = 0.005
     hessian = add_jitter(hessian, jitter)
     # Check if positive and symmetric:
     symmetric, positive = check_positive_symmetric(hessian)
     if not symmetric:
-        print("Hessian is not symmetric! Will give troubles during optimization!")
+        print(
+            "Hessian is not symmetric! Will give troubles during optimization!"
+        )
         sys.exit(0)
     if not positive:
-        print("Hessian is not positive definite! Will give troubles during optimization!")
+        print(
+            "Hessian is not positive definite! Will give troubles during optimization!"
+        )
         sys.exit(0)
-    return hessian 
+    return hessian
 
 
 def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
+    """Summary
+
+    Args:
+        atoms (TYPE): Description
+        mu (int, optional): Description
+        A (float, optional): Description
+        recalc_mu (bool, optional): Description
+
+    Returns:
+        TYPE: Description
+    """
     # If needed mu is estimated in the beginning and never changed
     precon = Exp(mu=mu, A=3.0, recalc_mu=False)
     precon.make_precon(atoms)
@@ -424,7 +960,7 @@ def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
     #         rij = np.array([np.linalg.norm(qi-Qj) for Qj in qj])
     #     else:
     #         dij, rij = vector_separation(cell_h, cell_ih, qi, qj)
-        
+
     #     coeff = -mu * np.exp(-A * (rij / r_NN - 1))
     #     mask = np.array(rij>=r_cut)
     #     coeff[mask] = 0
@@ -435,7 +971,7 @@ def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
     #     hessian[3 * i + 2, :] = stack[2]
 
     # # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
-    # hessian = ASR(hessian) 
+    # hessian = ASR(hessian)
     # # Add stabilization to the diagonal
     # jitter = 0.1
     # hessian = add_jitter(hessian, jitter)
@@ -447,7 +983,7 @@ def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
     # if not positive:
     #     print("Hessian is not positive definite! Will give troubles during optimization!")
     #     # sys.exit(0)
-    # return hessian 
+    # return hessian
 
 
 # def ExpHessian_P(atoms, mu=1, A=3):
@@ -480,7 +1016,7 @@ def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
 #         hessian[3 * i + 0, :] = stack[0]
 #         hessian[3 * i + 1, :] = stack[1]
 #         hessian[3 * i + 2, :] = stack[2]
-#     hessian = ASR(hessian) 
+#     hessian = ASR(hessian)
 #     # hessian = hessian + hessian.T - np.diag(hessian.diagonal())
 #     # for ind in range(len(hessian)):
 #         # hessian[ind, ind] = -np.sum(hessian[ind])
@@ -494,7 +1030,13 @@ Contribution from Jürgen Wieferink regarding the Lindh preconditioner
 
 
 def _acc_dict(key, d, val):
-    """If key in dict, accumulate, otherwise set."""
+    """If key in dict, accumulate, otherwise set.
+
+    Args:
+        key (TYPE): Description
+        d (TYPE): Description
+        val (TYPE): Description
+    """
     if key not in d:
         d[key] = np.zeros_like(val)
     d[key] += val
@@ -510,6 +1052,17 @@ def isposvec(vec, eps=1e-10, noself=True):
     True
     >>> isposvec(np.array([-1., 0., 1.]))
     True
+
+    Args:
+        vec (TYPE): Description
+        eps (float, optional): Description
+        noself (bool, optional): Description
+
+    Returns:
+        TYPE: Description
+
+    Raises:
+        ValueError: Description
     """
     for x in reversed(vec):
         if x > eps:
@@ -529,8 +1082,14 @@ def canonize(atom_name):
     minuskel.
 
     Example:
-    >>> print canonize("Ru"), canonize("-H3"), canonize("CT")
-    Ru H C
+        >>> print canonize("Ru"), canonize("-H3"), canonize("CT")
+        Ru H C
+
+    Args:
+        atom_name (TYPE): Description
+
+    Returns:
+        TYPE: Description
     """
     name = atom_name
     while name and not name[0].isupper():
@@ -543,11 +1102,18 @@ def canonize(atom_name):
 
 
 def name2row(atom_name):
-    """Return row number of atom type (starting with 0, max 2)."""
+    """Return row number of atom type (starting with 0, max 2).
+
+    Args:
+        atom_name (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     name = canonize(atom_name)
-    if name in ('H', 'He'):
+    if name in ("H", "He"):
         return 0
-    elif name in ('Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne'):
+    elif name in ("Li", "Be", "B", "C", "N", "O", "F", "Ne"):
         return 1
     else:
         return 2
@@ -559,6 +1125,7 @@ class Damper(object):
     A Damper is an object that can judge the importance of an atom pair from
     the interatomic distance and the atom numbers.
     """
+
     def exponent(self, AB, i, j):
         """Return exponent for distance AB and atom types i, j.
 
@@ -566,61 +1133,164 @@ class Damper(object):
         is an implementation detail.  Most probably, the initializer
         should be passed some system related information, i.e. at
         least the atom types within the system.
+
+        Args:
+            AB (TYPE): Description
+            i (TYPE): Description
+            j (TYPE): Description
+
+        Raises:
+            NotImplementedError: Description
         """
         raise NotImplementedError()
+
     def Rcut(self, max_exponent):
-        """Return the maximum distance leading to max_exponent."""
+        """Return the maximum distance leading to max_exponent.
+
+        Args:
+            max_exponent (TYPE): Description
+        """
 
 
 class SimpleDamper(Damper):
-    """Damper for maximum chain lenght (exponent==bondlength)."""
+    """Damper for maximum chain lenght (exponent==bondlength).
+
+    Attributes:
+        atom2any (TYPE): Description
+    """
+
     def __init__(self, atom2any=None):
+        """Summary
+
+        Args:
+            atom2any (None, optional): Description
+        """
         self.atom2any = atom2any
+
     def exponent(self, AB, i, j):
+        """Summary
+
+        Args:
+            AB (TYPE): Description
+            i (TYPE): Description
+            j (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         return norm(AB)
+
     def Rcut(self, max_exponent):
-        """Return the maximum distance leading to max_exponent."""
+        """Return the maximum distance leading to max_exponent.
+
+        Args:
+            max_exponent (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         return max_exponent
 
 
 class CovalenceDamper(Damper):
-    """Damper class for covalent bonds (exponent in set([0, HUGE]))."""
+    """Damper class for covalent bonds (exponent in set([0, HUGE])).
+
+    Attributes:
+        atom2name (TYPE): Description
+        covrads (TYPE): Description
+    """
+
     def __init__(self, atom2name, covrads=COVRADS):
+        """Summary
+
+        Args:
+            atom2name (TYPE): Description
+            covrads (TYPE, optional): Description
+        """
         self.covrads = covrads
         self.atom2name = atom2name
+
     def exponent(self, AB, i, j):
+        """Summary
+
+        Args:
+            AB (TYPE): Description
+            i (TYPE): Description
+            j (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         cr_i = self.covrads[canonize(self.atom2name[i])]
         cr_j = self.covrads[canonize(self.atom2name[j])]
         if norm(AB) < 1.3 * (cr_i + cr_j):
-            return 0.
+            return 0.0
         else:
             return HUGE
+
     def Rcut(self, max_exponent):
-        """Return the maximum distance leading to max_exponent."""
+        """Return the maximum distance leading to max_exponent.
+
+        Args:
+            max_exponent (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         return max(self.covrads[name] for name in list(self.atom2name.values()))
 
 
 class LindhExponent(Damper):
-    """Class of the LINDH object which provides the exponent factors."""
+    """Class of the LINDH object which provides the exponent factors.
+
+    Attributes:
+        alphas (TYPE): Description
+        atom2row (TYPE): Description
+        ref_ds (TYPE): Description
+    """
+
     def __init__(self, atom2row, alphas=ALPHAS, ref_ds=REF_DS):
+        """Summary
+
+        Args:
+            atom2row (TYPE): Description
+            alphas (TYPE, optional): Description
+            ref_ds (TYPE, optional): Description
+        """
         self.alphas = alphas
         self.ref_ds = ref_ds
         self.atom2row = atom2row
 
     def exponent(self, AB, i_atom, j_atom):
-        """Return the exponent for distance AB of given types."""
+        """Return the exponent for distance AB of given types.
+
+        Args:
+            AB (TYPE): Description
+            i_atom (TYPE): Description
+            j_atom (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         i_row, j_row = self.atom2row[i_atom], self.atom2row[j_atom]
         alpha = self.alphas[i_row, j_row]
         ref_d = self.ref_ds[i_row, j_row]
-        return alpha * (AB**2 - ref_d**2)
+        return alpha * (AB ** 2 - ref_d ** 2)
 
     def Rcut(self, max_exponent):
-        """Return the maximum distance for given exponent."""
+        """Return the maximum distance for given exponent.
+
+        Args:
+            max_exponent (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         lr_alpha = np.min(self.alphas)
         lr_ref_d = np.max(self.ref_ds)
         # max_exponent == lr_alpha * (Rcut**2 - lr_ref_d**2)
         # max_exponent / lr_alpha + ref_d**2 == Rcut**2
-        Rcut = np.sqrt(max_exponent / lr_alpha + lr_ref_d**2)
+        Rcut = np.sqrt(max_exponent / lr_alpha + lr_ref_d ** 2)
         return Rcut
 
 
@@ -631,9 +1301,20 @@ class Bravais(object):
     Provides tools to fold a vector or several vectors into the central
     parallel epipede (into_pe) and to retrieve a list of lattice vectors
     within a given radius (all_within).
+
+    Attributes:
+        bra (TYPE): Description
+        ibra (TYPE): Description
+        n (TYPE): Description
+        rec (TYPE): Description
     """
+
     def __init__(self, lattice_vectors):
-        """Initializes Bravais object."""
+        """Initializes Bravais object.
+
+        Args:
+            lattice_vectors (TYPE): Description
+        """
         if lattice_vectors is None:
             lattice_vectors = []
         else:
@@ -642,31 +1323,51 @@ class Bravais(object):
         if self.n > 0:
             self.bra = np.array(lattice_vectors)
             self.ibra = np.linalg.pinv(self.bra)
-            self.rec = 2.*np.pi*np.transpose(self.ibra)
+            self.rec = 2.0 * np.pi * np.transpose(self.ibra)
         else:
             self.bra = np.empty((0, 3))
             self.rec = np.empty((0, 3))
 
     def latvec(self, abc):
-        """Return a lattice vector from integer Bravais indices."""
+        """Return a lattice vector from integer Bravais indices.
+
+        Args:
+            abc (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         vec = np.zeros(3)
         a, b, c = abc
-        if a != 0: vec += a*self.bra[0,:]
-        if b != 0: vec += b*self.bra[1,:]
-        if c != 0: vec += c*self.bra[2,:]
+        if a != 0:
+            vec += a * self.bra[0, :]
+        if b != 0:
+            vec += b * self.bra[1, :]
+        if c != 0:
+            vec += c * self.bra[2, :]
         return vec
 
     def into_pe(self, vecs):
         """Fold vectors (last dimension 3) into parallel epipede.
 
         Examples:
-        >>> lat = Bravais([[1,0,0], [0,2,0]])
-        >>> np.allclose(lat.into_pe([3.2, 1.3, 0.5]), [0.2, -0.7, 0.5])
-        True
+            >>> lat = Bravais([[1,0,0], [0,2,0]])
+            >>> np.allclose(lat.into_pe([3.2, 1.3, 0.5]), [0.2, -0.7, 0.5])
+            True
+
+        Args:
+            vecs (TYPE): Description
+
+        Returns:
+            TYPE: Description
+
+        Raises:
+            ValueError: Description
         """
         vecs = np.asarray(vecs, dtype=float)
         shape = vecs.shape
-        if shape[-1] != 3: raise ValueError("Last dim should be 3.")
+        if shape[-1] != 3:
+            raise ValueError("Last dim should be 3.")
         n_vec = np.product(shape[:-1])
         reslist = []
         for vec in vecs.reshape((n_vec, 3)):
@@ -677,56 +1378,96 @@ class Bravais(object):
         return np.array(reslist).reshape(shape)
 
     def all_within(self, Rcut, add_base_PE=False):
-        r"""Return a list of all lattice vector indices shorter than Rcut.
+        """Return a list of all lattice vector indices shorter than Rcut.
 
         If base_PE is True, add one parallel epipede (PE) to the region.
 
         Examples:
-        >>> cos60, sin60 = np.cos(np.pi/3), np.sin(np.pi/3)
-        >>> lat = Bravais([[1,0,0], [cos60, sin60, 0], [0,0,1.5]])
-        >>> lat.all_within(0.5) == [(0, 0, 0)]
-        True
-        >>> (1, 0, 0) in lat.all_within(1.1)
-        True
-        >>> set1 = lat.all_within(1.2)
-        >>> len(set1)
-        7
-        >>> len(lat.all_within(0.2, add_base_PE=True))
-        27
-        
+            >>> cos60, sin60 = np.cos(np.pi/3), np.sin(np.pi/3)
+            >>> lat = Bravais([[1,0,0], [cos60, sin60, 0], [0,0,1.5]])
+            >>> lat.all_within(0.5) == [(0, 0, 0)]
+            True
+            >>> (1, 0, 0) in lat.all_within(1.1)
+            True
+            >>> set1 = lat.all_within(1.2)
+            >>> len(set1)
+            7
+            >>> len(lat.all_within(0.2, add_base_PE=True))
+            27
+
         The resulting vectors are sorted:
-        >>> lat.all_within(2.2)[0] == (0, 0, 0)
-        True
+            >>> lat.all_within(2.2)[0] == (0, 0, 0)
+            True
+
+        Args:
+            Rcut (TYPE): Description
+            add_base_PE (bool, optional): Description
+
+        Returns:
+            TYPE: Description
         """
         len_rec = np.array([norm(v) for v in self.rec])
-        ns = np.floor(len_rec * Rcut / (2*np.pi)) # cross check with diss
+        ns = np.floor(len_rec * Rcut / (2 * np.pi))  # cross check with diss
         n_cells = np.zeros(3, int)
-        n_cells[:self.n] = ns
+        n_cells[: self.n] = ns
         abcs = set()
-        for a in range(-n_cells[0], n_cells[0]+1):
-            for b in range(-n_cells[1], n_cells[1]+1):
-                for c in range(-n_cells[2], n_cells[2]+1):
+        for a in range(-n_cells[0], n_cells[0] + 1):
+            for b in range(-n_cells[1], n_cells[1] + 1):
+                for c in range(-n_cells[2], n_cells[2] + 1):
                     vec = self.latvec((a, b, c))
                     if norm(vec) <= Rcut:
                         abcs.add((a, b, c))
         if add_base_PE:
             # add one in each direction
-            def _around(d, n): return [-1, 0, 1] if d < n else [0]
+            def _around(d, n):
+                """Summary
+
+                Args:
+                    d (TYPE): Description
+                    n (TYPE): Description
+
+                Returns:
+                    TYPE: Description
+                """
+                return [-1, 0, 1] if d < n else [0]
+
             old_abcs = set(abcs)
             for i, j, k in old_abcs:
                 for ii in _around(0, self.n):
                     for jj in _around(1, self.n):
                         for kk in _around(2, self.n):
-                            abcs.add((i+ii, j+jj, k+kk))
+                            abcs.add((i + ii, j + jj, k + kk))
 
-        def _norm_of_abc(abc): return norm(self.latvec(abc))
+        def _norm_of_abc(abc):
+            """Summary
+
+            Args:
+                abc (TYPE): Description
+
+            Returns:
+                TYPE: Description
+            """
+            return norm(self.latvec(abc))
+
         return sorted(abcs, key=_norm_of_abc)
 
 
 def get_pairs(atoms1, atoms2, Rcut, use_scipy=True):
+    """Summary
+
+    Args:
+        atoms1 (TYPE): Description
+        atoms2 (TYPE): Description
+        Rcut (TYPE): Description
+        use_scipy (bool, optional): Description
+
+    Returns:
+        TYPE: Description
+    """
     if use_scipy:
         try:
             import scipy.spatial  # KDTree
+
             have_scipy = True
         except ImportError:
             have_scipy = False
@@ -755,31 +1496,51 @@ class Pairs(object):
     """Find chains (pairs, triples, ...) of atoms.
 
     Example:
-    # Chain of pairs, one at zero, one slightly distorted.
-    >>> bra = [[1, 0, 0]]
-    >>> atom = [[0, 0, 0], [0.01, 0.25, 0]]
-    >>> pairs = Pairs(bra, atom, SimpleDamper(), 1.5)
-    >>> bonds = list(pairs.chains(2, 1.01))   # all bonds up to length 1.
-    >>> for damp, atlist in bonds:  # only intracell and its own images.
-    ...     assert len(atlist) == 2
-    ...     print "%6.4f %s" % (damp, atlist)
-    0.2502 [(0, (0, 0, 0)), (1, (0, 0, 0))]
-    1.0000 [(0, (0, 0, 0)), (0, (1, 0, 0))]
-    1.0000 [(1, (0, 0, 0)), (1, (1, 0, 0))]
-    >>> bendings = list(pairs.chains(3, 1.251))   # 1.251: one short 1->2 bond.
-    >>> for damp, atlist in bendings:
-    ...     assert len(atlist) == 3
-    ...     print "%6.4f %s" % (damp, atlist)
-    1.2502 [(0, (0, 0, 0)), (0, (-1, 0, 0)), (1, (-1, 0, 0))]
-    1.2502 [(0, (0, 0, 0)), (0, (1, 0, 0)), (1, (1, 0, 0))]
-    1.2502 [(0, (0, 0, 0)), (1, (0, 0, 0)), (1, (-1, 0, 0))]
-    1.2502 [(0, (0, 0, 0)), (1, (0, 0, 0)), (1, (1, 0, 0))]
+        # Chain of pairs, one at zero, one slightly distorted.
+        >>> bra = [[1, 0, 0]]
+        >>> atom = [[0, 0, 0], [0.01, 0.25, 0]]
+        >>> pairs = Pairs(bra, atom, SimpleDamper(), 1.5)
+        >>> bonds = list(pairs.chains(2, 1.01))   # all bonds up to length 1.
+        >>> for damp, atlist in bonds:  # only intracell and its own images.
+        ...     assert len(atlist) == 2
+        ...     print "%6.4f %s" % (damp, atlist)
+        0.2502 [(0, (0, 0, 0)), (1, (0, 0, 0))]
+        1.0000 [(0, (0, 0, 0)), (0, (1, 0, 0))]
+        1.0000 [(1, (0, 0, 0)), (1, (1, 0, 0))]
+        >>> bendings = list(pairs.chains(3, 1.251))   # 1.251: one short 1->2 bond.
+        >>> for damp, atlist in bendings:
+        ...     assert len(atlist) == 3
+        ...     print "%6.4f %s" % (damp, atlist)
+        1.2502 [(0, (0, 0, 0)), (0, (-1, 0, 0)), (1, (-1, 0, 0))]
+        1.2502 [(0, (0, 0, 0)), (0, (1, 0, 0)), (1, (1, 0, 0))]
+        1.2502 [(0, (0, 0, 0)), (1, (0, 0, 0)), (1, (-1, 0, 0))]
+        1.2502 [(0, (0, 0, 0)), (1, (0, 0, 0)), (1, (1, 0, 0))]
+
+    Attributes:
+        abcs (TYPE): Description
+        atom (TYPE): Description
+        damper (TYPE): Description
+        lat (TYPE): Description
+        max_sing_thres (TYPE): Description
+        n_atom (TYPE): Description
+        pairs (list): Description
+        per_atom (TYPE): Description
     """
+
     def __init__(self, bra, atom, damper, max_sing_thres):
         """Initialize Pairs object.
 
         Returns a Pairs object containing all pairs which the damper gives
         a value smaller than max_sing_thres
+
+        Args:
+            bra (TYPE): Description
+            atom (TYPE): Description
+            damper (TYPE): Description
+            max_sing_thres (TYPE): Description
+
+        Raises:
+            ValueError: Description
         """
         # save parameters
         self.lat = Bravais(bra)
@@ -807,11 +1568,12 @@ class Pairs(object):
         for i, partners in enumerate(pairs):
             proc_partners = []
             for jj in partners:
-                if jj == i: continue
+                if jj == i:
+                    continue
                 Avec = self.atom[i]
                 Bvec = self.per_atom[jj]
                 vec = Bvec - Avec
-                j = jj % self.n_atom    # original vector
+                j = jj % self.n_atom  # original vector
                 # Can be the conversion problem, Must be integer
                 a = jj // self.n_atom
                 abc = self.abcs[a]
@@ -819,10 +1581,18 @@ class Pairs(object):
                 assert np.allclose(vec, Rvec + self.atom[j] - self.atom[i])
                 damp = damper.exponent(norm(vec), i, j)
                 proc_partners.append((j, abc, damp))
-            proc_partners.sort(key=operator.itemgetter(2)) # sort by damp
+            proc_partners.sort(key=operator.itemgetter(2))  # sort by damp
             self.pairs.append(proc_partners)
 
     def getvec(self, iabc):
+        """Summary
+
+        Args:
+            iabc (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         i, abc = iabc
         return self.lat.latvec(abc) + self.atom[i]
 
@@ -831,6 +1601,14 @@ class Pairs(object):
 
         This is the main workhorse and returns a weight-sorted list of
         bonds (n=2), bendings (n=3), or torsions (n=3).
+
+        Args:
+            n (TYPE): Description
+            thres (TYPE): Description
+            directed (bool, optional): Description
+
+        Returns:
+            TYPE: Description
         """
         res = []
         for i in range(self.n_atom):
@@ -846,26 +1624,40 @@ class Pairs(object):
         return final
 
     def _chains_i(self, i, n, thres):
-        """Get all chains of length n from atom i."""
-        if n < 2: raise ValueError("n should be at least 2.")
+        """Get all chains of length n from atom i.
+
+        Args:
+            i (TYPE): Description
+            n (TYPE): Description
+            thres (TYPE): Description
+
+        Returns:
+            TYPE: Description
+
+        Raises:
+            ValueError: Description
+        """
+        if n < 2:
+            raise ValueError("n should be at least 2.")
         res = []
         Avec = self.atom[i]
         for j, abc, damp in self.pairs[i]:
-            if damp > thres: break    # they should be sorted
+            if damp > thres:
+                break  # they should be sorted
             if n == 2:
                 # just pairs
                 Bvec = self.lat.latvec(abc) + self.atom[j]
                 tot_chain_damp = damp
-                res.append((tot_chain_damp, [(i, (0,0,0)), (j, abc)]))
+                res.append((tot_chain_damp, [(i, (0, 0, 0)), (j, abc)]))
             else:
                 # recursion
                 rest_thres = thres - damp
-                for chain_damp, atlist in self._chains_i(j, n-1, rest_thres):
-                    shifted_atlist = [(i, (0,0,0))]
+                for chain_damp, atlist in self._chains_i(j, n - 1, rest_thres):
+                    shifted_atlist = [(i, (0, 0, 0))]
                     for (k, kabc) in atlist:
-                        kabc = tuple([ai+ak for (ai, ak) in zip(abc, kabc)])
+                        kabc = tuple([ai + ak for (ai, ak) in zip(abc, kabc)])
                         if i == k and kabc == (0, 0, 0):
-                            break   # self reference
+                            break  # self reference
                         shifted_atlist.append((k, kabc))
                     else:
                         tot_chain_damp = damp + chain_damp
@@ -891,8 +1683,21 @@ class HessianBuilder(object):
     >>> HD[1,2,1,2] = 0.5
     >>> np.allclose(HB.to_array(), HD)
     True
+
+    Attributes:
+        Hdict (TYPE): Description
+        n_atom (TYPE): Description
+        n_dyn_periodic (TYPE): Description
+        n_vec (TYPE): Description
     """
+
     def __init__(self, n_atom, n_dyn_periodic):
+        """Summary
+
+        Args:
+            n_atom (TYPE): Description
+            n_dyn_periodic (TYPE): Description
+        """
         self.n_atom = n_atom
         self.n_dyn_periodic = n_dyn_periodic
         self.n_vec = n_atom + n_dyn_periodic
@@ -902,6 +1707,10 @@ class HessianBuilder(object):
         """Add rank-one term vec * vec * vec^T.
 
         Here, vec = {i_atom: np.array([xi, yi, zi]), ...}.
+
+        Args:
+            fac (TYPE): Description
+            vec (TYPE): Description
         """
         # Make sure that we have np.ndarrays
         for i_atom in vec:
@@ -909,7 +1718,7 @@ class HessianBuilder(object):
         # Perform dyadic product
         for i_atom, ivec in vec.items():
             for j_atom, jvec in vec.items():
-                blk = fac * ivec[:,np.newaxis] * jvec[np.newaxis,:]
+                blk = fac * ivec[:, np.newaxis] * jvec[np.newaxis, :]
                 _acc_dict((i_atom, j_atom), self.Hdict, blk)
 
     def add_rank1_from_atlist(self, fac, dq_datom, atlist):
@@ -917,6 +1726,11 @@ class HessianBuilder(object):
 
         Here, dq_atom = [np.array([xi, yi, zi]), ...], and
         atlist = [(i_tau, (a, b, c)), ...].
+
+        Args:
+            fac (TYPE): Description
+            dq_datom (TYPE): Description
+            atlist (TYPE): Description
         """
         vecdict = dict()
         for (dqi, (i_atom, abc)) in zip(dq_datom, atlist):
@@ -930,13 +1744,21 @@ class HessianBuilder(object):
         self.add_rank1(fac, vecdict)
 
     def add_unity(self, fac):
-        """Add multiple of unity."""
+        """Add multiple of unity.
+
+        Args:
+            fac (TYPE): Description
+        """
         blk = fac * np.identity(3)
         for i_vec in range(self.n_vec):
             _acc_dict((i_vec, i_vec), self.Hdict, blk)
 
     def to_array(self):
-        """Construct full np.ndarray (only atomic coordinates, no stress)."""
+        """Construct full np.ndarray (only atomic coordinates, no stress).
+
+        Returns:
+            TYPE: Description
+        """
         H = np.zeros((self.n_vec, 3, self.n_vec, 3))
         for i_atom, j_atom in self.Hdict:
             H[i_atom, :, j_atom, :] = self.Hdict[(i_atom, j_atom)]
@@ -949,12 +1771,23 @@ def format_atlist(atlist, is_periodic):
     Additionally adds 1 to atom numbers (-> start with 1):
     >>> print format_atlist([(0, (0, 0, 0)), (1, (0, -1, 0))], True)
       1( 0, 0, 0) --  2( 0,-1, 0)
+
+    Args:
+        atlist (TYPE): Description
+        is_periodic (TYPE): Description
+
+    Returns:
+        TYPE: Description
     """
     if is_periodic:
-        return " --".join(["%3i(%2i,%2i,%2i)" % ((i_atom+1,) + abc)
-                           for (i_atom, abc) in atlist])
+        return " --".join(
+            [
+                "%3i(%2i,%2i,%2i)" % ((i_atom + 1,) + abc)
+                for (i_atom, abc) in atlist
+            ]
+        )
     else:
-        return " --".join(["%3i" % (i_atom+1) for (i_atom, abc) in atlist])
+        return " --".join(["%3i" % (i_atom + 1) for (i_atom, abc) in atlist])
 
 
 def makeorthvec(orth):
@@ -963,11 +1796,17 @@ def makeorthvec(orth):
     >>> import numpy.random
     >>> vec = numpy.random.random(3)
     >>> assert np.dot(vec, makeorthvec(vec)) < 1e-12
+
+    Args:
+        orth (TYPE): Description
+
+    Returns:
+        TYPE: Description
     """
     orth /= norm(orth)
-    vec = np.cross(orth, np.array([0., 0., 1.]))
-    if (norm(vec) < 0.33):
-        vec = np.cross(orth, np.array([1., 0., 0.]))
+    vec = np.cross(orth, np.array([0.0, 0.0, 1.0]))
+    if norm(vec) < 0.33:
+        vec = np.cross(orth, np.array([1.0, 0.0, 0.0]))
     return vec / norm(vec)
 
 
@@ -986,43 +1825,59 @@ def model_matrix(bra, atom, builder, damper, thres, logfile=None):
     >>> assert not np.allclose(H[0,0], 0.)
     >>> assert np.allclose(H[0,0], H[3,3])
     >>> assert np.allclose(H[0,3], -H[0,0])
+
+    Args:
+        bra (TYPE): Description
+        atom (TYPE): Description
+        builder (TYPE): Description
+        damper (TYPE): Description
+        thres (TYPE): Description
+        logfile (None, optional): Description
+
+    Returns:
+        TYPE: Description
     """
-    thres_fac = np.exp(- thres) * K_BOND
+    thres_fac = np.exp(-thres) * K_BOND
     if logfile is not None:
-        logfile.write("# Neglecting anything with a prefac < %8.3g "
-                      "eV[/A^2]\n\n" % thres_fac)
+        logfile.write(
+            "# Neglecting anything with a prefac < %8.3g "
+            "eV[/A^2]\n\n" % thres_fac
+        )
 
     is_per = bra is not None and len(bra) > 0
     pairs = Pairs(bra, atom, damper, thres)
 
     # bonds:
     for damp, atlist in pairs.chains(2, thres):
-        fac = np.exp(- damp) * K_BOND
+        fac = np.exp(-damp) * K_BOND
         if fac < thres_fac:
             continue
         vecs = [pairs.getvec(at) for at in atlist]
         q, dq = q_bond(*vecs)
         if logfile is not None:
-            logfile.write("# bond: %4.2f A %s  "
-                          "[damp: %8.3g; prefac: %8.3g eV/A^2]\n" %
-                          (q, format_atlist(atlist, is_per), damp, fac))
+            logfile.write(
+                "# bond: %4.2f A %s  "
+                "[damp: %8.3g; prefac: %8.3g eV/A^2]\n"
+                % (q, format_atlist(atlist, is_per), damp, fac)
+            )
         builder.add_rank1_from_atlist(fac, dq, atlist)
     if logfile is not None:
         logfile.write("\n")
 
     # bendings:
     for damp, atlist in pairs.chains(3, thres):
-        fac = np.exp(- damp) * K_BENDING
+        fac = np.exp(-damp) * K_BENDING
         if fac < thres_fac:
             continue
         vecs = [pairs.getvec(at) for at in atlist]
         q, dq = q_bending(*vecs)
         if logfile is not None:
-            logfile.write("# angle: %4.0f deg %s  "
-                          "[damp: %8.3g; prefac: %8.3g eV]\n" %
-                          (np.rad2deg(q), format_atlist(atlist, is_per),
-                           damp, fac))
-        if 0.05*np.pi < q < 0.95*np.pi:
+            logfile.write(
+                "# angle: %4.0f deg %s  "
+                "[damp: %8.3g; prefac: %8.3g eV]\n"
+                % (np.rad2deg(q), format_atlist(atlist, is_per), damp, fac)
+            )
+        if 0.05 * np.pi < q < 0.95 * np.pi:
             builder.add_rank1_from_atlist(fac, dq, atlist)
         else:
             Avec, Bvec, Cvec = vecs
@@ -1038,27 +1893,29 @@ def model_matrix(bra, atom, builder, damper, thres, logfile=None):
 
     # torsions
     for damp, atlist in pairs.chains(4, thres):
-        fac = np.exp(- damp) * K_TORSION
+        fac = np.exp(-damp) * K_TORSION
         if fac < thres_fac:
             continue
         vecs = [pairs.getvec(at) for at in atlist]
         try:
             q, dq = q_torsion(*vecs)
             if logfile is not None:
-                logfile.write("# torsion: %4.0f deg %s  "
-                              "[damp: %8.3g; prefac: %8.3g eV]\n" %
-                              (np.rad2deg(q), format_atlist(atlist, is_per),
-                               damp, fac))
+                logfile.write(
+                    "# torsion: %4.0f deg %s  "
+                    "[damp: %8.3g; prefac: %8.3g eV]\n"
+                    % (np.rad2deg(q), format_atlist(atlist, is_per), damp, fac)
+                )
             builder.add_rank1_from_atlist(fac, dq, atlist)
         except ValueError:
             if logfile is not None:
-                logfile.write("# torsion: ---- deg %s "
-                              "[damp: %8.3g; prefac: %8.3g eV]\n" %
-                              (format_atlist(atlist, is_per), damp, fac))
+                logfile.write(
+                    "# torsion: ---- deg %s "
+                    "[damp: %8.3g; prefac: %8.3g eV]\n"
+                    % (format_atlist(atlist, is_per), damp, fac)
+                )
     if logfile is not None:
         logfile.write("\n")
 
-    
     return builder
 
 
@@ -1077,185 +1934,408 @@ def model_matrix(bra, atom, builder, damper, thres, logfile=None):
 # Obviously, this is not the most efficient way to do it.  But at least,
 # it works...
 
+
 def _dd_matmat(val_shape, dval_di, di_dvar):
+    """Summary
+
+    Args:
+        val_shape (TYPE): Description
+        dval_di (TYPE): Description
+        di_dvar (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     val_rank = len(val_shape)
     assert val_shape == np.shape(dval_di)[:val_rank]
     di_shape = np.shape(dval_di)[val_rank:]
     di_rank = len(di_shape)
     assert di_shape == np.shape(di_dvar)[:di_rank]
-    axes1 = list(range(val_rank, val_rank+di_rank))
+    axes1 = list(range(val_rank, val_rank + di_rank))
     return np.tensordot(dval_di, di_dvar, (axes1, list(range(di_rank))))
 
+
 def _dd_broadcast(val, dval):
+    """Summary
+
+    Args:
+        val (TYPE): Description
+        dval (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     val_rank = len(np.shape(val))
     assert np.shape(val) == np.shape(dval)[:val_rank]
     dval_rank = len(np.shape(dval))
-    newshape = np.shape(val) + (dval_rank-val_rank)*(1,)
+    newshape = np.shape(val) + (dval_rank - val_rank) * (1,)
     return np.reshape(val, newshape)
 
+
 def dd_sum(*arg_ds):
+    """Summary
+
+    Args:
+        *arg_ds: Description
+
+    Returns:
+        TYPE: Description
+    """
     shape = np.shape(arg_ds[0][1])
-    res = np.float(0.)
+    res = np.float(0.0)
     dres = np.zeros(shape)
     for arg, darg in arg_ds:
         res += np.asarray(arg)
         dres += np.asarray(darg)
     return res, dres
 
+
 def dd_mult(vec_d, fac):
+    """Summary
+
+    Args:
+        vec_d (TYPE): Description
+        fac (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     vec, dvec = vec_d
-    return fac*vec, fac*dvec
+    return fac * vec, fac * dvec
+
 
 def dd_prod(*arg_ds):
+    """Summary
+
+    Args:
+        *arg_ds: Description
+
+    Returns:
+        TYPE: Description
+    """
     shape = np.shape(arg_ds[0][1])
-    res = np.float(1.)
+    res = np.float(1.0)
     dres = np.zeros(shape)
     for arg, darg in arg_ds:
-        dres *= arg                     # update previous derivs
+        dres *= arg  # update previous derivs
         dres += np.asarray(darg) * res  # update with previous factors
-        res *= arg                      # update value
+        res *= arg  # update value
     return res, dres
 
+
 def dd_power(var_d, n):
+    """Summary
+
+    Args:
+        var_d (TYPE): Description
+        n (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     var, dvar = var_d
-    val = var**n
-    dval = n*(var**(n-1)) * dvar
+    val = var ** n
+    dval = n * (var ** (n - 1)) * dvar
     return val, dval
 
+
 def dd_dot(vec1_d, vec2_d):
+    """Summary
+
+    Args:
+        vec1_d (TYPE): Description
+        vec2_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     vec1, dvec1 = vec1_d
     vec2, dvec2 = vec2_d
     res = np.dot(vec1, vec2)
-    dres = (np.tensordot(vec1, dvec2, (-1, 0)) +
-            np.tensordot(vec2, dvec1, (-1, 0)))
+    dres = np.tensordot(vec1, dvec2, (-1, 0)) + np.tensordot(
+        vec2, dvec1, (-1, 0)
+    )
     return res, dres
+
 
 def dd_cross(vec1_d, vec2_d):
+    """Summary
+
+    Args:
+        vec1_d (TYPE): Description
+        vec2_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     vec1, dvec1 = vec1_d
     vec2, dvec2 = vec2_d
-    assert np.shape(vec1) == np.shape(vec2) == (3,)   # otherwise...
+    assert np.shape(vec1) == np.shape(vec2) == (3,)  # otherwise...
     res = np.cross(vec1, vec2)
-    dres = - np.cross(vec2, dvec1, axisb=0).T + np.cross(vec1, dvec2, axisb=0).T
+    dres = -np.cross(vec2, dvec1, axisb=0).T + np.cross(vec1, dvec2, axisb=0).T
     return res, dres
+
 
 def dd_norm(vec_d):
+    """Summary
+
+    Args:
+        vec_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     return dd_power(dd_dot(vec_d, vec_d), 0.5)
 
+
 def dd_normalized(vec_d):
+    """Summary
+
+    Args:
+        vec_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     vec, dvec = vec_d
-    fac, dfac = dd_power(dd_norm(vec_d), -1.)
-    res = fac*vec
-    dres = fac*dvec + vec[:,np.newaxis]*dfac[np.newaxis,:]
+    fac, dfac = dd_power(dd_norm(vec_d), -1.0)
+    res = fac * vec
+    dres = fac * dvec + vec[:, np.newaxis] * dfac[np.newaxis, :]
     return res, dres
 
+
 def dd_cosv1v2(vec1_d, vec2_d):
-    return dd_prod(dd_dot(vec1_d, vec2_d),
-                   dd_power(dd_norm(vec1_d), -1.),
-                   dd_power(dd_norm(vec2_d), -1.))
+    """Summary
+
+    Args:
+        vec1_d (TYPE): Description
+        vec2_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    return dd_prod(
+        dd_dot(vec1_d, vec2_d),
+        dd_power(dd_norm(vec1_d), -1.0),
+        dd_power(dd_norm(vec2_d), -1.0),
+    )
+
 
 def dd_arccos(val_d):
+    """Summary
+
+    Args:
+        val_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     val, dval = val_d
-    if 1. < abs(val) < 1. + 1e-10:
+    if 1.0 < abs(val) < 1.0 + 1e-10:
         val = np.sign(val)
     res = np.arccos(val)
     vval = _dd_broadcast(val, dval)
-    dres = - 1. / np.sqrt(1. - vval**2) * dval
+    dres = -1.0 / np.sqrt(1.0 - vval ** 2) * dval
     return res, dres
 
+
 def dd_arcsin(val_d):
+    """Summary
+
+    Args:
+        val_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     val, dval = val_d
-    if 1. < abs(val) < 1. + 1e-10:
+    if 1.0 < abs(val) < 1.0 + 1e-10:
         val = np.sign(val)
     res = np.arcsin(val)
     vval = _dd_broadcast(val, dval)
-    dres = 1. / np.sqrt(1. - vval**2) * dval
+    dres = 1.0 / np.sqrt(1.0 - vval ** 2) * dval
     return res, dres
 
+
 def dd_angle(vec1_d, vec2_d):
+    """Summary
+
+    Args:
+        vec1_d (TYPE): Description
+        vec2_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     return dd_arccos(dd_cosv1v2(vec1_d, vec2_d))
 
+
 def dd_bondlength(pos1_d, pos2_d):
-    AB_d = dd_sum(pos2_d, dd_mult(pos1_d, -1.))
+    """Summary
+
+    Args:
+        pos1_d (TYPE): Description
+        pos2_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    AB_d = dd_sum(pos2_d, dd_mult(pos1_d, -1.0))
     return dd_norm(AB_d)
 
+
 def dd_bondangle(pos1_d, pos2_d, pos3_d):
-    BA_d = dd_sum(pos2_d, dd_mult(pos1_d, -1.))
-    BC_d = dd_sum(pos2_d, dd_mult(pos3_d, -1.))
+    """Summary
+
+    Args:
+        pos1_d (TYPE): Description
+        pos2_d (TYPE): Description
+        pos3_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    BA_d = dd_sum(pos2_d, dd_mult(pos1_d, -1.0))
+    BC_d = dd_sum(pos2_d, dd_mult(pos3_d, -1.0))
     return dd_angle(BA_d, BC_d)
 
+
 def dd_bondangle_directed(pos1_d, pos2_d, pos3_d, dir_d):
-    BA_d = dd_sum(pos2_d, dd_mult(pos1_d, -1.))
-    BC_d = dd_sum(pos2_d, dd_mult(pos3_d, -1.))
+    """Summary
+
+    Args:
+        pos1_d (TYPE): Description
+        pos2_d (TYPE): Description
+        pos3_d (TYPE): Description
+        dir_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    BA_d = dd_sum(pos2_d, dd_mult(pos1_d, -1.0))
+    BC_d = dd_sum(pos2_d, dd_mult(pos3_d, -1.0))
     return dd_directed_angle(BA_d, BC_d, dir_d)
 
+
 def dd_arctan2(y_d, x_d):
+    """Summary
+
+    Args:
+        y_d (TYPE): Description
+        x_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     y, dy = y_d
     x, dx = x_d
     phi = np.arctan2(y, x)
-    tan, dtan = dd_prod(x_d, dd_power(y_d, -1.))
+    tan, dtan = dd_prod(x_d, dd_power(y_d, -1.0))
     tan = _dd_broadcast(tan, dtan)
-    dphi = (1. + tan**2) * dtan
+    dphi = (1.0 + tan ** 2) * dtan
     return phi, dphi
 
+
 def dd_directed_angle(vec1_d, vec2_d, dir_d):
+    """Summary
+
+    Args:
+        vec1_d (TYPE): Description
+        vec2_d (TYPE): Description
+        dir_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     ndir_d = dd_normalized(dir_d)
     vv1_d = dd_cross(vec1_d, ndir_d)
     vv2_d = dd_cross(vec2_d, ndir_d)
-    if (norm(vv1_d[0]) < 1e-7 or
-        norm(vv2_d[0]) < 1e-7):
-        return 0., np.zeros(np.shape(vec1_d[1])[1:])
+    if norm(vv1_d[0]) < 1e-7 or norm(vv2_d[0]) < 1e-7:
+        return 0.0, np.zeros(np.shape(vec1_d[1])[1:])
     vv1_d = dd_normalized(vv1_d)
     vv2_d = dd_normalized(vv2_d)
     cosphi_d = dd_dot(vv1_d, vv2_d)
     vvv_d = dd_cross(vv1_d, vv2_d)
     sinphi_d = dd_dot(vvv_d, ndir_d)
     # phi_d = dd_arctan2(sinphi_d, cosphi_d)
-    if (abs(cosphi_d[0]) < np.sqrt(0.5)):
+    if abs(cosphi_d[0]) < np.sqrt(0.5):
         phi, dphi = dd_arccos(cosphi_d)
-        if sinphi_d[0] < 0.:
-            phi *= -1.
-            dphi *= -1.
+        if sinphi_d[0] < 0.0:
+            phi *= -1.0
+            dphi *= -1.0
     else:
         phi, dphi = dd_arcsin(sinphi_d)
-        if cosphi_d[0] < 0.:
-            phi = - np.pi - phi
-            if phi < np.pi: phi += 2*np.pi
-            dphi *= -1.
+        if cosphi_d[0] < 0.0:
+            phi = -np.pi - phi
+            if phi < np.pi:
+                phi += 2 * np.pi
+            dphi *= -1.0
     return phi, dphi
 
+
 def dd_bondtorsion(pos1_d, pos2_d, pos3_d, pos4_d):
-    BA_d = dd_sum(pos2_d, dd_mult(pos1_d, -1.))
-    BC_d = dd_sum(pos2_d, dd_mult(pos3_d, -1.))
-    CD_d = dd_sum(pos3_d, dd_mult(pos4_d, -1.))
+    """Summary
+
+    Args:
+        pos1_d (TYPE): Description
+        pos2_d (TYPE): Description
+        pos3_d (TYPE): Description
+        pos4_d (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    BA_d = dd_sum(pos2_d, dd_mult(pos1_d, -1.0))
+    BC_d = dd_sum(pos2_d, dd_mult(pos3_d, -1.0))
+    CD_d = dd_sum(pos3_d, dd_mult(pos4_d, -1.0))
     return dd_directed_angle(BA_d, CD_d, BC_d)
+
 
 ##############################################################################
 ###################################### q #####################################
 ##############################################################################
 
+
 def q_bond(Avec, Bvec):
     """Bond length and derivative wrt vector AB.
 
     Test:
-    >>> np.allclose(q_bond([0., 0., 0.], [1., 1., 1.])[0], np.sqrt(3.))
-    True
-    >>> assert _test_qgrad(q_bond, 2) < 1e-5
+        >>> np.allclose(q_bond([0., 0., 0.], [1., 1., 1.])[0], np.sqrt(3.))
+        True
+        >>> assert _test_qgrad(q_bond, 2) < 1e-5
+
+    Args:
+        Avec (TYPE): Description
+        Bvec (TYPE): Description
+
+    Returns:
+        TYPE: Description
     """
     Avec_d = (np.asarray(Avec), np.c_[ID, ZERO])
     Bvec_d = (np.asarray(Bvec), np.c_[ZERO, ID])
     q, dq = dd_bondlength(Avec_d, Bvec_d)
     return q, dq.reshape((2, 3))
 
+
 def q_bending(Avec, Bvec, Cvec, direction=None):
     """Bond angle and derivative wrt vectors AB and BC.
 
     Test:
-    >>> A = np.array([ 1, 1, 1])
-    >>> B = np.zeros(3)
-    >>> C = np.array([-1,-1, 1])
-    >>> print round(np.rad2deg(q_bending(A, B, C)[0]), 1)
-    109.5
-    >>> assert _test_qgrad(q_bending, 3) < 1e-5
+        >>> A = np.array([ 1, 1, 1])
+        >>> B = np.zeros(3)
+        >>> C = np.array([-1,-1, 1])
+        >>> print round(np.rad2deg(q_bending(A, B, C)[0]), 1)
+        109.5
+        >>> assert _test_qgrad(q_bending, 3) < 1e-5
+
+    Args:
+        Avec (TYPE): Description
+        Bvec (TYPE): Description
+        Cvec (TYPE): Description
+        direction (None, optional): Description
+
+    Returns:
+        TYPE: Description
     """
     Avec_d = (np.asarray(Avec), np.c_[ID, ZERO, ZERO])
     Bvec_d = (np.asarray(Bvec), np.c_[ZERO, ID, ZERO])
@@ -1267,27 +2347,40 @@ def q_bending(Avec, Bvec, Cvec, direction=None):
         q, dq = dd_bondangle_directed(Avec_d, Bvec_d, Cvec_d, dir_d)
     return q, dq.reshape((3, 3))
 
+
 def q_torsion(Avec, Bvec, Cvec, Dvec):
     """Bond torsion and derivative wrt vectors AB, BC, and CD.
 
     Test:
-    >>> A = np.array([0., 0., 1.])
-    >>> B = np.array([0., 0., 0.])
-    >>> C = np.array([1., 0., 0.])
-    >>> D = np.array([1., 1., 0.])
-    >>> print round(np.rad2deg(q_torsion(A, B, C, D)[0]), 5)
-    90.0
-    >>> try:
-    ...    assert _test_qgrad(q_torsion, 4) < 1e-5
-    ... except ValueError:   # May happen with bad luck.
-    ...    pass
+        >>> A = np.array([0., 0., 1.])
+        >>> B = np.array([0., 0., 0.])
+        >>> C = np.array([1., 0., 0.])
+        >>> D = np.array([1., 1., 0.])
+        >>> print round(np.rad2deg(q_torsion(A, B, C, D)[0]), 5)
+        90.0
+        >>> try:
+        ...    assert _test_qgrad(q_torsion, 4) < 1e-5
+        ... except ValueError:   # May happen with bad luck.
+        ...    pass
+
+    Args:
+        Avec (TYPE): Description
+        Bvec (TYPE): Description
+        Cvec (TYPE): Description
+        Dvec (TYPE): Description
+
+    Returns:
+        TYPE: Description
+
+    Raises:
+        ValueError: Description
     """
     ABvec = Bvec - Avec
     BCvec = Cvec - Bvec
     CDvec = Dvec - Cvec
     cosABC = np.dot(ABvec, BCvec) / (norm(ABvec) * norm(BCvec))
     cosBCD = np.dot(BCvec, CDvec) / (norm(BCvec) * norm(CDvec))
-    if max(abs(cosABC), abs(cosBCD)) > 0.99:   # nearly linear angle
+    if max(abs(cosABC), abs(cosBCD)) > 0.99:  # nearly linear angle
         raise ValueError("Nearly linear angle")
     else:
         Avec_d = (np.asarray(Avec), np.c_[ID, ZERO, ZERO, ZERO])
@@ -1297,37 +2390,78 @@ def q_torsion(Avec, Bvec, Cvec, Dvec):
         q, dq = dd_bondtorsion(Avec_d, Bvec_d, Cvec_d, Dvec_d)
         return q, dq.reshape(4, 3)
 
+
 ##############################################################################
 ############################# unit test utilities ############################
 ##############################################################################
 
+
 def _test_qgrad(q_func, n):
+    """Summary
+
+    Args:
+        q_func (TYPE): Description
+        n (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     import scipy.optimize
     import numpy.random
-    x0 = np.random.standard_normal(3*n)
+
+    x0 = np.random.standard_normal(3 * n)
+
     def func(x):
-        vecs = np.asarray(x).reshape((n,3))
+        """Summary
+
+        Args:
+            x (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        vecs = np.asarray(x).reshape((n, 3))
         q, dq = q_func(*vecs)
         return q
+
     def grad(x):
-        vecs = np.asarray(x).reshape((n,3))
+        """Summary
+
+        Args:
+            x (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        vecs = np.asarray(x).reshape((n, 3))
         q, dq = q_func(*vecs)
-        return np.reshape(dq, (3*n))
+        return np.reshape(dq, (3 * n))
+
     return scipy.optimize.check_grad(func, grad, x0)
 
-def testmod():
-    import doctest
-    doctest.testmod(raise_on_error=False)
 
+def testmod():
+    """Summary"""
+    import doctest
+
+    doctest.testmod(raise_on_error=False)
 
 
 ##############################################################################
 ##################################### main ###################################
 ##############################################################################
 
-def LindhHessian(atoms):
 
-    cutoff = 15.
+def LindhHessian(atoms):
+    """Summary
+
+    Args:
+        atoms (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    cutoff = 15.0
 
     atom = atoms.get_positions()
     atom_name = atoms.get_chemical_symbols()
@@ -1345,7 +2479,7 @@ def LindhHessian(atoms):
     model_matrix(bra, atom, builder, damper, cutoff, logfile=logfile)
     # builder.add_unity(add_unity)
 
-    hessian = builder.to_array().reshape((3*n_vec, 3*n_vec))
+    hessian = builder.to_array().reshape((3 * n_vec, 3 * n_vec))
 
     # Proper ASR
     jitter = 0.005
@@ -1356,31 +2490,43 @@ def LindhHessian(atoms):
     # for ind in range(len(x_range)):
     #     to_sum  = np.delete(x_range, ind)
     #     hessian[x_range[ind], x_range[ind]] = -np.sum(hessian[x_range[ind],to_sum])
-    #     hessian[x_range[ind]+1, x_range[ind]] = -np.sum(hessian[x_range[ind]+1,to_sum]) 
-    #     hessian[x_range[ind]+2, x_range[ind]] = -np.sum(hessian[x_range[ind]+2,to_sum]) 
+    #     hessian[x_range[ind]+1, x_range[ind]] = -np.sum(hessian[x_range[ind]+1,to_sum])
+    #     hessian[x_range[ind]+2, x_range[ind]] = -np.sum(hessian[x_range[ind]+2,to_sum])
 
     # for ind in range(len(y_range)):
     #     to_sum  = np.delete(y_range, ind)
-    #     hessian[x_range[ind], x_range[ind]+1] = -np.sum(hessian[x_range[ind],to_sum]) 
+    #     hessian[x_range[ind], x_range[ind]+1] = -np.sum(hessian[x_range[ind],to_sum])
     #     hessian[x_range[ind]+1, x_range[ind]+1] = -np.sum(hessian[x_range[ind]+1,to_sum])
-    #     hessian[x_range[ind]+2, x_range[ind]+1] = -np.sum(hessian[x_range[ind]+2,to_sum]) 
+    #     hessian[x_range[ind]+2, x_range[ind]+1] = -np.sum(hessian[x_range[ind]+2,to_sum])
 
     # for ind in range(len(y_range)):
     #     to_sum  = np.delete(z_range, ind)
-    #     hessian[x_range[ind], x_range[ind]+2] = -np.sum(hessian[x_range[ind],to_sum])         
-    #     hessian[x_range[ind]+1, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+1,to_sum])         
-    #     hessian[x_range[ind]+2, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+2,to_sum]) 
+    #     hessian[x_range[ind], x_range[ind]+2] = -np.sum(hessian[x_range[ind],to_sum])
+    #     hessian[x_range[ind]+1, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+1,to_sum])
+    #     hessian[x_range[ind]+2, x_range[ind]+2] = -np.sum(hessian[x_range[ind]+2,to_sum])
 
     for ind in range(len(hessian)):
-        hessian[ind, ind] +=jitter
+        hessian[ind, ind] += jitter
     return hessian
 
-def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H, task="update"):
 
+def preconditioned_hessian(
+    structure, fixed_frame, parameters, atoms_current, H, task="update"
+):
+    """Summary
+
+    Args:
+        structure (TYPE): Description
+        fixed_frame (TYPE): Description
+        parameters (TYPE): Description
+        atoms_current (TYPE): Description
+        H (TYPE): Description
+        task (str, optional): Description
+    """
     if len(structure.molecules) > 1:
         a0 = structure.molecules[0].copy()
         for i in range(1, len(structure.molecules)):
-            a0+=structure.molecules[i]
+            a0 += structure.molecules[i]
     else:
         a0 = structure.molecules[0]
 
@@ -1388,20 +2534,23 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
         all_atoms = a0 + fixed_frame.fixed_frame
     else:
         all_atoms = a0
-    symbol = all_atoms.get_chemical_symbols()[0]  
+    symbol = all_atoms.get_chemical_symbols()[0]
     atoms = all_atoms.copy()
     atoms.set_positions(atoms_current.get_positions())
     set_constrains(atoms, parameters)
-
 
     ### Preconditioner part
 
     # Isolate indices
     hessian_indices = []
     for i in range(len(structure.molecules)):
-        hessian_indices.append(["mol{}".format(i) for k in range(3*len(structure.molecules[i]))])
+        hessian_indices.append(
+            ["mol{}".format(i) for k in range(3 * len(structure.molecules[i]))]
+        )
     if hasattr(fixed_frame, "fixed_frame"):
-        hessian_indices.append(["fixed_frame" for k in range(3*len(fixed_frame.fixed_frame))])
+        hessian_indices.append(
+            ["fixed_frame" for k in range(3 * len(fixed_frame.fixed_frame))]
+        )
     hessian_indices = sum(hessian_indices, [])
 
     # Genrate all nececcary hessians
@@ -1409,30 +2558,43 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
     precon_names = []
 
     precons_parameters = {
-        "mol" : parameters["calculator"]["preconditioner"]["mol"]["precon"],
-        "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"]["precon"], 
-        "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
-        "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"]["precon"]
+        "mol": parameters["calculator"]["preconditioner"]["mol"]["precon"],
+        "fixed_frame": parameters["calculator"]["preconditioner"][
+            "fixed_frame"
+        ]["precon"],
+        "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
+            "precon"
+        ],
+        "mol-fixed_frame": parameters["calculator"]["preconditioner"][
+            "mol-fixed_frame"
+        ]["precon"],
     }
 
     routine = {
-        "mol" : parameters["calculator"]["preconditioner"]["mol"][task],
-        "fixed_frame" : parameters["calculator"]["preconditioner"]["fixed_frame"][task], 
-        "mol-mol" : parameters["calculator"]["preconditioner"]["mol-mol"][task],
-        "mol-fixed_frame" : parameters["calculator"]["preconditioner"]["mol-fixed_frame"][task]
+        "mol": parameters["calculator"]["preconditioner"]["mol"][task],
+        "fixed_frame": parameters["calculator"]["preconditioner"][
+            "fixed_frame"
+        ][task],
+        "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][task],
+        "mol-fixed_frame": parameters["calculator"]["preconditioner"][
+            "mol-fixed_frame"
+        ][task],
     }
-    precon_names = [list(precons_parameters.values())[i] for i in range(len(routine)) if list(routine.values())[i]]
+    precon_names = [
+        list(precons_parameters.values())[i]
+        for i in range(len(routine))
+        if list(routine.values())[i]
+    ]
 
     # find for which atoms Lindh should be calculated
     # find for which atoms vdW should be calculated
     # find for which atoms Exp should be calculated
     # find for which atoms ID should be calculated
 
-
-
-    #take a 'Cholesky' decomposition:
+    # take a 'Cholesky' decomposition:
     # chol_A = np.linalg.cholesky(preconditioned_hessian)
     from numpy import linalg as la
+
     def nearestPD(A):
         """Find the nearest positive-definite matrix to input
 
@@ -1443,14 +2605,29 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
 
         [2] N.J. Higham, "Computing a nearest symmetric positive semidefinite
         matrix" (1988): https://doi.org/10.1016/0024-3795(88)90223-6
+
+        Args:
+            A (TYPE): Description
+
+        Returns:
+            TYPE: Description
         """
+
         def isPD(B):
-            """Returns true when input is positive-definite, via Cholesky"""
+            """Returns true when input is positive-definite, via Cholesky
+
+            Args:
+                B (TYPE): Description
+
+            Returns:
+                TYPE: Description
+            """
             try:
                 _ = la.cholesky(B)
                 return True
             except la.LinAlgError:
                 return False
+
         B = (A + A.T) / 2
         _, s, V = la.svd(B)
 
@@ -1477,26 +2654,26 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
         k = 1
         while not isPD(A3):
             mineig = np.min(np.real(la.eigvals(A3)))
-            A3 += I * (-mineig * k**2 + spacing)
+            A3 += I * (-mineig * k ** 2 + spacing)
             k += 1
 
         return A3
 
-
-
     if "Lindh" in precon_names:
         precons["Lindh"] = LindhHessian(atoms)
     if "Exp" in precon_names:
-        precons["Exp"] = ExpHessian(atoms, mu=structure.mu, A=3.0, recalc_mu=False)
+        precons["Exp"] = ExpHessian(
+            atoms, mu=structure.mu, A=3.0, recalc_mu=False
+        )
     if "vdW" in precon_names:
-        precons["vdW"] = vdwHessian(atoms) 
+        precons["vdW"] = vdwHessian(atoms)
     if "ID" in precon_names:
         precons["ID"] = np.eye(3 * len(atoms)) * 70
 
     # Combine hessians into hessian
     N = len(all_atoms)
     if task == "update":
-        if all(a ==  False for a in routine.values()):
+        if all(a == False for a in routine.values()):
             # Nothing to update
             return H
         else:
@@ -1504,96 +2681,123 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
             for i in range(3 * len(all_atoms)):
                 for j in range(3 * len(all_atoms)):
                     if hessian_indices[i] == hessian_indices[j]:
-                        if "fixed_frame" in hessian_indices[j] and routine["fixed_frame"]:
+                        if (
+                            "fixed_frame" in hessian_indices[j]
+                            and routine["fixed_frame"]
+                        ):
                             p = precons_parameters["fixed_frame"]
-                            preconditioned_hessian[i,j] = precons[p][i,j]
+                            preconditioned_hessian[i, j] = precons[p][i, j]
                         elif "mol" in hessian_indices[j] and routine["mol"]:
                             p = precons_parameters["mol"]
-                            preconditioned_hessian[i,j] = precons[p][i,j]
+                            preconditioned_hessian[i, j] = precons[p][i, j]
                     else:
-                        if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]] and routine["mol-mol"]:
+                        if (
+                            "fixed_frame"
+                            not in [hessian_indices[i], hessian_indices[j]]
+                            and routine["mol-mol"]
+                        ):
                             p = precons_parameters["mol-mol"]
-                            preconditioned_hessian[i,j] = precons[p][i,j]
-                        elif routine["mol-fixed_frame"]:               
+                            preconditioned_hessian[i, j] = precons[p][i, j]
+                        elif routine["mol-fixed_frame"]:
                             p = precons_parameters["mol-fixed_frame"]
-                            preconditioned_hessian[i,j] = precons[p][i,j]
+                            preconditioned_hessian[i, j] = precons[p][i, j]
 
-            if np.array_equal(preconditioned_hessian, np.eye(3 * len(atoms)) * 70):
+            if np.array_equal(
+                preconditioned_hessian, np.eye(3 * len(atoms)) * 70
+            ):
                 return preconditioned_hessian
             else:
                 # Fill the down triangle
-                # preconditioned_hessian = preconditioned_hessian + preconditioned_hessian.T    
+                # preconditioned_hessian = preconditioned_hessian + preconditioned_hessian.T
                 # Calculate Acoustic sum rule
-                preconditioned_hessian = ASR(preconditioned_hessian) 
+                preconditioned_hessian = ASR(preconditioned_hessian)
                 # Add stabilization to the diagonal
                 jitter = 0.005
-                preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
+                preconditioned_hessian = add_jitter(
+                    preconditioned_hessian, jitter
+                )
                 # Check if positive and symmetric:
-                symmetric, positive = check_positive_symmetric(preconditioned_hessian)
-
-
-
+                symmetric, positive = check_positive_symmetric(
+                    preconditioned_hessian
+                )
 
                 if not positive:
                     p = preconditioned_hessian.copy()
                     preconditioned_hessian = nearestPD(preconditioned_hessian)
-                    preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
+                    preconditioned_hessian = add_jitter(
+                        preconditioned_hessian, jitter
+                    )
 
                     # print(preconditioned_hessian - p)
 
-
-                    matplotlib.use( 'tkagg' )
+                    matplotlib.use("tkagg")
                     z = preconditioned_hessian - p
                     fig, ax = plt.subplots()
                     im = ax.imshow(z)
                     plt.colorbar(im)
                     plt.show()
-  
-                symmetric, positive = check_positive_symmetric(preconditioned_hessian)
+
+                symmetric, positive = check_positive_symmetric(
+                    preconditioned_hessian
+                )
 
                 if not symmetric:
-                    print("Hessian is not symmetric! Will give troubles during optimization!")
+                    print(
+                        "Hessian is not symmetric! Will give troubles during optimization!"
+                    )
                     sys.exit(0)
                 if not positive:
-                    print("Hessian is not positive definite! Will give troubles during optimization!")
+                    print(
+                        "Hessian is not positive definite! Will give troubles during optimization!"
+                    )
                     sys.exit(0)
                 if symmetric and positive:
                     print("Hessian is symmetric and positive definite")
-                    return  preconditioned_hessian
+                    return preconditioned_hessian
 
     if task == "initial":
-        preconditioned_hessian = np.eye(3*N) * 70
+        preconditioned_hessian = np.eye(3 * N) * 70
         for i in range(3 * len(all_atoms)):
             for j in range(3 * len(all_atoms)):
                 if j > i:
                     if hessian_indices[i] == hessian_indices[j]:
-                        if "fixed_frame" in hessian_indices[j] and routine["fixed_frame"]:
+                        if (
+                            "fixed_frame" in hessian_indices[j]
+                            and routine["fixed_frame"]
+                        ):
                             p = precons_parameters["fixed_frame"]
-                            preconditioned_hessian[i,j] = precons[p][i,j]
+                            preconditioned_hessian[i, j] = precons[p][i, j]
                         elif "mol" in hessian_indices[j] and routine["mol"]:
                             p = precons_parameters["mol"]
-                            preconditioned_hessian[i,j] = precons[p][i,j]
+                            preconditioned_hessian[i, j] = precons[p][i, j]
                     else:
-                        if "fixed_frame" not in [hessian_indices[i], hessian_indices[j]] and routine["mol-mol"]:
+                        if (
+                            "fixed_frame"
+                            not in [hessian_indices[i], hessian_indices[j]]
+                            and routine["mol-mol"]
+                        ):
                             p = precons_parameters["mol-mol"]
-                            preconditioned_hessian[i,j] = precons[p][i,j]
-                        elif routine["mol-fixed_frame"]:               
+                            preconditioned_hessian[i, j] = precons[p][i, j]
+                        elif routine["mol-fixed_frame"]:
                             p = precons_parameters["mol-fixed_frame"]
-                            preconditioned_hessian[i,j] = precons[p][i,j]
+                            preconditioned_hessian[i, j] = precons[p][i, j]
 
         if np.array_equal(preconditioned_hessian, np.eye(3 * len(atoms)) * 70):
             return preconditioned_hessian
         else:
             # Fill the down triangle
-            preconditioned_hessian = preconditioned_hessian + preconditioned_hessian.T    
+            preconditioned_hessian = (
+                preconditioned_hessian + preconditioned_hessian.T
+            )
             # Calculate Acoustic sum rule
-            preconditioned_hessian = ASR(preconditioned_hessian) 
+            preconditioned_hessian = ASR(preconditioned_hessian)
             # Add stabilization to the diagonal
             jitter = 0.005
             preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
             # Check if positive and symmetric:
-            symmetric, positive = check_positive_symmetric(preconditioned_hessian)
-
+            symmetric, positive = check_positive_symmetric(
+                preconditioned_hessian
+            )
 
             p = preconditioned_hessian.copy()
             preconditioned_hessian = nearestPD(preconditioned_hessian)
@@ -1601,26 +2805,23 @@ def preconditioned_hessian(structure, fixed_frame, parameters, atoms_current, H,
 
             # print(preconditioned_hessian - p)
 
-
-            matplotlib.use( 'tkagg' )
+            matplotlib.use("tkagg")
             z = preconditioned_hessian - p
             fig, ax = plt.subplots()
             im = ax.imshow(z)
             plt.colorbar(im)
             plt.show()
 
-            
             if not symmetric:
-                print("Hessian is not symmetric! Will give troubles during optimization!")
+                print(
+                    "Hessian is not symmetric! Will give troubles during optimization!"
+                )
                 sys.exit(0)
             if not positive:
-                print("Hessian is not positive definite! Will give troubles during optimization!")
+                print(
+                    "Hessian is not positive definite! Will give troubles during optimization!"
+                )
                 sys.exit(0)
             if symmetric and positive:
                 # print("Hessian is symmetric and positive definite")
-                return  preconditioned_hessian
-
-
-
-
-
+                return preconditioned_hessian

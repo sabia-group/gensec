@@ -13,11 +13,14 @@ class TestStructure(unittest.TestCase):
 
         list_of_torsions_ref = [[1, 0, 2, 4], [2, 0, 1, 3], [0, 1, 3, 5]]
         dirname, filename = os.path.split(os.path.abspath(__file__))
-        atoms = read(os.path.join(dirname, "supporting", "molecules", "hexane.xyz"), format="xyz")
+        atoms = read(
+            os.path.join(dirname, "supporting", "molecules", "hexane.xyz"),
+            format="xyz",
+        )
         connectivity = create_connectivity_matrix(atoms, bothways=False)
         list_of_torsions = detect_rotatble(connectivity, atoms)
         self.assertEqual(list_of_torsions_ref, list_of_torsions)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
