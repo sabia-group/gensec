@@ -1,13 +1,19 @@
+"""Summary
+"""
 from ase import neighborlist
-from ase.build import molecule
-from scipy import sparse
 import numpy as np
 import operator
-import sys
 
 
 def construct_graph(connectivity_matrix):
-    """Constructu graph from connectivity matrix"""
+    """Constructu graph from connectivity matrix
+
+    Args:
+        connectivity_matrix (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     graph = {}
     for i in connectivity_matrix.keys():
         if i[0] not in graph:
@@ -25,6 +31,14 @@ def construct_graph(connectivity_matrix):
 # Cycles detection
 # https://algocoding.wordpress.com/2015/04/02/detecting-cycles-in-an-undirected-graph-with-dfs-python/
 def cycle_exists(G):  # - G is an undirected graph.
+    """Summary
+
+    Args:
+        G (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     marked = {u: False for u in G}  # - All nodes are initially unmarked.
     found_cycle = [False]  # - Define found_cycle as a list so we can change
     # its value per reference, see:
@@ -41,6 +55,18 @@ def cycle_exists(G):  # - G is an undirected graph.
 
 
 def dfs_visit(G, u, found_cycle, pred_node, marked):
+    """Summary
+
+    Args:
+        G (TYPE): Description
+        u (TYPE): Description
+        found_cycle (TYPE): Description
+        pred_node (TYPE): Description
+        marked (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     if found_cycle[0]:  # - Stop dfs if cycle is found.
         return
     marked[u] = True  # - Mark node.
@@ -55,7 +81,16 @@ def dfs_visit(G, u, found_cycle, pred_node, marked):
 
 
 def create_torsion_list(bond, graph, atoms):
+    """Summary
 
+    Args:
+        bond (TYPE): Description
+        graph (TYPE): Description
+        atoms (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     symbols = atoms.get_chemical_symbols()
     append = True
     torsions = None
@@ -78,14 +113,27 @@ def create_torsion_list(bond, graph, atoms):
 
 
 def set_centre_of_mass(atoms, new_com):
+    """Summary
 
+    Args:
+        atoms (TYPE): Description
+        new_com (TYPE): Description
+    """
     old_positions = atoms.get_positions()
     old_com = atoms.get_center_of_mass()
     atoms.set_positions(old_positions - old_com + new_com)
 
 
 def create_connectivity_matrix(atoms, bothways):
+    """Summary
 
+    Args:
+        atoms (TYPE): Description
+        bothways (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     cutOff = neighborlist.natural_cutoffs(atoms)
     neighborList = neighborlist.NeighborList(
         cutOff, self_interaction=False, bothways=bothways
@@ -100,6 +148,13 @@ def detect_rotatble(connectivity_matrix, atoms):
     2. The bonds does not contain terminate atoms
     2.
     3.
+
+    Args:
+        connectivity_matrix (TYPE): Description
+        atoms (TYPE): Description
+
+    Returns:
+        TYPE: Description
     """
     graph = construct_graph(connectivity_matrix)
     indx_not_terminal = [i for i in graph if len(graph[i]) > 1]
@@ -159,6 +214,14 @@ def detect_rotatble(connectivity_matrix, atoms):
 
 
 def detect_cycles(connectivity_matrix):
+    """Summary
+
+    Args:
+        connectivity_matrix (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     import networkx as nx
     from itertools import combinations
 
@@ -179,6 +242,15 @@ def detect_cycles(connectivity_matrix):
 
 
 def exclude_rotatable_from_cycles(list_of_torsions, cycles):
+    """Summary
+
+    Args:
+        list_of_torsions (TYPE): Description
+        cycles (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     rotatable = []
     # print(rotatable)
     # print(list_of_torsions)
@@ -195,7 +267,15 @@ def exclude_rotatable_from_cycles(list_of_torsions, cycles):
 
 
 def make_canonical_pyranosering(atoms, cycle):
+    """Summary
 
+    Args:
+        atoms (TYPE): Description
+        cycle (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     pattern = ["C", "C", "C", "C", "C", "O"]
     while True:
         cycle = np.roll(cycle, 1)
@@ -205,8 +285,25 @@ def make_canonical_pyranosering(atoms, cycle):
 
 
 def getroots(aNeigh):
+    """Summary
+
+    Args:
+        aNeigh (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     #    source: https://stackoverflow.com/questions/10301000/python-connected-components
     def findroot(aNode, aRoot):
+        """Summary
+
+        Args:
+            aNode (TYPE): Description
+            aRoot (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         while aNode != aRoot[aNode][0]:
             aNode = aRoot[aNode][0]
         return aNode, aRoot[aNode][1]
@@ -244,6 +341,9 @@ def insertbreak(graph, atom1, atom2):
     Creates two disconnected graphs from one connected graph
 
     Arguments:
+        graph (TYPE): Description
+        atom1 (TYPE): Description
+        atom2 (TYPE): Description
         graph {graph} -- Graph representation of the system
         atom1 {atom number} -- Terminate atom fro the first graph
         atom2 {atom number} -- Terminate atom for the second graph
@@ -259,7 +359,15 @@ def insertbreak(graph, atom1, atom2):
 
 
 def carried_atoms(connectivity_matrix_isolated, positions):
-    """Returns list of carried atoms"""
+    """Returns list of carried atoms
+
+    Args:
+        connectivity_matrix_isolated (TYPE): Description
+        positions (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     graph = construct_graph(connectivity_matrix_isolated)
     graph_with_break = insertbreak(graph, positions[1], positions[2])
     if positions[2] in list(getroots(graph_with_break).values())[0]:
@@ -269,7 +377,14 @@ def carried_atoms(connectivity_matrix_isolated, positions):
 
 
 def unit_vector(vector):
-    """Returns the unit vector of the vector."""
+    """Returns the unit vector of the vector.
+
+    Args:
+        vector (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     if np.linalg.norm(vector) == 0.0:
         vector = np.array(
             [0.0, 0.0, 0.0000000001]
@@ -278,23 +393,58 @@ def unit_vector(vector):
 
 
 def angle_between(v1, v2):
-    """Returns angle between two vectors"""
+    """Returns angle between two vectors
+
+    Args:
+        v1 (TYPE): Description
+        v2 (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.dot(v1_u, v2_u)) * 180.0 / np.pi
 
 
 def translate(point, coord):
+    """Summary
+
+    Args:
+        point (TYPE): Description
+        coord (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     translated = coord[:] - point[:]
     return translated
 
 
 def translate_back(point, coord):
+    """Summary
+
+    Args:
+        point (TYPE): Description
+        coord (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     translated = coord[:] + point[:]
     return translated
 
 
 def mult_quats(q_1, q_2):
+    """Summary
+
+    Args:
+        q_1 (TYPE): Description
+        q_2 (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     Q_q_2 = np.array(
         [
             [q_2[0], q_2[1], q_2[2], q_2[3]],
@@ -308,6 +458,14 @@ def mult_quats(q_1, q_2):
 
 
 def unit_quaternion(q):
+    """Summary
+
+    Args:
+        q (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     ones = np.ones((1, 4))
     ones[:, 0] = np.cos(q[0] * np.pi / 180 / 2)
     vec = np.array([q[1], q[2], q[3]])
@@ -318,6 +476,15 @@ def unit_quaternion(q):
 
 
 def rotation_quat(coord, q):
+    """Summary
+
+    Args:
+        coord (TYPE): Description
+        q (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     q = unit_quaternion(q)
     R_q = np.array(
         [
@@ -343,6 +510,16 @@ def rotation_quat(coord, q):
 
 
 def Rotation(coord, point, quaternion):
+    """Summary
+
+    Args:
+        coord (TYPE): Description
+        point (TYPE): Description
+        quaternion (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     trans = translate(point, coord)
     rotate = rotation_quat(trans, quaternion)
     final = translate_back(point, rotate)
@@ -350,6 +527,15 @@ def Rotation(coord, point, quaternion):
 
 
 def produce_quaternion(angle, vector):
+    """Summary
+
+    Args:
+        angle (TYPE): Description
+        vector (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     ones = np.ones((1, 4))
     ones[:, 0] = angle
     ones[:, 1:] = unit_vector(vector[:])
@@ -358,6 +544,15 @@ def produce_quaternion(angle, vector):
 
 
 def produce_coords_and_masses(coords, masses):
+    """Summary
+
+    Args:
+        coords (TYPE): Description
+        masses (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     zeros = np.zeros((len(coords), 4))
     zeros[:, :3] = coords[:]
     zeros[:, 3] = masses[:]
@@ -365,7 +560,16 @@ def produce_coords_and_masses(coords, masses):
 
 
 def measure_quaternion(atoms, atom_1_indx, atom_2_indx):
+    """Summary
 
+    Args:
+        atoms (TYPE): Description
+        atom_1_indx (TYPE): Description
+        atom_2_indx (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     # To revise and test
     coords = atoms.get_positions()
     orient_vec = unit_vector(coords[atom_2_indx] - coords[atom_1_indx])
@@ -398,7 +602,16 @@ def measure_quaternion(atoms, atom_1_indx, atom_2_indx):
 
 
 def align_to_axes(atoms, atom_1_indx, atom_2_indx):
+    """Summary
 
+    Args:
+        atoms (TYPE): Description
+        atom_1_indx (TYPE): Description
+        atom_2_indx (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     coords = atoms.get_positions()
     center = atoms.get_center_of_mass()
     quaternion = measure_quaternion(atoms, atom_1_indx, atom_2_indx)
@@ -413,7 +626,17 @@ def align_to_axes(atoms, atom_1_indx, atom_2_indx):
 
 
 def quaternion_set(atoms, quaternion, atom_1_indx, atom_2_indx):
+    """Summary
 
+    Args:
+        atoms (TYPE): Description
+        quaternion (TYPE): Description
+        atom_1_indx (TYPE): Description
+        atom_2_indx (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     coords = atoms.get_positions()
     center = atoms.get_center_of_mass()
     align_to_axes(atoms, atom_1_indx, atom_2_indx)
@@ -435,6 +658,7 @@ def internal_clashes(structure):
     account with use of the flag "bothways = True".
 
     Arguments:
+        structure (TYPE): Description
         structure {list} -- list of the molecules
 
     Returns:
@@ -470,6 +694,7 @@ def intramolecular_clashes(structure):
     mic=structure.mic
 
     Arguments:
+        structure (TYPE): Description
         structure {list} -- list of the molecules
 
     Returns:
@@ -517,6 +742,8 @@ def clashes_with_fixed_frame(structure, fixed_frame):
     mic=fixed_frame.mic
 
     Arguments:
+        structure (TYPE): Description
+        fixed_frame (TYPE): Description
         structure {list} -- list of the molecules
         fixed_frame {Atoms object} -- atoms in fixed frame
 
@@ -547,7 +774,15 @@ def clashes_with_fixed_frame(structure, fixed_frame):
 
 
 def all_right(structure, fixed_frame):
+    """Summary
 
+    Args:
+        structure (TYPE): Description
+        fixed_frame (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     ready = False
 
     if not internal_clashes(structure):
@@ -568,6 +803,15 @@ def all_right(structure, fixed_frame):
 
 
 def measure_molecules(molecules, list_of_torsions):
+    """Summary
+
+    Args:
+        molecules (TYPE): Description
+        list_of_torsions (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     vector = []
     for i in range(len(molecules)):
         for torsion in list_of_torsions:
@@ -586,6 +830,15 @@ def measure_molecules(molecules, list_of_torsions):
 
 
 def measure_torsion_of_last(atoms, list_of_torsions):
+    """Summary
+
+    Args:
+        atoms (TYPE): Description
+        list_of_torsions (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     torsions = []
     for torsion in list_of_torsions:
         torsions.append(
@@ -597,6 +850,12 @@ def measure_torsion_of_last(atoms, list_of_torsions):
 
 
 def assign_random_state(molecule, list_of_torsions):
+    """Summary
+
+    Args:
+        molecule (TYPE): Description
+        list_of_torsions (TYPE): Description
+    """
     for torsion in list_of_torsions:
         value = randint(0, 360)
         fixed_indices = carried_atoms(connectivity_matrix_isolated, torsion)
@@ -619,6 +878,15 @@ def assign_random_state(molecule, list_of_torsions):
 
 
 def merge_together(structure, fixed_frame):
+    """Summary
+
+    Args:
+        structure (TYPE): Description
+        fixed_frame (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     ensemble = structure.atoms.copy()
     del ensemble[[atom.index for atom in structure.atoms]]
     for molecule in structure.molecules:
@@ -629,6 +897,14 @@ def merge_together(structure, fixed_frame):
 
 
 def prepare_for_saving(structure):
+    """Summary
+
+    Args:
+        structure (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
     ensemble = structure.atoms.copy()
     del ensemble[[atom.index for atom in structure.atoms]]
     for molecule in structure.molecules:

@@ -21,7 +21,7 @@ class Protocol:
         trials (int): Description
     """
 
-    def init(self, parameters):
+    def init(self):
         """Summary
 
         Args:
