@@ -992,9 +992,10 @@ class TRM_BFGS(BFGS):
 
     def update_H(self, dx, df):
         """Input: DX = X -X_old
-               DF = F -F_old
-               DG = -DF
-               H  = hessian
+
+        DF = F -F_old
+        DG = -DF
+        H  = hessian
         Task: updated hessian
 
         Args:
@@ -1149,16 +1150,6 @@ class TRM_BFGS(BFGS):
                 print("Not update")
                 pass
 
-            # if quality > 0.75:
-            #     if s_norm <= 0.8 * self.tr:
-            #         self.tr = self.tr
-            #     else:
-            #         self.tr = 2 * self.tr
-            # elif 0.1 < quality <= 0.75:
-            #     self.tr = self.tr
-            # else:
-            #     self.tr = 0.5 * self.tr
-
             if quality < 0.25:
                 self.tr = 0.5 * s_norm
             elif quality > 0.75 and s_norm > 0.9 * self.tr:
@@ -1166,98 +1157,29 @@ class TRM_BFGS(BFGS):
                 if self.tr > self.maxstep:
                     self.tr = self.maxstep
 
-        # If accepted: Update Hessian
-        # print("Updating Hessian")
-        # print(self.H)
-        print(self.tr)
-
         self.r0 = r.flat.copy()
         self.f0 = f.copy()
         f = f1.copy()
         r = (r.reshape(-1, 3) + s.reshape(-1, 3)).copy()
-        # self.update(s, y)
-
-        # self.update_H(s.flatten(), y.flatten())
-        # self.update_BFGS(r, f, self.r0, self.f0)
         self.dump((self.H, self.r0, self.f0, self.maxstep))
-        # print("Updated Hessian")
-        # print(self.H)
-
-        # if self.initial: # This is the change compared to ASE
-        # #     # print(self.atoms.get_potential_energy())
-        # #     # Experimental for vdW clusters
-        # #     forces = self.atoms.get_forces()
-        # #     fmax = sqrt((forces ** 2).sum(axis=1).max())
-
-        # #     # condition  = np.dot(f.reshape(-1), f0.reshape(-1))/(np.dot(f.reshape(-1), f.reshape(-1))**2)
-        # #     # print("\nCondition", condition)
-        # #     # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
-        # # # Calculate RMSD between current and initial steps:
-        #     if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
-        #         print("################################Applying update")
-        # #         # name = "hessian_progress.hes"
-        # #         # h = os.path.join(os.getcwd(), name)
-        # #         # if not os.path.exists(h):
-        # #         #     open(h, 'a').close()
-        # #         # f=open(h,'a')
-        # #         # f.write("RMSD is Exceed, the hessian will be updated\n")
-        # #         # f.write("Hessian before (GenSec)\n")
-        # #         # np.savetxt(f, self.H)
-        # #         # f.write("\n")
-
-        #         self.H = preconditioned_hessian(self.structure,
-        #                                         self.fixed_frame,
-        #                                         self.parameters,
-        #                                         self.atoms,
-        #                                         self.H,
-        #                                         task="update")
-        # #         # f.write("Hessian after (GenSec)\n")
-        # #         # np.savetxt(f, self.H)
-        # #         # f.write("\n")
-        # #         # f.close()
-        #         a0=self.atoms.copy()
-        #         self.initial=a0
-
-        # print("Accepted   ", accept)
-        # Update TrustRadius (tr)
-        # print(quality, "quility")
-        # if quality > 0.75:
-        #     if s_norm <= 0.8 * self.tr:
-        #         self.tr = self.tr
-        #     else:
-        #         self.tr = 2 * self.tr
-        # elif 0.1 < quality <= 0.75:
-        #     self.tr = self.tr
-        # else:
-        #     self.tr = 0.5 * self.tr
-
-        # sys.exit(0)
-
-        # omega, V = eigh(self.H)
-        # dr = np.dot(V, np.dot(f, V) / np.fabs(omega)).reshape((-1, 3))
-        # steplengths = (dr**2).sum(1)**0.5
-        # dr = self.determine_step(dr, steplengths)
-        # atoms.set_positions(r + dr)
-        # self.r0 = r.flat.copy()
-        # self.f0 = f.copy()
-        # self.dump((self.H, self.r0, self.f0, self.maxstep))
 
     def min_trm(self, f, H, tr):
         """Return the minimum of
         E(dx) = -(F * dx + 0.5 * ( dx * H * dx ),
         whithin dx**2 <tr
-        IN    f  = forces        (n,)
-              h  = hessian       (nxn)
-              tr = trust-radius
+        IN
+        f  = forces        (n,)
+        h  = hessian       (nxn)
+        tr = trust-radius
         OUT   DX = displacement in cartesian basis
         INTERNAL
-                 ndim = dimension
-                 d    = hessian eigenvalues
-                 w    = hessian eigenvector (in columns)
-                 g    = gradient in cartesian basis
-                 gE   = gradient in eigenvector basis
-                 DX   = displacement in cartesian basis
-                 DXE  = displacement in eigenvector basis
+        ndim = dimension
+        d    = hessian eigenvalues
+        w    = hessian eigenvector (in columns)
+        g    = gradient in cartesian basis
+        gE   = gradient in eigenvector basis
+        DX   = displacement in cartesian basis
+        DXE  = displacement in eigenvector basis
 
         Args:
             f (TYPE): Description
@@ -1543,9 +1465,10 @@ class TRM_BFGS_IPI(BFGS):
 
     def update_H(self, dx, df):
         """Input: DX = X -X_old
-               DF = F -F_old
-               DG = -DF
-               H  = hessian
+
+        DF = F -F_old
+        DG = -DF
+        H  = hessian
         Task: updated hessian
 
         Args:

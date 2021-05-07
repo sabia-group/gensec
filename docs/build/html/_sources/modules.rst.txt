@@ -1,4 +1,7 @@
-Modules
-=======
+gensec
+======
 
-Description of the modules and functions.
+.. toctree::
+   :maxdepth: 4
+
+   gensec

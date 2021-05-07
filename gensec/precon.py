@@ -3,12 +3,10 @@
 Attributes:
     abohr (float): convert Bohr to Angstrom
     hartree (float): convert Hartree to eV
-    ID (TYPE): Description
     k_bending (TYPE): Description
     k_bond (TYPE): Description
     k_torsion (TYPE): Description
     ref_ds (TYPE): Description
-    ZERO (TYPE): Description
 """
 
 import sys
@@ -193,9 +191,6 @@ ref_ds = (
     np.array([[1.35, 2.10, 2.53], [2.10, 2.87, 3.40], [2.53, 3.40, 3.40]])
     * abohr
 )
-
-ID = np.identity(3)
-ZERO = np.zeros((3, 3))
 
 
 def vector_separation(cell_h, cell_ih, qi, qj):
@@ -1145,10 +1140,10 @@ class HessianBuilder(object):
     """Builder object for Hessians by rank-one additions.
 
     For a Hessian which is built successively as a sum of rank-one updates:
-       H_{nu i, mu j} = \sum_k fac v_{nu i} v_{mu j}
+    H_{nu i, mu j} = \sum_k fac v_{nu i} v_{mu j}
     where each update vector is assumed to be sparse wrt the number of
     associated atoms.  The rank-one update is done by:
-      HB.add_rank1(fac, vec)
+    HB.add_rank1(fac, vec)
     where vec == {nu: [x,y,z], ...}
 
     >>> HB = HessianBuilder(2, 0)
@@ -1246,7 +1241,7 @@ def format_atlist(atlist, is_periodic):
 
     Additionally adds 1 to atom numbers (-> start with 1):
     >>> print format_atlist([(0, (0, 0, 0)), (1, (0, -1, 0))], True)
-      1( 0, 0, 0) --  2( 0,-1, 0)
+    1( 0, 0, 0) --  2( 0,-1, 0)
 
     Args:
         atlist (TYPE): Description
@@ -1452,7 +1447,7 @@ def dd_sum(*arg_ds):
     """Summary
 
     Args:
-        *arg_ds: Description
+        arg_ds: Description
 
     Returns:
         TYPE: Description
@@ -1484,7 +1479,7 @@ def dd_prod(*arg_ds):
     """Summary
 
     Args:
-        *arg_ds: Description
+        arg_ds: Description
 
     Returns:
         TYPE: Description
@@ -1787,8 +1782,8 @@ def q_bond(Avec, Bvec):
     Returns:
         TYPE: Description
     """
-    Avec_d = (np.asarray(Avec), np.c_[ID, ZERO])
-    Bvec_d = (np.asarray(Bvec), np.c_[ZERO, ID])
+    Avec_d = (np.asarray(Avec), np.c_[np.identity(3), np.zeros((3, 3))])
+    Bvec_d = (np.asarray(Bvec), np.c_[np.zeros((3, 3)), np.identity(3)])
     q, dq = dd_bondlength(Avec_d, Bvec_d)
     return q, dq.reshape((2, 3))
 
@@ -1813,13 +1808,25 @@ def q_bending(Avec, Bvec, Cvec, direction=None):
     Returns:
         TYPE: Description
     """
-    Avec_d = (np.asarray(Avec), np.c_[ID, ZERO, ZERO])
-    Bvec_d = (np.asarray(Bvec), np.c_[ZERO, ID, ZERO])
-    Cvec_d = (np.asarray(Cvec), np.c_[ZERO, ZERO, ID])
+    Avec_d = (
+        np.asarray(Avec),
+        np.c_[np.identity(3), np.zeros((3, 3)), np.zeros((3, 3))],
+    )
+    Bvec_d = (
+        np.asarray(Bvec),
+        np.c_[np.zeros((3, 3)), np.identity(3), np.zeros((3, 3))],
+    )
+    Cvec_d = (
+        np.asarray(Cvec),
+        np.c_[np.zeros((3, 3)), np.zeros((3, 3)), np.identity(3)],
+    )
     if direction is None:
         q, dq = dd_bondangle(Avec_d, Bvec_d, Cvec_d)
     else:
-        dir_d = (direction, np.c_[ZERO, ZERO, ZERO])
+        dir_d = (
+            direction,
+            np.c_[np.zeros((3, 3)), np.zeros((3, 3)), np.zeros((3, 3))],
+        )
         q, dq = dd_bondangle_directed(Avec_d, Bvec_d, Cvec_d, dir_d)
     return q, dq.reshape((3, 3))
 
@@ -1859,10 +1866,42 @@ def q_torsion(Avec, Bvec, Cvec, Dvec):
     if max(abs(cosABC), abs(cosBCD)) > 0.99:  # nearly linear angle
         raise ValueError("Nearly linear angle")
     else:
-        Avec_d = (np.asarray(Avec), np.c_[ID, ZERO, ZERO, ZERO])
-        Bvec_d = (np.asarray(Bvec), np.c_[ZERO, ID, ZERO, ZERO])
-        Cvec_d = (np.asarray(Cvec), np.c_[ZERO, ZERO, ID, ZERO])
-        Dvec_d = (np.asarray(Dvec), np.c_[ZERO, ZERO, ZERO, ID])
+        Avec_d = (
+            np.asarray(Avec),
+            np.c_[
+                np.identity(3),
+                np.zeros((3, 3)),
+                np.zeros((3, 3)),
+                np.zeros((3, 3)),
+            ],
+        )
+        Bvec_d = (
+            np.asarray(Bvec),
+            np.c_[
+                np.zeros((3, 3)),
+                np.identity(3),
+                np.zeros((3, 3)),
+                np.zeros((3, 3)),
+            ],
+        )
+        Cvec_d = (
+            np.asarray(Cvec),
+            np.c_[
+                np.zeros((3, 3)),
+                np.zeros((3, 3)),
+                np.identity(3),
+                np.zeros((3, 3)),
+            ],
+        )
+        Dvec_d = (
+            np.asarray(Dvec),
+            np.c_[
+                np.zeros((3, 3)),
+                np.zeros((3, 3)),
+                np.zeros((3, 3)),
+                np.identity(3),
+            ],
+        )
         q, dq = dd_bondtorsion(Avec_d, Bvec_d, Cvec_d, Dvec_d)
         return q, dq.reshape(4, 3)
 
@@ -2269,15 +2308,6 @@ def preconditioned_hessian(
             p = preconditioned_hessian.copy()
             preconditioned_hessian = nearestPD(preconditioned_hessian)
             # preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
-
-            # print(preconditioned_hessian - p)
-
-            matplotlib.use("tkagg")
-            z = preconditioned_hessian - p
-            fig, ax = plt.subplots()
-            im = ax.imshow(z)
-            plt.colorbar(im)
-            plt.show()
 
             if not symmetric:
                 print(
