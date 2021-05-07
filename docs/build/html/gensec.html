@@ -1,0 +1,2713 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>gensec package &mdash; GenSec Documentation 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Citing GenSec" href="citation.html" />
+    <link rel="prev" title="gensec" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> GenSec Documentation
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">gensec</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">gensec package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.alphas">gensec.alphas module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.coefficients">gensec.coefficients module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.defaults">gensec.defaults module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.known">gensec.known module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.modules">gensec.modules module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.optimize">gensec.optimize module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.outputs">gensec.outputs module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.precon">gensec.precon module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.protocols">gensec.protocols module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.relaxation">gensec.relaxation module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec.structure">gensec.structure module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gensec">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="citation.html">Citing GenSec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GenSec Documentation</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">gensec</a> &raquo;</li>
+        
+      <li>gensec package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/gensec.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="gensec-package">
+<h1>gensec package<a class="headerlink" href="#gensec-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-gensec.alphas">
+<span id="gensec-alphas-module"></span><h2>gensec.alphas module<a class="headerlink" href="#module-gensec.alphas" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="gensec.alphas.find_alpha">
+<code class="descclassname">gensec.alphas.</code><code class="descname">find_alpha</code><span class="sig-paren">(</span><em>A</em>, <em>B</em>, <em>Cutoff</em>, <em>threshold</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.alphas.find_alpha" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="gensec.alphas.func">
+<code class="descclassname">gensec.alphas.</code><code class="descname">func</code><span class="sig-paren">(</span><em>alpha</em>, <em>R0</em>, <em>R</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.alphas.func" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="gensec.alphas.get_R0AB">
+<code class="descclassname">gensec.alphas.</code><code class="descname">get_R0AB</code><span class="sig-paren">(</span><em>A</em>, <em>B</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.alphas.get_R0AB" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="gensec.alphas.save_obj">
+<code class="descclassname">gensec.alphas.</code><code class="descname">save_obj</code><span class="sig-paren">(</span><em>obj</em>, <em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.alphas.save_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-gensec.coefficients">
+<span id="gensec-coefficients-module"></span><h2>gensec.coefficients module<a class="headerlink" href="#module-gensec.coefficients" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-gensec.defaults">
+<span id="gensec-defaults-module"></span><h2>gensec.defaults module<a class="headerlink" href="#module-gensec.defaults" title="Permalink to this headline">¶</a></h2>
+<p>Default parameters for optimizer class - currently just sets max step size</p>
+</div>
+<div class="section" id="module-gensec.known">
+<span id="gensec-known-module"></span><h2>gensec.known module<a class="headerlink" href="#module-gensec.known" title="Permalink to this headline">¶</a></h2>
+<p>Summary</p>
+<dl class="class">
+<dt id="gensec.known.Known">
+<em class="property">class </em><code class="descclassname">gensec.known.</code><code class="descname">Known</code><span class="sig-paren">(</span><em>structure</em>, <em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Handling of the known structures</p>
+<p>Class for keeping of already known structures
+in order to avoid repetative calculations
+and generate unique structures.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>coms (TYPE): Description
+criteria (str): Description
+orientations (TYPE): Description
+torsional_diff_degree (int): Description
+torsions (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.known.Known.add_to_known">
+<code class="descname">add_to_known</code><span class="sig-paren">(</span><em>t</em>, <em>o</em>, <em>c</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.add_to_known" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>t (TYPE): Description
+o (TYPE): Description
+c (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.add_to_known_coms">
+<code class="descname">add_to_known_coms</code><span class="sig-paren">(</span><em>c</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.add_to_known_coms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>c (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.add_to_known_orientations">
+<code class="descname">add_to_known_orientations</code><span class="sig-paren">(</span><em>o</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.add_to_known_orientations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>o (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.add_to_known_torsions">
+<code class="descname">add_to_known_torsions</code><span class="sig-paren">(</span><em>t</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.add_to_known_torsions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>t (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.angle_between">
+<code class="descname">angle_between</code><span class="sig-paren">(</span><em>vec2</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.angle_between" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec1 (TYPE): Description
+vec2 (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.coms_diff">
+<code class="descname">coms_diff</code><span class="sig-paren">(</span><em>point</em>, <em>vector</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.coms_diff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>point (TYPE): Description
+vector (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.find_in_known">
+<code class="descname">find_in_known</code><span class="sig-paren">(</span><em>coords</em>, <em>parameters</em>, <em>structure</em>, <em>fixed_frame</em>, <em>criteria</em>, <em>t</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.find_in_known" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>coords (TYPE): Description
+parameters (TYPE): Description
+structure (TYPE): Description
+fixed_frame (TYPE): Description
+criteria (TYPE): Description
+t (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.find_traj">
+<code class="descname">find_traj</code><span class="sig-paren">(</span><em>directory</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.find_traj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>directory (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.get_internal_vector">
+<code class="descname">get_internal_vector</code><span class="sig-paren">(</span><em>configuration</em>, <em>structure</em>, <em>fixed_frame</em>, <em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.get_internal_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>configuration (TYPE): Description
+structure (TYPE): Description
+fixed_frame (TYPE): Description
+parameters (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.get_known">
+<code class="descname">get_known</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.get_known" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.get_len">
+<code class="descname">get_len</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.get_len" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="gensec.known.Known.minimal_angle">
+<em class="property">static </em><code class="descname">minimal_angle</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.minimal_angle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>x (TYPE): Description
+y (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.orientational_diff">
+<code class="descname">orientational_diff</code><span class="sig-paren">(</span><em>point</em>, <em>vector</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.orientational_diff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>point (TYPE): Description
+vector (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.known.Known.torsional_diff">
+<code class="descname">torsional_diff</code><span class="sig-paren">(</span><em>point</em>, <em>vector</em>, <em>criteria</em>, <em>t</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.known.Known.torsional_diff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>point (TYPE): Description
+vector (TYPE): Description
+criteria (TYPE): Description
+t (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-gensec.modules">
+<span id="gensec-modules-module"></span><h2>gensec.modules module<a class="headerlink" href="#module-gensec.modules" title="Permalink to this headline">¶</a></h2>
+<p>Summary</p>
+<dl class="function">
+<dt id="gensec.modules.Rotation">
+<code class="descclassname">gensec.modules.</code><code class="descname">Rotation</code><span class="sig-paren">(</span><em>coord</em>, <em>point</em>, <em>quaternion</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.Rotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>coord (TYPE): Description
+point (TYPE): Description
+quaternion (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.align_to_axes">
+<code class="descclassname">gensec.modules.</code><code class="descname">align_to_axes</code><span class="sig-paren">(</span><em>atoms</em>, <em>atom_1_indx</em>, <em>atom_2_indx</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.align_to_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description
+atom_1_indx (TYPE): Description
+atom_2_indx (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.all_right">
+<code class="descclassname">gensec.modules.</code><code class="descname">all_right</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.all_right" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>structure (TYPE): Description
+fixed_frame (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.angle_between">
+<code class="descclassname">gensec.modules.</code><code class="descname">angle_between</code><span class="sig-paren">(</span><em>v1</em>, <em>v2</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.angle_between" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns angle between two vectors</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>v1 (TYPE): Description
+v2 (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.assign_random_state">
+<code class="descclassname">gensec.modules.</code><code class="descname">assign_random_state</code><span class="sig-paren">(</span><em>molecule</em>, <em>list_of_torsions</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.assign_random_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>molecule (TYPE): Description
+list_of_torsions (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.carried_atoms">
+<code class="descclassname">gensec.modules.</code><code class="descname">carried_atoms</code><span class="sig-paren">(</span><em>connectivity_matrix_isolated</em>, <em>positions</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.carried_atoms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns list of carried atoms</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>connectivity_matrix_isolated (TYPE): Description
+positions (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.clashes_with_fixed_frame">
+<code class="descclassname">gensec.modules.</code><code class="descname">clashes_with_fixed_frame</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.clashes_with_fixed_frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks for clashes between molecules and fixed frame</p>
+<p>Claculates distances between all atoms in all molecules
+with all atoms in the fixed frame. Passed if all the
+distances are greater than 2.0 A. Periodic boundary
+conditions are taken into account with use of the
+mic=fixed_frame.mic</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>structure (TYPE): Description
+fixed_frame (TYPE): Description
+structure {list} – list of the molecules
+fixed_frame {Atoms object} – atoms in fixed frame</dd>
+<dt>Returns:</dt>
+<dd>boolean – False if all the distances are greater than 2.0 A</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.construct_graph">
+<code class="descclassname">gensec.modules.</code><code class="descname">construct_graph</code><span class="sig-paren">(</span><em>connectivity_matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.construct_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructu graph from connectivity matrix</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>connectivity_matrix (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.create_connectivity_matrix">
+<code class="descclassname">gensec.modules.</code><code class="descname">create_connectivity_matrix</code><span class="sig-paren">(</span><em>atoms</em>, <em>bothways</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.create_connectivity_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description
+bothways (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.create_torsion_list">
+<code class="descclassname">gensec.modules.</code><code class="descname">create_torsion_list</code><span class="sig-paren">(</span><em>bond</em>, <em>graph</em>, <em>atoms</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.create_torsion_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>bond (TYPE): Description
+graph (TYPE): Description
+atoms (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.cycle_exists">
+<code class="descclassname">gensec.modules.</code><code class="descname">cycle_exists</code><span class="sig-paren">(</span><em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.cycle_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>G (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.detect_cycles">
+<code class="descclassname">gensec.modules.</code><code class="descname">detect_cycles</code><span class="sig-paren">(</span><em>connectivity_matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.detect_cycles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>connectivity_matrix (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.detect_rotatble">
+<code class="descclassname">gensec.modules.</code><code class="descname">detect_rotatble</code><span class="sig-paren">(</span><em>connectivity_matrix</em>, <em>atoms</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.detect_rotatble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detection of all rotatable bonds
+2. The bonds does not contain terminate atoms
+2.
+3.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>connectivity_matrix (TYPE): Description
+atoms (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.dfs_visit">
+<code class="descclassname">gensec.modules.</code><code class="descname">dfs_visit</code><span class="sig-paren">(</span><em>G</em>, <em>u</em>, <em>found_cycle</em>, <em>pred_node</em>, <em>marked</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.dfs_visit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>G (TYPE): Description
+u (TYPE): Description
+found_cycle (TYPE): Description
+pred_node (TYPE): Description
+marked (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.exclude_rotatable_from_cycles">
+<code class="descclassname">gensec.modules.</code><code class="descname">exclude_rotatable_from_cycles</code><span class="sig-paren">(</span><em>list_of_torsions</em>, <em>cycles</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.exclude_rotatable_from_cycles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>list_of_torsions (TYPE): Description
+cycles (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.getroots">
+<code class="descclassname">gensec.modules.</code><code class="descname">getroots</code><span class="sig-paren">(</span><em>aNeigh</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.getroots" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>aNeigh (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.insertbreak">
+<code class="descclassname">gensec.modules.</code><code class="descname">insertbreak</code><span class="sig-paren">(</span><em>graph</em>, <em>atom1</em>, <em>atom2</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.insertbreak" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert the break in the graph</p>
+<p>Creates two disconnected graphs from one connected graph</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>graph (TYPE): Description
+atom1 (TYPE): Description
+atom2 (TYPE): Description
+graph {graph} – Graph representation of the system
+atom1 {atom number} – Terminate atom fro the first graph
+atom2 {atom number} – Terminate atom for the second graph</dd>
+<dt>Returns:</dt>
+<dd>Graph – Now the graph will not have connection between atom1 and atom2</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.internal_clashes">
+<code class="descclassname">gensec.modules.</code><code class="descname">internal_clashes</code><span class="sig-paren">(</span><em>structure</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.internal_clashes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check for internal clashes within molecule</p>
+<p>Iterates over the molecules and compare their
+connectivity matrices with template’s one.
+Periodic boundary conditions are taken into
+account with use of the flag “bothways = True”.</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>structure (TYPE): Description
+structure {list} – list of the molecules</dd>
+<dt>Returns:</dt>
+<dd>bollean – False if no clashes found</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.intramolecular_clashes">
+<code class="descclassname">gensec.modules.</code><code class="descname">intramolecular_clashes</code><span class="sig-paren">(</span><em>structure</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.intramolecular_clashes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks for intermolecular clashes</p>
+<p>Claculates distances between all atoms that
+belong to the different molecules. Passed if all the
+distances are greater than 1.4 A. Periodic boundary
+conditions are taken into account with use of the
+mic=structure.mic</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>structure (TYPE): Description
+structure {list} – list of the molecules</dd>
+<dt>Returns:</dt>
+<dd>boolean – False if no cllashes found</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.make_canonical_pyranosering">
+<code class="descclassname">gensec.modules.</code><code class="descname">make_canonical_pyranosering</code><span class="sig-paren">(</span><em>atoms</em>, <em>cycle</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.make_canonical_pyranosering" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description
+cycle (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.measure_molecules">
+<code class="descclassname">gensec.modules.</code><code class="descname">measure_molecules</code><span class="sig-paren">(</span><em>molecules</em>, <em>list_of_torsions</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.measure_molecules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>molecules (TYPE): Description
+list_of_torsions (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.measure_quaternion">
+<code class="descclassname">gensec.modules.</code><code class="descname">measure_quaternion</code><span class="sig-paren">(</span><em>atoms</em>, <em>atom_1_indx</em>, <em>atom_2_indx</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.measure_quaternion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description
+atom_1_indx (TYPE): Description
+atom_2_indx (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.measure_torsion_of_last">
+<code class="descclassname">gensec.modules.</code><code class="descname">measure_torsion_of_last</code><span class="sig-paren">(</span><em>atoms</em>, <em>list_of_torsions</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.measure_torsion_of_last" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description
+list_of_torsions (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.merge_together">
+<code class="descclassname">gensec.modules.</code><code class="descname">merge_together</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.merge_together" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>structure (TYPE): Description
+fixed_frame (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.mult_quats">
+<code class="descclassname">gensec.modules.</code><code class="descname">mult_quats</code><span class="sig-paren">(</span><em>q_1</em>, <em>q_2</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.mult_quats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>q_1 (TYPE): Description
+q_2 (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.prepare_for_saving">
+<code class="descclassname">gensec.modules.</code><code class="descname">prepare_for_saving</code><span class="sig-paren">(</span><em>structure</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.prepare_for_saving" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>structure (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.produce_coords_and_masses">
+<code class="descclassname">gensec.modules.</code><code class="descname">produce_coords_and_masses</code><span class="sig-paren">(</span><em>coords</em>, <em>masses</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.produce_coords_and_masses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>coords (TYPE): Description
+masses (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.produce_quaternion">
+<code class="descclassname">gensec.modules.</code><code class="descname">produce_quaternion</code><span class="sig-paren">(</span><em>angle</em>, <em>vector</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.produce_quaternion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>angle (TYPE): Description
+vector (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.quaternion_set">
+<code class="descclassname">gensec.modules.</code><code class="descname">quaternion_set</code><span class="sig-paren">(</span><em>atoms</em>, <em>quaternion</em>, <em>atom_1_indx</em>, <em>atom_2_indx</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.quaternion_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description
+quaternion (TYPE): Description
+atom_1_indx (TYPE): Description
+atom_2_indx (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.rotation_quat">
+<code class="descclassname">gensec.modules.</code><code class="descname">rotation_quat</code><span class="sig-paren">(</span><em>coord</em>, <em>q</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.rotation_quat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>coord (TYPE): Description
+q (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.set_centre_of_mass">
+<code class="descclassname">gensec.modules.</code><code class="descname">set_centre_of_mass</code><span class="sig-paren">(</span><em>atoms</em>, <em>new_com</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.set_centre_of_mass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description
+new_com (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.translate">
+<code class="descclassname">gensec.modules.</code><code class="descname">translate</code><span class="sig-paren">(</span><em>point</em>, <em>coord</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.translate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>point (TYPE): Description
+coord (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.translate_back">
+<code class="descclassname">gensec.modules.</code><code class="descname">translate_back</code><span class="sig-paren">(</span><em>point</em>, <em>coord</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.translate_back" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>point (TYPE): Description
+coord (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.unit_quaternion">
+<code class="descclassname">gensec.modules.</code><code class="descname">unit_quaternion</code><span class="sig-paren">(</span><em>q</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.unit_quaternion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>q (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.modules.unit_vector">
+<code class="descclassname">gensec.modules.</code><code class="descname">unit_vector</code><span class="sig-paren">(</span><em>vector</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.unit_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the unit vector of the vector.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vector (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gensec.optimize">
+<span id="gensec-optimize-module"></span><h2>gensec.optimize module<a class="headerlink" href="#module-gensec.optimize" title="Permalink to this headline">¶</a></h2>
+<p>Structure optimization.</p>
+<dl class="class">
+<dt id="gensec.optimize.BFGSLineSearch_mod">
+<em class="property">class </em><code class="descclassname">gensec.optimize.</code><code class="descname">BFGSLineSearch_mod</code><span class="sig-paren">(</span><em>atoms</em>, <em>restart=None</em>, <em>logfile='-'</em>, <em>trajectory=None</em>, <em>maxstep=None</em>, <em>master=None</em>, <em>initial=None</em>, <em>rmsd_dev=1000.0</em>, <em>molindixes=None</em>, <em>structure=None</em>, <em>H0=None</em>, <em>fixed_frame=None</em>, <em>parameters=None</em>, <em>mu=None</em>, <em>A=None</em>, <em>known=None</em>, <em>c1=0.23</em>, <em>c2=0.46</em>, <em>alpha=10.0</em>, <em>stpmax=50.0</em>, <em>force_consistent=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.BFGSLineSearch_mod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ase.optimize.bfgslinesearch.BFGSLineSearch</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>fixed_frame (TYPE): Description
+fmax_last (TYPE): Description
+H (TYPE): Description
+H0 (TYPE): Description
+I (TYPE): Description
+initial (TYPE): Description
+molindixes (TYPE): Description
+parameters (TYPE): Description
+rmsd_dev (TYPE): Description
+steps_in_row (int): Description
+structure (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.optimize.BFGSLineSearch_mod.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>r</em>, <em>g</em>, <em>r0</em>, <em>g0</em>, <em>p0</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.BFGSLineSearch_mod.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>r (TYPE): Description
+g (TYPE): Description
+r0 (TYPE): Description
+g0 (TYPE): Description
+p0 (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.optimize.BFGS_mod">
+<em class="property">class </em><code class="descclassname">gensec.optimize.</code><code class="descname">BFGS_mod</code><span class="sig-paren">(</span><em>atoms</em>, <em>restart=None</em>, <em>logfile='-'</em>, <em>trajectory=None</em>, <em>maxstep=0.04</em>, <em>master=None</em>, <em>initial=None</em>, <em>rmsd_dev=1000.0</em>, <em>molindixes=None</em>, <em>structure=None</em>, <em>H0=None</em>, <em>fixed_frame=None</em>, <em>parameters=None</em>, <em>mu=None</em>, <em>A=None</em>, <em>known=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.BFGS_mod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ase.optimize.bfgs.BFGS</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>fixed_frame (TYPE): Description
+H (TYPE): Description
+H0 (TYPE): Description
+initial (TYPE): Description
+molindixes (TYPE): Description
+parameters (TYPE): Description
+rmsd_dev (TYPE): Description
+structure (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.optimize.BFGS_mod.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>r</em>, <em>f</em>, <em>r0</em>, <em>f0</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.BFGS_mod.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>r (TYPE): Description
+f (TYPE): Description
+r0 (TYPE): Description
+f0 (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.optimize.LBFGS_Linesearch_mod">
+<em class="property">class </em><code class="descclassname">gensec.optimize.</code><code class="descname">LBFGS_Linesearch_mod</code><span class="sig-paren">(</span><em>atoms</em>, <em>restart=None</em>, <em>logfile='-'</em>, <em>trajectory=None</em>, <em>maxstep=None</em>, <em>master=None</em>, <em>initial=None</em>, <em>rmsd_dev=1000.0</em>, <em>molindixes=None</em>, <em>structure=None</em>, <em>H0_init=None</em>, <em>fixed_frame=None</em>, <em>parameters=None</em>, <em>mu=None</em>, <em>A=None</em>, <em>known=None</em>, <em>alpha=70.0</em>, <em>damping=1.0</em>, <em>memory=100</em>, <em>force_consistent=True</em>, <em>use_line_search=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.LBFGS_Linesearch_mod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ase.optimize.lbfgs.LBFGS</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>f0 (TYPE): Description
+fixed_frame (TYPE): Description
+fmax_last (TYPE): Description
+Hinv (TYPE): Description
+initial (TYPE): Description
+iteration (int): Description
+molindixes (TYPE): Description
+p (TYPE): Description
+parameters (TYPE): Description
+r0 (TYPE): Description
+rho (list): Description
+rmsd_dev (TYPE): Description
+s (list): Description
+steps_in_row (int): Description
+structure (TYPE): Description
+y (list): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.optimize.LBFGS_Linesearch_mod.log">
+<code class="descname">log</code><span class="sig-paren">(</span><em>forces=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.LBFGS_Linesearch_mod.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>forces (None, optional): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.LBFGS_Linesearch_mod.reset_hessian">
+<code class="descname">reset_hessian</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.LBFGS_Linesearch_mod.reset_hessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete the history of the Hessian</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.LBFGS_Linesearch_mod.step">
+<code class="descname">step</code><span class="sig-paren">(</span><em>f=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.LBFGS_Linesearch_mod.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step</p>
+<p>Use the given forces, update the history and calculate the next step –
+then take it</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>f (None, optional): Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.optimize.PreconLBFGS_mod">
+<em class="property">class </em><code class="descclassname">gensec.optimize.</code><code class="descname">PreconLBFGS_mod</code><span class="sig-paren">(</span><em>atoms</em>, <em>restart=None</em>, <em>logfile='-'</em>, <em>trajectory=None</em>, <em>maxstep=None</em>, <em>memory=100</em>, <em>damping=1.0</em>, <em>alpha=70.0</em>, <em>master=None</em>, <em>precon='ID'</em>, <em>variable_cell=False</em>, <em>use_armijo=False</em>, <em>c1=0.23</em>, <em>c2=0.46</em>, <em>a_min=None</em>, <em>rigid_units=None</em>, <em>rotation_factors=None</em>, <em>Hinv=None</em>, <em>structure=None</em>, <em>H0=None</em>, <em>fixed_frame=None</em>, <em>parameters=None</em>, <em>initial=None</em>, <em>rmsd_dev=1000.0</em>, <em>molindixes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.PreconLBFGS_mod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ase.optimize.precon.lbfgs.PreconLBFGS</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>f0 (TYPE): Description
+fixed_frame (TYPE): Description
+Hinv (TYPE): Description
+initial (TYPE): Description
+molindixes (TYPE): Description
+p (TYPE): Description
+parameters (TYPE): Description
+r0 (TYPE): Description
+rmsd_dev (TYPE): Description
+structure (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.optimize.PreconLBFGS_mod.step">
+<code class="descname">step</code><span class="sig-paren">(</span><em>f=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.PreconLBFGS_mod.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a single step</p>
+<p>Use the given forces, update the history and calculate the next step –
+then take it</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>f (None, optional): Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.optimize.TRM_BFGS">
+<em class="property">class </em><code class="descclassname">gensec.optimize.</code><code class="descname">TRM_BFGS</code><span class="sig-paren">(</span><em>atoms</em>, <em>restart=None</em>, <em>logfile='-'</em>, <em>trajectory=None</em>, <em>maxstep=1.0</em>, <em>master=None</em>, <em>initial=None</em>, <em>rmsd_dev=1000.0</em>, <em>molindixes=None</em>, <em>structure=None</em>, <em>H0=None</em>, <em>fixed_frame=None</em>, <em>parameters=None</em>, <em>mu=None</em>, <em>A=None</em>, <em>known=None</em>, <em>tr=1.0</em>, <em>eta=0.001</em>, <em>r=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ase.optimize.bfgs.BFGS</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>f0 (TYPE): Description
+fixed_frame (TYPE): Description
+H (TYPE): Description
+H0 (TYPE): Description
+initial (TYPE): Description
+log_accept (bool): Description
+maxstep (TYPE): Description
+molindixes (TYPE): Description
+parameters (TYPE): Description
+r0 (TYPE): Description
+rmsd_dev (TYPE): Description
+structure (TYPE): Description
+tr (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS.log">
+<code class="descname">log</code><span class="sig-paren">(</span><em>forces=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>forces (None, optional): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS.log_rejected">
+<code class="descname">log_rejected</code><span class="sig-paren">(</span><em>forces=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS.log_rejected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>forces (None, optional): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS.min_trm">
+<code class="descname">min_trm</code><span class="sig-paren">(</span><em>f</em>, <em>H</em>, <em>tr</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS.min_trm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the minimum of
+E(dx) = -(F * dx + 0.5 * ( dx * H * dx ),
+whithin dx**2 &lt;tr
+IN
+f  = forces        (n,)
+h  = hessian       (nxn)
+tr = trust-radius
+OUT   DX = displacement in cartesian basis
+INTERNAL
+ndim = dimension
+d    = hessian eigenvalues
+w    = hessian eigenvector (in columns)
+g    = gradient in cartesian basis
+gE   = gradient in eigenvector basis
+DX   = displacement in cartesian basis
+DXE  = displacement in eigenvector basis</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>f (TYPE): Description
+H (TYPE): Description
+tr (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS.step">
+<code class="descname">step</code><span class="sig-paren">(</span><em>f=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>f (None, optional): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS.update_BFGS">
+<code class="descname">update_BFGS</code><span class="sig-paren">(</span><em>r</em>, <em>f</em>, <em>r0</em>, <em>f0</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS.update_BFGS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>r (TYPE): Description
+f (TYPE): Description
+r0 (TYPE): Description
+f0 (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS.update_H">
+<code class="descname">update_H</code><span class="sig-paren">(</span><em>dx</em>, <em>df</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS.update_H" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input: DX = X -X_old</p>
+<p>DF = F -F_old
+DG = -DF
+H  = hessian
+Task: updated hessian</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>dx (TYPE): Description
+df (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.optimize.TRM_BFGS_IPI">
+<em class="property">class </em><code class="descclassname">gensec.optimize.</code><code class="descname">TRM_BFGS_IPI</code><span class="sig-paren">(</span><em>atoms</em>, <em>restart=None</em>, <em>logfile='-'</em>, <em>trajectory=None</em>, <em>maxstep=0.15</em>, <em>master=None</em>, <em>initial=None</em>, <em>rmsd_dev=1000.0</em>, <em>molindixes=None</em>, <em>structure=None</em>, <em>H0=None</em>, <em>fixed_frame=None</em>, <em>parameters=None</em>, <em>mu=None</em>, <em>A=None</em>, <em>known=None</em>, <em>tr=0.04</em>, <em>eta=0.001</em>, <em>r=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS_IPI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ase.optimize.bfgs.BFGS</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>f0 (TYPE): Description
+fixed_frame (TYPE): Description
+H (TYPE): Description
+H0 (TYPE): Description
+initial (TYPE): Description
+lastforce (TYPE): Description
+log_accept (bool): Description
+maxstep (TYPE): Description
+molindixes (TYPE): Description
+parameters (TYPE): Description
+r0 (TYPE): Description
+restart (TYPE): Description
+rmsd_dev (TYPE): Description
+steps (int): Description
+structure (TYPE): Description
+tr (TYPE): Description
+tr_init (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS_IPI.log">
+<code class="descname">log</code><span class="sig-paren">(</span><em>forces=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS_IPI.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>forces (None, optional): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS_IPI.log_rejected">
+<code class="descname">log_rejected</code><span class="sig-paren">(</span><em>forces=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS_IPI.log_rejected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>forces (None, optional): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS_IPI.min_trm">
+<code class="descname">min_trm</code><span class="sig-paren">(</span><em>f</em>, <em>h</em>, <em>tr</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS_IPI.min_trm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the minimum of
+E(dx) = -(F * dx + 0.5 * ( dx * H * dx ),
+whithin dx**2 &lt;tr</p>
+<dl class="docutils">
+<dt>IN    f  = forces        (n,)</dt>
+<dd>h  = hessian       (nxn)
+tr = trust-radius</dd>
+</dl>
+<p>OUT   DX = displacement in cartesian basis</p>
+<dl class="docutils">
+<dt>INTERNAL</dt>
+<dd>ndim = dimension
+d    = hessian eigenvalues
+w    = hessian eigenvector (in columns)
+g    = gradient in cartesian basis
+gE   = gradient in eigenvector basis
+DX   = displacement in cartesian basis
+DXE  = displacement in eigenvector basis</dd>
+<dt>Args:</dt>
+<dd>f (TYPE): Description
+h (TYPE): Description
+tr (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS_IPI.step">
+<code class="descname">step</code><span class="sig-paren">(</span><em>f=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS_IPI.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>f (None, optional): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.optimize.TRM_BFGS_IPI.update_H">
+<code class="descname">update_H</code><span class="sig-paren">(</span><em>dx</em>, <em>df</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS_IPI.update_H" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input: DX = X -X_old</p>
+<p>DF = F -F_old
+DG = -DF
+H  = hessian
+Task: updated hessian</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>dx (TYPE): Description
+df (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-gensec.outputs">
+<span id="gensec-outputs-module"></span><h2>gensec.outputs module<a class="headerlink" href="#module-gensec.outputs" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="gensec.outputs.Directories">
+<em class="property">class </em><code class="descclassname">gensec.outputs.</code><code class="descname">Directories</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Directories" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="gensec.outputs.Directories.create_directory">
+<code class="descname">create_directory</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Directories.create_directory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Directories.current_dir">
+<code class="descname">current_dir</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Directories.current_dir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Directories.find_last_dir">
+<code class="descname">find_last_dir</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Directories.find_last_dir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Directories.finished">
+<code class="descname">finished</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Directories.finished" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Directories.known">
+<code class="descname">known</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Directories.known" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Directories.remove_last_directory">
+<code class="descname">remove_last_directory</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Directories.remove_last_directory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Directories.save_to_directory">
+<code class="descname">save_to_directory</code><span class="sig-paren">(</span><em>ensemble</em>, <em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Directories.save_to_directory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.outputs.Output">
+<em class="property">class </em><code class="descclassname">gensec.outputs.</code><code class="descname">Output</code><span class="sig-paren">(</span><em>report_file</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="gensec.outputs.Output.write_configuration">
+<code class="descname">write_configuration</code><span class="sig-paren">(</span><em>configuration</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Output.write_configuration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Output.write_parameters">
+<code class="descname">write_parameters</code><span class="sig-paren">(</span><em>parameters</em>, <em>structure</em>, <em>known</em>, <em>dirs</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Output.write_parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Output.write_successfull_generate">
+<code class="descname">write_successfull_generate</code><span class="sig-paren">(</span><em>parameters</em>, <em>configuration</em>, <em>dirs</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Output.write_successfull_generate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Output.write_successfull_relax">
+<code class="descname">write_successfull_relax</code><span class="sig-paren">(</span><em>parameters</em>, <em>structure</em>, <em>known</em>, <em>dirs</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Output.write_successfull_relax" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="gensec.outputs.Output.write_to_report">
+<code class="descname">write_to_report</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.Output.write_to_report" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.outputs.Workflow">
+<em class="property">class </em><code class="descclassname">gensec.outputs.</code><code class="descname">Workflow</code><a class="headerlink" href="#gensec.outputs.Workflow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.outputs.load_parameters">
+<code class="descclassname">gensec.outputs.</code><code class="descname">load_parameters</code><span class="sig-paren">(</span><em>parameters_file</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.outputs.load_parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-gensec.precon">
+<span id="gensec-precon-module"></span><h2>gensec.precon module<a class="headerlink" href="#module-gensec.precon" title="Permalink to this headline">¶</a></h2>
+<p>Create the preconditioner based on the geometry.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>abohr (float): convert Bohr to Angstrom
+hartree (float): convert Hartree to eV
+k_bending (TYPE): Description
+k_bond (TYPE): Description
+k_torsion (TYPE): Description
+ref_ds (TYPE): Description</dd>
+</dl>
+<dl class="function">
+<dt id="gensec.precon.ASR">
+<code class="descclassname">gensec.precon.</code><code class="descname">ASR</code><span class="sig-paren">(</span><em>hessian</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.ASR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acoustic sum rule (ASR)</p>
+<p>ASR comes from the continous translational invariance of the periodic
+system. With translation of the whole system by a uniform
+displacement, there should be no forces acting on the atoms.
+This function restores the ASR for the given Hessian matrix.</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>hessian (matrix): 3Nx3N where N is lenght of atoms</dd>
+<dt>Returns:</dt>
+<dd>matrix: Hessian matrix with correct ASR</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.precon.Bravais">
+<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">Bravais</code><span class="sig-paren">(</span><em>lattice_vectors</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Bravais" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Provide tools related to some given Bravais lattice.</p>
+<p>May be initialized by a list of one, two, or three Bravais vectors.
+Provides tools to fold a vector or several vectors into the central
+parallel epipede (into_pe) and to retrieve a list of lattice vectors
+within a given radius (all_within).</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>bra (TYPE): Description
+ibra (TYPE): Description
+n (TYPE): Description
+rec (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.precon.Bravais.all_within">
+<code class="descname">all_within</code><span class="sig-paren">(</span><em>Rcut</em>, <em>add_base_PE=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Bravais.all_within" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of all lattice vector indices shorter than Rcut.</p>
+<p>If base_PE is True, add one parallel epipede (PE) to the region.</p>
+<dl class="docutils">
+<dt>Examples:</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cos60</span><span class="p">,</span> <span class="n">sin60</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lat</span> <span class="o">=</span> <span class="n">Bravais</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">cos60</span><span class="p">,</span> <span class="n">sin60</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.5</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lat</span><span class="o">.</span><span class="n">all_within</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">==</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">in</span> <span class="n">lat</span><span class="o">.</span><span class="n">all_within</span><span class="p">(</span><span class="mf">1.1</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">set1</span> <span class="o">=</span> <span class="n">lat</span><span class="o">.</span><span class="n">all_within</span><span class="p">(</span><span class="mf">1.2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">set1</span><span class="p">)</span>
+<span class="go">7</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">lat</span><span class="o">.</span><span class="n">all_within</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">add_base_PE</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="go">27</span>
+</pre></div>
+</div>
+</dd>
+<dt>The resulting vectors are sorted:</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lat</span><span class="o">.</span><span class="n">all_within</span><span class="p">(</span><span class="mf">2.2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd>
+<dt>Args:</dt>
+<dd>Rcut (TYPE): Description
+add_base_PE (bool, optional): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.Bravais.into_pe">
+<code class="descname">into_pe</code><span class="sig-paren">(</span><em>vecs</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Bravais.into_pe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fold vectors (last dimension 3) into parallel epipede.</p>
+<dl class="docutils">
+<dt>Examples:</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lat</span> <span class="o">=</span> <span class="n">Bravais</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">lat</span><span class="o">.</span><span class="n">into_pe</span><span class="p">([</span><span class="mf">3.2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]),</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd>
+<dt>Args:</dt>
+<dd>vecs (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+<dt>Raises:</dt>
+<dd>ValueError: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.Bravais.latvec">
+<code class="descname">latvec</code><span class="sig-paren">(</span><em>abc</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Bravais.latvec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a lattice vector from integer Bravais indices.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>abc (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.precon.CovalenceDamper">
+<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">CovalenceDamper</code><span class="sig-paren">(</span><em>atom2name</em>, <em>covrads={'Ac': 2.0</em>, <em>'Ag': 1.34</em>, <em>'Al': 1.18</em>, <em>'Ar': 0.98</em>, <em>'As': 1.2</em>, <em>'At': 2.0</em>, <em>'Au': 1.34</em>, <em>'B': 0.82</em>, <em>'Ba': 1.98</em>, <em>'Be': 0.9</em>, <em>'Bi': 1.46</em>, <em>'Br': 1.14</em>, <em>'C': 0.77</em>, <em>'Ca': 1.74</em>, <em>'Cd': 1.48</em>, <em>'Ce': 1.65</em>, <em>'Cl': 0.99</em>, <em>'Co': 1.16</em>, <em>'Cr': 1.18</em>, <em>'Cs': 2.35</em>, <em>'Cu': 1.17</em>, <em>'Dy': 1.59</em>, <em>'Er': 1.57</em>, <em>'Eu': 1.85</em>, <em>'F': 0.72</em>, <em>'Fe': 1.17</em>, <em>'Fr': 2.0</em>, <em>'Ga': 1.26</em>, <em>'Gd': 1.61</em>, <em>'Ge': 1.22</em>, <em>'H': 0.32</em>, <em>'He': 0.31</em>, <em>'Hf': 1.44</em>, <em>'Hg': 1.49</em>, <em>'Ho': 1.58</em>, <em>'I': 1.33</em>, <em>'In': 1.44</em>, <em>'Ir': 1.27</em>, <em>'K': 2.03</em>, <em>'Kr': 1.12</em>, <em>'La': 1.69</em>, <em>'Li': 1.63</em>, <em>'Lu': 1.56</em>, <em>'Mg': 1.36</em>, <em>'Mn': 1.17</em>, <em>'Mo': 1.3</em>, <em>'N': 0.75</em>, <em>'Na': 1.54</em>, <em>'Nb': 1.34</em>, <em>'Nd': 1.84</em>, <em>'Ne': 0.71</em>, <em>'Ni': 1.15</em>, <em>'O': 0.73</em>, <em>'Os': 1.26</em>, <em>'P': 1.06</em>, <em>'Pa': 2.0</em>, <em>'Pb': 1.47</em>, <em>'Pd': 1.28</em>, <em>'Pm': 1.63</em>, <em>'Po': 1.46</em>, <em>'Pr': 1.65</em>, <em>'Pt': 1.3</em>, <em>'Ra': 2.0</em>, <em>'Rb': 2.16</em>, <em>'Re': 1.28</em>, <em>'Rh': 1.25</em>, <em>'Rn': 2.0</em>, <em>'Ru': 1.25</em>, <em>'S': 1.02</em>, <em>'Sb': 1.4</em>, <em>'Sc': 1.44</em>, <em>'Se': 1.16</em>, <em>'Si': 1.11</em>, <em>'Sm': 1.62</em>, <em>'Sn': 1.41</em>, <em>'Sr': 1.91</em>, <em>'Ta': 1.34</em>, <em>'Tb': 1.59</em>, <em>'Tc': 1.27</em>, <em>'Te': 1.36</em>, <em>'Th': 1.65</em>, <em>'Ti': 1.32</em>, <em>'Tl': 1.48</em>, <em>'Tm': 1.56</em>, <em>'U': 1.42</em>, <em>'V': 1.22</em>, <em>'W': 1.3</em>, <em>'Xe': 1.31</em>, <em>'Y': 1.62</em>, <em>'Yb': 2.0</em>, <em>'Zn': 1.25</em>, <em>'Zr': 1.45}</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.CovalenceDamper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensec.precon.Damper" title="gensec.precon.Damper"><code class="xref py py-class docutils literal notranslate"><span class="pre">gensec.precon.Damper</span></code></a></p>
+<p>Damper class for covalent bonds (exponent in set([0, HUGE])).</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>atom2name (TYPE): Description
+covrads (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.precon.CovalenceDamper.Rcut">
+<code class="descname">Rcut</code><span class="sig-paren">(</span><em>max_exponent</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.CovalenceDamper.Rcut" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the maximum distance leading to max_exponent.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>max_exponent (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.CovalenceDamper.exponent">
+<code class="descname">exponent</code><span class="sig-paren">(</span><em>AB</em>, <em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.CovalenceDamper.exponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>AB (TYPE): Description
+i (TYPE): Description
+j (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.precon.Damper">
+<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">Damper</code><a class="headerlink" href="#gensec.precon.Damper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Damper interface documentation</p>
+<p>A Damper is an object that can judge the importance of an atom pair from
+the interatomic distance and the atom numbers.</p>
+<dl class="method">
+<dt id="gensec.precon.Damper.Rcut">
+<code class="descname">Rcut</code><span class="sig-paren">(</span><em>max_exponent</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Damper.Rcut" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the maximum distance leading to max_exponent.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>max_exponent (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.Damper.exponent">
+<code class="descname">exponent</code><span class="sig-paren">(</span><em>AB</em>, <em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Damper.exponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return exponent for distance AB and atom types i, j.</p>
+<p>What is actually done with AB, and in particular i, j
+is an implementation detail.  Most probably, the initializer
+should be passed some system related information, i.e. at
+least the atom types within the system.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>AB (TYPE): Description
+i (TYPE): Description
+j (TYPE): Description</dd>
+<dt>Raises:</dt>
+<dd>NotImplementedError: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.ExpHessian">
+<code class="descclassname">gensec.precon.</code><code class="descname">ExpHessian</code><span class="sig-paren">(</span><em>atoms</em>, <em>mu=1</em>, <em>A=3.0</em>, <em>recalc_mu=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.ExpHessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description
+mu (int, optional): Description
+A (float, optional): Description
+recalc_mu (bool, optional): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.precon.HessianBuilder">
+<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">HessianBuilder</code><span class="sig-paren">(</span><em>n_atom</em>, <em>n_dyn_periodic</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.HessianBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Builder object for Hessians by rank-one additions.</p>
+<p>For a Hessian which is built successively as a sum of rank-one updates:
+H_{nu i, mu j} = sum_k fac v_{nu i} v_{mu j}
+where each update vector is assumed to be sparse wrt the number of
+associated atoms.  The rank-one update is done by:
+HB.add_rank1(fac, vec)
+where vec == {nu: [x,y,z], …}</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">HB</span> <span class="o">=</span> <span class="n">HessianBuilder</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">HB</span><span class="o">.</span><span class="n">add_rank1</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">HB</span><span class="o">.</span><span class="n">add_rank1</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">HD</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">HD</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">HD</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">HB</span><span class="o">.</span><span class="n">to_array</span><span class="p">(),</span> <span class="n">HD</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>Hdict (TYPE): Description
+n_atom (TYPE): Description
+n_dyn_periodic (TYPE): Description
+n_vec (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.precon.HessianBuilder.add_rank1">
+<code class="descname">add_rank1</code><span class="sig-paren">(</span><em>fac</em>, <em>vec</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.HessianBuilder.add_rank1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add rank-one term vec * vec * vec^T.</p>
+<p>Here, vec = {i_atom: np.array([xi, yi, zi]), …}.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>fac (TYPE): Description
+vec (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.HessianBuilder.add_rank1_from_atlist">
+<code class="descname">add_rank1_from_atlist</code><span class="sig-paren">(</span><em>fac</em>, <em>dq_datom</em>, <em>atlist</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.HessianBuilder.add_rank1_from_atlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add rank-one term vec * vec * vec^T.</p>
+<p>Here, dq_atom = [np.array([xi, yi, zi]), …], and
+atlist = [(i_tau, (a, b, c)), …].</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>fac (TYPE): Description
+dq_datom (TYPE): Description
+atlist (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.HessianBuilder.add_unity">
+<code class="descname">add_unity</code><span class="sig-paren">(</span><em>fac</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.HessianBuilder.add_unity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add multiple of unity.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>fac (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.HessianBuilder.to_array">
+<code class="descname">to_array</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.HessianBuilder.to_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct full np.ndarray (only atomic coordinates, no stress).</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.Kabsh_rmsd">
+<code class="descclassname">gensec.precon.</code><code class="descname">Kabsh_rmsd</code><span class="sig-paren">(</span><em>atoms</em>, <em>initial</em>, <em>molindixes</em>, <em>removeHs=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Kabsh_rmsd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Root-mean-square deviation (RMSD) between tructures</p>
+<p>Finds the optimal rotation for alignment of two structures
+with use of Kabsh algorithm and then calculates RMSD
+between all the corresponding atoms.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (ASE Atoms object): The structure to calculate RMSD with the
+reference geometry.
+initial (ASE Atoms object): The reference geometry
+molindixes (list): list of indexes of the atoms object that
+should be taken into consideration while calculation of RMSD value
+removeHs (bool, optional): True if Hydrogens should be taken into
+consideration</dd>
+<dt>Returns:</dt>
+<dd>float: Root-mean-square deviation value between two structures</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.precon.LindhExponent">
+<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">LindhExponent</code><span class="sig-paren">(</span><em>atom2row, alphas=array([[3.57106484, 1.4102135 , 1.4102135 ],        [1.4102135 , 0.99989815, 0.99989815],        [1.4102135 , 0.99989815, 0.99989815]]), ref_ds=array([[0.71438923, 1.11127214, 1.33881834],        [1.11127214, 1.51873859, 1.79920251],        [1.33881834, 1.79920251, 1.79920251]])</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.LindhExponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensec.precon.Damper" title="gensec.precon.Damper"><code class="xref py py-class docutils literal notranslate"><span class="pre">gensec.precon.Damper</span></code></a></p>
+<p>Class of the LINDH object which provides the exponent factors.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>alphas (TYPE): Description
+atom2row (TYPE): Description
+ref_ds (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.precon.LindhExponent.Rcut">
+<code class="descname">Rcut</code><span class="sig-paren">(</span><em>max_exponent</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.LindhExponent.Rcut" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the maximum distance for given exponent.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>max_exponent (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.LindhExponent.exponent">
+<code class="descname">exponent</code><span class="sig-paren">(</span><em>AB</em>, <em>i_atom</em>, <em>j_atom</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.LindhExponent.exponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the exponent for distance AB of given types.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>AB (TYPE): Description
+i_atom (TYPE): Description
+j_atom (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.LindhHessian">
+<code class="descclassname">gensec.precon.</code><code class="descname">LindhHessian</code><span class="sig-paren">(</span><em>atoms</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.LindhHessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.precon.Pairs">
+<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">Pairs</code><span class="sig-paren">(</span><em>bra</em>, <em>atom</em>, <em>damper</em>, <em>max_sing_thres</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Find chains (pairs, triples, …) of atoms.</p>
+<dl class="docutils">
+<dt>Example:</dt>
+<dd># Chain of pairs, one at zero, one slightly distorted.
+&gt;&gt;&gt; bra = [[1, 0, 0]]
+&gt;&gt;&gt; atom = [[0, 0, 0], [0.01, 0.25, 0]]
+&gt;&gt;&gt; pairs = Pairs(bra, atom, SimpleDamper(), 1.5)
+&gt;&gt;&gt; bonds = list(pairs.chains(2, 1.01))   # all bonds up to length 1.
+&gt;&gt;&gt; for damp, atlist in bonds:  # only intracell and its own images.
+…     assert len(atlist) == 2
+…     print “%6.4f %s” % (damp, atlist)
+0.2502 [(0, (0, 0, 0)), (1, (0, 0, 0))]
+1.0000 [(0, (0, 0, 0)), (0, (1, 0, 0))]
+1.0000 [(1, (0, 0, 0)), (1, (1, 0, 0))]
+&gt;&gt;&gt; bendings = list(pairs.chains(3, 1.251))   # 1.251: one short 1-&gt;2 bond.
+&gt;&gt;&gt; for damp, atlist in bendings:
+…     assert len(atlist) == 3
+…     print “%6.4f %s” % (damp, atlist)
+1.2502 [(0, (0, 0, 0)), (0, (-1, 0, 0)), (1, (-1, 0, 0))]
+1.2502 [(0, (0, 0, 0)), (0, (1, 0, 0)), (1, (1, 0, 0))]
+1.2502 [(0, (0, 0, 0)), (1, (0, 0, 0)), (1, (-1, 0, 0))]
+1.2502 [(0, (0, 0, 0)), (1, (0, 0, 0)), (1, (1, 0, 0))]</dd>
+<dt>Attributes:</dt>
+<dd>abcs (TYPE): Description
+atom (TYPE): Description
+damper (TYPE): Description
+lat (TYPE): Description
+max_sing_thres (TYPE): Description
+n_atom (TYPE): Description
+pairs (list): Description
+per_atom (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.precon.Pairs.chains">
+<code class="descname">chains</code><span class="sig-paren">(</span><em>n</em>, <em>thres</em>, <em>directed=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Pairs.chains" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of (damp, [(i, abc), …]) tuples of n-chains.</p>
+<p>This is the main workhorse and returns a weight-sorted list of
+bonds (n=2), bendings (n=3), or torsions (n=3).</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>n (TYPE): Description
+thres (TYPE): Description
+directed (bool, optional): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.Pairs.getvec">
+<code class="descname">getvec</code><span class="sig-paren">(</span><em>iabc</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Pairs.getvec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>iabc (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.precon.SimpleDamper">
+<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">SimpleDamper</code><span class="sig-paren">(</span><em>atom2any=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.SimpleDamper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensec.precon.Damper" title="gensec.precon.Damper"><code class="xref py py-class docutils literal notranslate"><span class="pre">gensec.precon.Damper</span></code></a></p>
+<p>Damper for maximum chain lenght (exponent==bondlength).</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>atom2any (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.precon.SimpleDamper.Rcut">
+<code class="descname">Rcut</code><span class="sig-paren">(</span><em>max_exponent</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.SimpleDamper.Rcut" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the maximum distance leading to max_exponent.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>max_exponent (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.precon.SimpleDamper.exponent">
+<code class="descname">exponent</code><span class="sig-paren">(</span><em>AB</em>, <em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.SimpleDamper.exponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>AB (TYPE): Description
+i (TYPE): Description
+j (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.add_jitter">
+<code class="descclassname">gensec.precon.</code><code class="descname">add_jitter</code><span class="sig-paren">(</span><em>hessian</em>, <em>jitter</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.add_jitter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add jitter to the diagonal</p>
+<p>For the reasons of numerical stability adding jitter parameter to the
+diagonal of the matrix allows inverting of the matrix without problems.</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>hessian (matrix): 3Nx3N where N is lenght of atoms
+jitter (float): small value that is added to diagonal</dd>
+<dt>Returns:</dt>
+<dd>matrix: Hessian with jitter value added to the diagonal</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.canonize">
+<code class="descclassname">gensec.precon.</code><code class="descname">canonize</code><span class="sig-paren">(</span><em>atom_name</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.canonize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return canonical name of atom_name.</p>
+<p>The canonical name is the first capital of the string with an optional
+minuskel.</p>
+<dl class="docutils">
+<dt>Example:</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="n">canonize</span><span class="p">(</span><span class="s2">&quot;Ru&quot;</span><span class="p">),</span> <span class="n">canonize</span><span class="p">(</span><span class="s2">&quot;-H3&quot;</span><span class="p">),</span> <span class="n">canonize</span><span class="p">(</span><span class="s2">&quot;CT&quot;</span><span class="p">)</span>
+<span class="go">Ru H C</span>
+</pre></div>
+</div>
+</dd>
+<dt>Args:</dt>
+<dd>atom_name (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.check_positive_symmetric">
+<code class="descclassname">gensec.precon.</code><code class="descname">check_positive_symmetric</code><span class="sig-paren">(</span><em>hessian</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.check_positive_symmetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check properties of Hessian matrix</p>
+<p>The function in quazi-Newton’s method has to be strongly convex
+which is true if Hessian is positive definite and symmetric matrix.
+Symmetric if all the values of the Hessian after substracting
+of it’s transpose are smaller than 1e-10.
+Positive definite if all the eigenvalues are positive.</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>hessian (matrix): 3Nx3N where N is lenght of atoms</dd>
+<dt>Returns:</dt>
+<dd>boolean, boolean: True and True if Hessian symmetric
+and positive definite</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_angle">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_angle</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_angle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec1_d (TYPE): Description
+vec2_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_arccos">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_arccos</code><span class="sig-paren">(</span><em>val_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_arccos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>val_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_arcsin">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_arcsin</code><span class="sig-paren">(</span><em>val_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_arcsin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>val_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_arctan2">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_arctan2</code><span class="sig-paren">(</span><em>y_d</em>, <em>x_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_arctan2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>y_d (TYPE): Description
+x_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_bondangle">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_bondangle</code><span class="sig-paren">(</span><em>pos1_d</em>, <em>pos2_d</em>, <em>pos3_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_bondangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>pos1_d (TYPE): Description
+pos2_d (TYPE): Description
+pos3_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_bondangle_directed">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_bondangle_directed</code><span class="sig-paren">(</span><em>pos1_d</em>, <em>pos2_d</em>, <em>pos3_d</em>, <em>dir_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_bondangle_directed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>pos1_d (TYPE): Description
+pos2_d (TYPE): Description
+pos3_d (TYPE): Description
+dir_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_bondlength">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_bondlength</code><span class="sig-paren">(</span><em>pos1_d</em>, <em>pos2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_bondlength" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>pos1_d (TYPE): Description
+pos2_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_bondtorsion">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_bondtorsion</code><span class="sig-paren">(</span><em>pos1_d</em>, <em>pos2_d</em>, <em>pos3_d</em>, <em>pos4_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_bondtorsion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>pos1_d (TYPE): Description
+pos2_d (TYPE): Description
+pos3_d (TYPE): Description
+pos4_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_cosv1v2">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_cosv1v2</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_cosv1v2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec1_d (TYPE): Description
+vec2_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_cross">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_cross</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_cross" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec1_d (TYPE): Description
+vec2_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_directed_angle">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_directed_angle</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em>, <em>dir_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_directed_angle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec1_d (TYPE): Description
+vec2_d (TYPE): Description
+dir_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_dot">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_dot</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_dot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec1_d (TYPE): Description
+vec2_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_mult">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_mult</code><span class="sig-paren">(</span><em>vec_d</em>, <em>fac</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_mult" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec_d (TYPE): Description
+fac (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_norm">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_norm</code><span class="sig-paren">(</span><em>vec_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_normalized">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_normalized</code><span class="sig-paren">(</span><em>vec_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_normalized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec_d (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_power">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_power</code><span class="sig-paren">(</span><em>var_d</em>, <em>n</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_power" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>var_d (TYPE): Description
+n (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_prod">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_prod</code><span class="sig-paren">(</span><em>*arg_ds</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_prod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>arg_ds: Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.dd_sum">
+<code class="descclassname">gensec.precon.</code><code class="descname">dd_sum</code><span class="sig-paren">(</span><em>*arg_ds</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>arg_ds: Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.format_atlist">
+<code class="descclassname">gensec.precon.</code><code class="descname">format_atlist</code><span class="sig-paren">(</span><em>atlist</em>, <em>is_periodic</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.format_atlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Nicely format an atom list (atlist).</p>
+<p>Additionally adds 1 to atom numbers (-&gt; start with 1):
+&gt;&gt;&gt; print format_atlist([(0, (0, 0, 0)), (1, (0, -1, 0))], True)
+1( 0, 0, 0) –  2( 0,-1, 0)</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atlist (TYPE): Description
+is_periodic (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.get_pairs">
+<code class="descclassname">gensec.precon.</code><code class="descname">get_pairs</code><span class="sig-paren">(</span><em>atoms1</em>, <em>atoms2</em>, <em>Rcut</em>, <em>use_scipy=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.get_pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms1 (TYPE): Description
+atoms2 (TYPE): Description
+Rcut (TYPE): Description
+use_scipy (bool, optional): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.isposvec">
+<code class="descclassname">gensec.precon.</code><code class="descname">isposvec</code><span class="sig-paren">(</span><em>vec</em>, <em>eps=1e-10</em>, <em>noself=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.isposvec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return if vector is in some special sense ‘positive’.</p>
+<p>Positiveness is defined by the rightmost non-zero dimension:
+&gt;&gt;&gt; isposvec(np.array([1., 0., -1.]))
+False
+&gt;&gt;&gt; isposvec(np.array([1., 0., 0.]))
+True
+&gt;&gt;&gt; isposvec(np.array([-1., 0., 1.]))
+True</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>vec (TYPE): Description
+eps (float, optional): Description
+noself (bool, optional): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+<dt>Raises:</dt>
+<dd>ValueError: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.makeorthvec">
+<code class="descclassname">gensec.precon.</code><code class="descname">makeorthvec</code><span class="sig-paren">(</span><em>orth</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.makeorthvec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a (3 component) vector orthogonal to orth.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy.random</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">makeorthvec</span><span class="p">(</span><span class="n">vec</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1e-12</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>orth (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.model_matrix">
+<code class="descclassname">gensec.precon.</code><code class="descname">model_matrix</code><span class="sig-paren">(</span><em>bra</em>, <em>atom</em>, <em>builder</em>, <em>damper</em>, <em>thres</em>, <em>logfile=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.model_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct model Hessian.  Returns the HessianBuilder object.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">builder</span> <span class="o">=</span> <span class="n">HessianBuilder</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">damper</span> <span class="o">=</span> <span class="n">LindhExponent</span><span class="p">(</span><span class="n">atom2row</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>    <span class="c1"># Say, two hydrogens.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">atom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">HB</span> <span class="o">=</span> <span class="n">model_matrix</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">atom</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">damper</span><span class="p">,</span> <span class="mf">10.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">HB</span> <span class="ow">is</span> <span class="n">builder</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">H</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="o">*</span><span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="n">H</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="mf">0.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[:,</span><span class="mi">4</span><span class="p">:</span><span class="mi">6</span><span class="p">],</span> <span class="mf">0.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="mf">0.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">H</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="o">-</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>bra (TYPE): Description
+atom (TYPE): Description
+builder (TYPE): Description
+damper (TYPE): Description
+thres (TYPE): Description
+logfile (None, optional): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.name2row">
+<code class="descclassname">gensec.precon.</code><code class="descname">name2row</code><span class="sig-paren">(</span><em>atom_name</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.name2row" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return row number of atom type (starting with 0, max 2).</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atom_name (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.preconditioned_hessian">
+<code class="descclassname">gensec.precon.</code><code class="descname">preconditioned_hessian</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em>, <em>parameters</em>, <em>atoms_current</em>, <em>H</em>, <em>task='update'</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.preconditioned_hessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>structure (TYPE): Description
+fixed_frame (TYPE): Description
+parameters (TYPE): Description
+atoms_current (TYPE): Description
+H (TYPE): Description
+task (str, optional): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.q_bending">
+<code class="descclassname">gensec.precon.</code><code class="descname">q_bending</code><span class="sig-paren">(</span><em>Avec</em>, <em>Bvec</em>, <em>Cvec</em>, <em>direction=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.q_bending" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bond angle and derivative wrt vectors AB and BC.</p>
+<dl class="docutils">
+<dt>Test:</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">q_bending</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">)[</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">109.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">_test_qgrad</span><span class="p">(</span><span class="n">q_bending</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-5</span>
+</pre></div>
+</div>
+</dd>
+<dt>Args:</dt>
+<dd>Avec (TYPE): Description
+Bvec (TYPE): Description
+Cvec (TYPE): Description
+direction (None, optional): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.q_bond">
+<code class="descclassname">gensec.precon.</code><code class="descname">q_bond</code><span class="sig-paren">(</span><em>Avec</em>, <em>Bvec</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.q_bond" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bond length and derivative wrt vector AB.</p>
+<dl class="docutils">
+<dt>Test:</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">q_bond</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">])[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.</span><span class="p">))</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">_test_qgrad</span><span class="p">(</span><span class="n">q_bond</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-5</span>
+</pre></div>
+</div>
+</dd>
+<dt>Args:</dt>
+<dd>Avec (TYPE): Description
+Bvec (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.q_torsion">
+<code class="descclassname">gensec.precon.</code><code class="descname">q_torsion</code><span class="sig-paren">(</span><em>Avec</em>, <em>Bvec</em>, <em>Cvec</em>, <em>Dvec</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.q_torsion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bond torsion and derivative wrt vectors AB, BC, and CD.</p>
+<dl class="docutils">
+<dt>Test:</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">q_torsion</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">D</span><span class="p">)[</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">5</span><span class="p">)</span>
+<span class="go">90.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">assert</span> <span class="n">_test_qgrad</span><span class="p">(</span><span class="n">q_torsion</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-5</span>
+<span class="gp">... </span><span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>   <span class="c1"># May happen with bad luck.</span>
+<span class="gp">... </span>   <span class="k">pass</span>
+</pre></div>
+</div>
+</dd>
+<dt>Args:</dt>
+<dd>Avec (TYPE): Description
+Bvec (TYPE): Description
+Cvec (TYPE): Description
+Dvec (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+<dt>Raises:</dt>
+<dd>ValueError: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.set_constrains">
+<code class="descclassname">gensec.precon.</code><code class="descname">set_constrains</code><span class="sig-paren">(</span><em>atoms</em>, <em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.set_constrains" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the constrains</p>
+<p>Adds the constrains for geometry optimizations to the Atoms object.
+During geometry optimization the forces on the constrained atoms
+will be always zero.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (ASE Atoms object): Geometry to optimize
+parameters (file): file with parameters for constrainings</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.testmod">
+<code class="descclassname">gensec.precon.</code><code class="descname">testmod</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.testmod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.vdwHessian">
+<code class="descclassname">gensec.precon.</code><code class="descname">vdwHessian</code><span class="sig-paren">(</span><em>atoms</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.vdwHessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.vector_separation">
+<code class="descclassname">gensec.precon.</code><code class="descname">vector_separation</code><span class="sig-paren">(</span><em>cell_h</em>, <em>cell_ih</em>, <em>qi</em>, <em>qj</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.vector_separation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>cell_h (TYPE): Description
+cell_ih (TYPE): Description
+qi (TYPE): Description
+qj (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gensec.protocols">
+<span id="gensec-protocols-module"></span><h2>gensec.protocols module<a class="headerlink" href="#module-gensec.protocols" title="Permalink to this headline">¶</a></h2>
+<p>Create different search protocols</p>
+<dl class="class">
+<dt id="gensec.protocols.Protocol">
+<em class="property">class </em><code class="descclassname">gensec.protocols.</code><code class="descname">Protocol</code><a class="headerlink" href="#gensec.protocols.Protocol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>success (TYPE): Description
+trials (int): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.protocols.Protocol.init">
+<code class="descname">init</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.protocols.Protocol.init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>parameters (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.protocols.Protocol.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.protocols.Protocol.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>parameters (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-gensec.relaxation">
+<span id="gensec-relaxation-module"></span><h2>gensec.relaxation module<a class="headerlink" href="#module-gensec.relaxation" title="Permalink to this headline">¶</a></h2>
+<p>Summary</p>
+<dl class="class">
+<dt id="gensec.relaxation.Calculator">
+<em class="property">class </em><code class="descclassname">gensec.relaxation.</code><code class="descname">Calculator</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>calculator (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.relaxation.Calculator.estimate_mu">
+<code class="descname">estimate_mu</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em>, <em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator.estimate_mu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>structure (TYPE): Description
+fixed_frame (TYPE): Description
+parameters (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.relaxation.Calculator.finish_relaxation">
+<code class="descname">finish_relaxation</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em>, <em>parameters</em>, <em>calculator</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator.finish_relaxation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finishes unfinished calculation</p>
+<p>Reads the output in logfile and compares to the convergence criteria in
+parameters.json file. If no “finished” reads the trajectory file and
+relax the structure.</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>structure (TYPE): Description
+fixed_frame (TYPE): Description
+parameters (TYPE): Description
+calculator (TYPE): Description
+structure {[type]} – Structure object
+fixed_frame {[type]} – Fixed frame object
+parameters {[type]} – parameters file
+directory {[type]} – the directory with unfinished calculation</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.relaxation.Calculator.finished">
+<code class="descname">finished</code><span class="sig-paren">(</span><em>directory</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator.finished" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark, that calculation finished successfully</p>
+<p>Write file “finished” if the</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>directory (TYPE): Description
+directory {str} – Directory, where the calculation was carried out</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.relaxation.Calculator.relax">
+<code class="descname">relax</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em>, <em>parameters</em>, <em>directory</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator.relax" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>structure (TYPE): Description
+fixed_frame (TYPE): Description
+parameters (TYPE): Description
+directory (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.relaxation.Calculator.set_constrains">
+<code class="descname">set_constrains</code><span class="sig-paren">(</span><em>atoms</em>, <em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator.set_constrains" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (TYPE): Description
+parameters (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-gensec.structure">
+<span id="gensec-structure-module"></span><h2>gensec.structure module<a class="headerlink" href="#module-gensec.structure" title="Permalink to this headline">¶</a></h2>
+<p>Summary</p>
+<dl class="class">
+<dt id="gensec.structure.Fixed_frame">
+<em class="property">class </em><code class="descclassname">gensec.structure.</code><code class="descname">Fixed_frame</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Fixed_frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>fixed_frame (TYPE): Description
+mic (bool): Description
+pbc (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.structure.Fixed_frame.get_len">
+<code class="descname">get_len</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Fixed_frame.get_len" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Fixed_frame.set_fixed_frame_positions">
+<code class="descname">set_fixed_frame_positions</code><span class="sig-paren">(</span><em>structure</em>, <em>atoms</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Fixed_frame.set_fixed_frame_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the coordinates from atoms object</p>
+<p>Set the coordinates from atoms to fixed_frame object</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>structure (TYPE): Description
+atoms (TYPE): Description
+atoms {ase atoms object} – ASE Atoms object with cordinates</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gensec.structure.Structure">
+<em class="property">class </em><code class="descclassname">gensec.structure.</code><code class="descname">Structure</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Summary</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>atoms (TYPE): Description
+connectivity_matrix_full (TYPE): Description
+connectivity_matrix_isolated (TYPE): Description
+list_of_torsions (TYPE): Description
+mic (bool): Description
+molecules (TYPE): Description
+mu (TYPE): Description
+pbc (TYPE): Description</dd>
+</dl>
+<dl class="method">
+<dt id="gensec.structure.Structure.apply_conf">
+<code class="descname">apply_conf</code><span class="sig-paren">(</span><em>conf</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.apply_conf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply confiruration to the structure object</p>
+<p>Getting the configuration in the form of dictionary and applies
+it to the structure object</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>conf (TYPE): Description
+conf {dictionary} – Dictionary with configuration stored</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Structure.apply_configuration">
+<code class="descname">apply_configuration</code><span class="sig-paren">(</span><em>configuration</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.apply_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>configuration (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Structure.apply_torsions">
+<code class="descname">apply_torsions</code><span class="sig-paren">(</span><em>configuration</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.apply_torsions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>configuration (TYPE): Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Structure.atoms_object">
+<code class="descname">atoms_object</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.atoms_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Structure object to ASE Atoms object</p>
+<p>Goes through Molecules in Structure object and join
+them to one ASE Atoms object</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>[ASE Atoms] – ASE Atoms object</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Structure.create_configuration">
+<code class="descname">create_configuration</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.create_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>parameters (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Structure.extract_conf_keys_from_row">
+<code class="descname">extract_conf_keys_from_row</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.extract_conf_keys_from_row" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract configurtion keys</p>
+<p>From the row of the database all keys are read and the
+configuration is returned as list of keys that correspond to
+the torsional, rotational and positional degrees of freedom
+of the structure object</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>[list] – list of keys reflectin the configuration</dt>
+<dd>on internal degrees of freedom</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Structure.find_in_database">
+<code class="descname">find_in_database</code><span class="sig-paren">(</span><em>conf</em>, <em>database</em>, <em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.find_in_database" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the configuration is stored in database</p>
+<p>[description]</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>conf (TYPE): Description
+database (TYPE): Description
+parameters (TYPE): Description
+conf {dictionary} – Conformation stored in dictionary
+database {ASE database} – ASE database with other configurations
+parameters {file} – Parameters file</dd>
+<dt>Returns:</dt>
+<dd>[boolean] – True if the configuration found in database</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Structure.read_configuration">
+<code class="descname">read_configuration</code><span class="sig-paren">(</span><em>atoms_positions</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.read_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the configuration from atoms positions</p>
+<p>Read the atoms positions and calculate the values of degrees of freedom
+using the template and list of torsions stored in the structure object</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>atoms_positions (TYPE): Description
+atoms_positions {ASE Atoms} – ASE Atoms object</dd>
+<dt>Returns:</dt>
+<dd>[dictionary] – Dictionary reflecting the cinfiguration on internal
+degrees of freedom</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Structure.set_structure_positions">
+<code class="descname">set_structure_positions</code><span class="sig-paren">(</span><em>atoms</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.set_structure_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the coordinates from atoms object</p>
+<p>Set the coordinates from atoms to structure object</p>
+<dl class="docutils">
+<dt>Arguments:</dt>
+<dd>atoms (TYPE): Description
+atoms {ase atoms object} – ASE Atoms object with cordinates</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="gensec.structure.Structure.torsions_from_conf">
+<code class="descname">torsions_from_conf</code><span class="sig-paren">(</span><em>configuration</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure.torsions_from_conf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>configuration (TYPE): Description</dd>
+<dt>Returns:</dt>
+<dd>TYPE: Description</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.structure.random">
+<code class="descclassname">gensec.structure.</code><code class="descname">random</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; x in the interval [0, 1).<a class="headerlink" href="#gensec.structure.random" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-gensec">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gensec" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="citation.html" class="btn btn-neutral float-right" title="Citing GenSec" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="modules.html" class="btn btn-neutral float-left" title="gensec" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Dmitrii Maksimov.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
