@@ -60,8 +60,8 @@ class Protocol:
                 db_trajectories = open("db_trajectories.db", "w")
             if os.path.exists("db_trajectories.db-journal"):
                 os.remove("db_trajectories.db-journal")
-            if os.path.exists("db_trajectories.lock"):
-                os.remove("db_trajectories.lock")
+            if os.path.exists("db_trajectories.db.lock"):
+                os.remove("db_trajectories.db.lock")
 
             db_trajectories = ase.db.connect("db_trajectories.db")
 
@@ -140,8 +140,8 @@ class Protocol:
                 db_trajectories = open("db_trajectories.db", "w")
             if os.path.exists("db_trajectories.db-journal"):
                 os.remove("db_trajectories.db-journal")
-            if os.path.exists("db_trajectories.lock"):
-                os.remove("db_trajectories.lock")
+            if os.path.exists("db_trajectories.db.lock"):
+                os.remove("db_trajectories.db.lock")
 
             db_trajectories = ase.db.connect("db_trajectories.db")
 
