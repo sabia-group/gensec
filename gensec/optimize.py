@@ -189,8 +189,7 @@ class PreconLBFGS_mod(PreconLBFGS):
         # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
         # Calculate RMSD between current and initial steps:
         if (
-            Kabsh_rmsd(self.atoms, self.initial, self.molindixes)
-            > self.rmsd_dev
+            Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev
             and self.parameters["calculator"]["preconditioner"]["rmsd_update"][
                 "activate"
             ]
@@ -399,10 +398,7 @@ class BFGS_mod(BFGS):
         if self.initial:  # Update the Hessian (not inverse!!!)
             # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
             # Calculate RMSD between current and initial steps:
-            if (
-                Kabsh_rmsd(self.atoms, self.initial, self.molindixes)
-                > self.rmsd_dev
-            ):
+            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
                 print("################################Applying update")
                 self.H = preconditioned_hessian(
                     self.structure,
@@ -532,9 +528,7 @@ class BFGSLineSearch_mod(BFGSLineSearch):
             return
         else:
             if self.fmax_last is None:
-                self.fmax_last = sqrt(
-                    (g0.reshape(-1, 3) ** 2).sum(axis=1).max()
-                )
+                self.fmax_last = sqrt((g0.reshape(-1, 3) ** 2).sum(axis=1).max())
 
             dr = r - r0
             dg = g - g0
@@ -783,9 +777,7 @@ class LBFGS_Linesearch_mod(LBFGS):
         # else:
         #     z = H0 * q
 
-        if self.parameters["calculator"]["preconditioner"]["rmsd_update"][
-            "activate"
-        ]:
+        if self.parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:
             # self.steps_in_raw+=1
             # or self.steps_in_raw > 50
             current_fmax = sqrt((f ** 2).sum(axis=1).max())
@@ -871,9 +863,7 @@ class LBFGS_Linesearch_mod(LBFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(
-            force_consistent=self.force_consistent
-        )
+        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
         T = time.localtime()
         name = self.__class__.__name__
         w = self.logfile.write
@@ -1064,10 +1054,7 @@ class TRM_BFGS(BFGS):
         if self.initial:  # Update the Hessian (not inverse!!!)
             # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
             # # Calculate RMSD between current and initial steps:
-            if (
-                Kabsh_rmsd(self.atoms, self.initial, self.molindixes)
-                > self.rmsd_dev
-            ):
+            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
                 print("################################Applying update")
                 self.H = preconditioned_hessian(
                     self.structure,
@@ -1268,9 +1255,7 @@ class TRM_BFGS(BFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(
-            force_consistent=self.force_consistent
-        )
+        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
         accept = self.log_accept
         T = time.localtime()
         if self.logfile is not None:
@@ -1318,9 +1303,7 @@ class TRM_BFGS(BFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(
-            force_consistent=self.force_consistent
-        )
+        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
         accept = self.log_accept
         T = time.localtime()
         if self.logfile is not None:
@@ -1514,8 +1497,7 @@ class TRM_BFGS_IPI(BFGS):
         self.steps += 1
 
         if (
-            Kabsh_rmsd(self.atoms, self.initial, self.molindixes)
-            > self.rmsd_dev
+            Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev
             and self.parameters["calculator"]["preconditioner"]["rmsd_update"][
                 "activate"
             ]
@@ -1552,9 +1534,7 @@ class TRM_BFGS_IPI(BFGS):
             # sys.exit(0)
             # Step 2 Calculate for the found displacemets:
             u = atoms.get_potential_energy()
-            f1 = atoms.get_forces().reshape(
-                -1
-            )  # Already correct sign! f1 = -grad(u)
+            f1 = atoms.get_forces().reshape(-1)  # Already correct sign! f1 = -grad(u)
 
             true_gain = u - u0
             expected_gain = -np.dot(f, s) + 0.5 * np.dot(s, np.dot(self.H, s))
@@ -1704,9 +1684,7 @@ class TRM_BFGS_IPI(BFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(
-            force_consistent=self.force_consistent
-        )
+        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
         accept = self.log_accept
         T = time.localtime()
         if self.logfile is not None:
@@ -1754,9 +1732,7 @@ class TRM_BFGS_IPI(BFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(
-            force_consistent=self.force_consistent
-        )
+        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
         accept = self.log_accept
         T = time.localtime()
         if self.logfile is not None:

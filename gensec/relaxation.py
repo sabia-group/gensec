@@ -79,36 +79,30 @@ class Calculator:
         # Figure out for which atoms Exp is applicapble
         precons_parameters = {
             "mol": parameters["calculator"]["preconditioner"]["mol"]["precon"],
-            "fixed_frame": parameters["calculator"]["preconditioner"][
-                "fixed_frame"
-            ]["precon"],
-            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
+            "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][
                 "precon"
             ],
+            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
             "mol-fixed_frame": parameters["calculator"]["preconditioner"][
                 "mol-fixed_frame"
             ]["precon"],
         }
         precons_parameters_init = {
             "mol": parameters["calculator"]["preconditioner"]["mol"]["initial"],
-            "fixed_frame": parameters["calculator"]["preconditioner"][
-                "fixed_frame"
-            ]["initial"],
-            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
+            "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][
                 "initial"
             ],
+            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"]["initial"],
             "mol-fixed_frame": parameters["calculator"]["preconditioner"][
                 "mol-fixed_frame"
             ]["initial"],
         }
         precons_parameters_update = {
             "mol": parameters["calculator"]["preconditioner"]["mol"]["update"],
-            "fixed_frame": parameters["calculator"]["preconditioner"][
-                "fixed_frame"
-            ]["update"],
-            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
+            "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][
                 "update"
             ],
+            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"]["update"],
             "mol-fixed_frame": parameters["calculator"]["preconditioner"][
                 "mol-fixed_frame"
             ]["update"],
@@ -170,12 +164,10 @@ class Calculator:
         self.set_constrains(atoms, parameters)
         atoms.set_calculator(self.calculator)
         # write(os.path.join(directory, "initial_configuration_{}.in".format(name)), atoms, format="aims" )
-        if parameters["calculator"]["preconditioner"]["rmsd_update"][
-            "activate"
-        ]:
-            rmsd_threshhold = parameters["calculator"]["preconditioner"][
-                "rmsd_update"
-            ]["value"]
+        if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:
+            rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"][
+                "value"
+            ]
         else:
             rmsd_threshhold = 100000000000
         if not hasattr(structure, "mu"):
@@ -189,9 +181,7 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "bfgs":
             opt = BFGS_mod(
                 atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
+                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
                 maxstep=0.004,
                 initial=a0,
                 molindixes=list(range(len(a0))),
@@ -208,9 +198,7 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "bfgs_linesearch":
             opt = BFGSLineSearch_mod(
                 atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
+                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
                 initial=a0,
                 molindixes=list(range(len(a0))),
                 rmsd_dev=rmsd_threshhold,
@@ -232,9 +220,7 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "lbfgs":
             opt = LBFGS_Linesearch_mod(
                 atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
+                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
                 initial=a0,
                 molindixes=list(range(len(a0))),
                 rmsd_dev=rmsd_threshhold,
@@ -252,9 +238,7 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "trm_nocedal":
             opt = TRM_BFGS(
                 atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
+                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
                 maxstep=0.2,
                 initial=a0,
                 molindixes=list(range(len(a0))),
@@ -272,9 +256,7 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "trm":
             opt = TRM_BFGS_IPI(
                 atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
+                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
                 maxstep=0.15,
                 initial=a0,
                 molindixes=list(range(len(a0))),
@@ -446,9 +428,7 @@ class Calculator:
 
             t = os.path.join(directory, "{}".format(traj))
             history_trajs = [i for i in os.listdir(directory) if "history" in i]
-            name_history_traj = "{:05d}_history_{}".format(
-                len(history_trajs) + 1, traj
-            )
+            name_history_traj = "{:05d}_history_{}".format(len(history_trajs) + 1, traj)
             shutil.copyfile(t, os.path.join(directory, name_history_traj))
 
         def concatenate_trajs(directory, traj):

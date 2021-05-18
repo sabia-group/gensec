@@ -38,9 +38,7 @@ def set_constrains(atoms, parameters):
     """
 
     z = parameters["calculator"]["constraints"]["z-coord"]
-    c = FixAtoms(
-        indices=[atom.index for atom in atoms if atom.position[2] <= z[-1]]
-    )
+    c = FixAtoms(indices=[atom.index for atom in atoms if atom.position[2] <= z[-1]])
     atoms.set_constraint(c)
 
 
@@ -88,9 +86,7 @@ def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
     coords1 = np.dot(coords1, K)
     rmsd_kabsh = 0.0
     for v, w in zip(coords1, coords2):
-        rmsd_kabsh += sum(
-            [(v[i] - w[i]) ** 2.0 for i in range(len(coords1[0]))]
-        )
+        rmsd_kabsh += sum([(v[i] - w[i]) ** 2.0 for i in range(len(coords1[0]))])
     return np.sqrt(rmsd_kabsh / len(coords1))
 
 
@@ -189,10 +185,7 @@ alphas = (
     * abohr ** (-2)
 )
 
-ref_ds = (
-    np.array([[1.35, 2.10, 2.53], [2.10, 2.87, 3.40], [2.53, 3.40, 3.40]])
-    * abohr
-)
+ref_ds = np.array([[1.35, 2.10, 2.53], [2.10, 2.87, 3.40], [2.53, 3.40, 3.40]]) * abohr
 
 
 def vdwHessian(atoms):
@@ -411,9 +404,7 @@ def vdwHessian(atoms):
     # Check if positive and symmetric:
     symmetric, positive = check_positive_symmetric(hessian)
     if not symmetric:
-        print(
-            "Hessian is not symmetric! Will give troubles during optimization!"
-        )
+        print("Hessian is not symmetric! Will give troubles during optimization!")
         sys.exit(0)
     if not positive:
         print(
@@ -1241,9 +1232,7 @@ def dd_dot(vec1_d, vec2_d):
     vec1, dvec1 = vec1_d
     vec2, dvec2 = vec2_d
     res = np.dot(vec1, vec2)
-    dres = np.tensordot(vec1, dvec2, (-1, 0)) + np.tensordot(
-        vec2, dvec1, (-1, 0)
-    )
+    dres = np.tensordot(vec1, dvec2, (-1, 0)) + np.tensordot(vec2, dvec1, (-1, 0))
     return res, dres
 
 
@@ -1608,12 +1597,10 @@ def preconditioned_hessian(
 
     precons_parameters = {
         "mol": parameters["calculator"]["preconditioner"]["mol"]["precon"],
-        "fixed_frame": parameters["calculator"]["preconditioner"][
-            "fixed_frame"
-        ]["precon"],
-        "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
+        "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][
             "precon"
         ],
+        "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
         "mol-fixed_frame": parameters["calculator"]["preconditioner"][
             "mol-fixed_frame"
         ]["precon"],
@@ -1621,9 +1608,7 @@ def preconditioned_hessian(
 
     routine = {
         "mol": parameters["calculator"]["preconditioner"]["mol"][task],
-        "fixed_frame": parameters["calculator"]["preconditioner"][
-            "fixed_frame"
-        ][task],
+        "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][task],
         "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][task],
         "mol-fixed_frame": parameters["calculator"]["preconditioner"][
             "mol-fixed_frame"
@@ -1699,9 +1684,7 @@ def preconditioned_hessian(
     if "Lindh" in precon_names:
         precons["Lindh"] = LindhHessian(atoms)
     if "Exp" in precon_names:
-        precons["Exp"] = ExpHessian(
-            atoms, mu=structure.mu, A=3.0, recalc_mu=False
-        )
+        precons["Exp"] = ExpHessian(atoms, mu=structure.mu, A=3.0, recalc_mu=False)
     if "vdW" in precon_names:
         precons["vdW"] = vdwHessian(atoms)
     if "ID" in precon_names:
@@ -1739,9 +1722,7 @@ def preconditioned_hessian(
                             p = precons_parameters["mol-fixed_frame"]
                             preconditioned_hessian[i, j] = precons[p][i, j]
 
-            if np.array_equal(
-                preconditioned_hessian, np.eye(3 * len(atoms)) * 70
-            ):
+            if np.array_equal(preconditioned_hessian, np.eye(3 * len(atoms)) * 70):
                 return preconditioned_hessian
             else:
                 # Fill the down triangle
@@ -1750,24 +1731,16 @@ def preconditioned_hessian(
                 preconditioned_hessian = ASR(preconditioned_hessian)
                 # Add stabilization to the diagonal
                 jitter = 0.005
-                preconditioned_hessian = add_jitter(
-                    preconditioned_hessian, jitter
-                )
+                preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
                 # Check if positive and symmetric:
-                symmetric, positive = check_positive_symmetric(
-                    preconditioned_hessian
-                )
+                symmetric, positive = check_positive_symmetric(preconditioned_hessian)
 
                 if not positive:
                     p = preconditioned_hessian.copy()
                     preconditioned_hessian = nearestPD(preconditioned_hessian)
-                    preconditioned_hessian = add_jitter(
-                        preconditioned_hessian, jitter
-                    )
+                    preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
 
-                symmetric, positive = check_positive_symmetric(
-                    preconditioned_hessian
-                )
+                symmetric, positive = check_positive_symmetric(preconditioned_hessian)
 
                 if not symmetric:
                     print(
@@ -1814,18 +1787,14 @@ def preconditioned_hessian(
             return preconditioned_hessian
         else:
             # Fill the down triangle
-            preconditioned_hessian = (
-                preconditioned_hessian + preconditioned_hessian.T
-            )
+            preconditioned_hessian = preconditioned_hessian + preconditioned_hessian.T
             # Calculate Acoustic sum rule
             preconditioned_hessian = ASR(preconditioned_hessian)
             # Add stabilization to the diagonal
             jitter = 0.005
             preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
             # Check if positive and symmetric:
-            symmetric, positive = check_positive_symmetric(
-                preconditioned_hessian
-            )
+            symmetric, positive = check_positive_symmetric(preconditioned_hessian)
 
             p = preconditioned_hessian.copy()
             preconditioned_hessian = nearestPD(preconditioned_hessian)

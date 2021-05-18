@@ -1,4 +1,3 @@
-
 #    VALUES for ALPHA-vdW and C6_vdW:
 #    !VVG: The majority of values such as isotropic static polarizability
 #    !(in bohr^3), the homo-atomic van der Waals coefficient(in hartree*bohr^6),

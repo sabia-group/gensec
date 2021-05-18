@@ -71,9 +71,7 @@ def dfs_visit(G, u, found_cycle, pred_node, marked):
         return
     marked[u] = True  # - Mark node.
     for v in G[u]:  # - Check neighbors, where G[u] is the adjacency list of u.
-        if (
-            marked[v] and v != pred_node
-        ):  # - If neighbor is marked and not predecessor,
+        if marked[v] and v != pred_node:  # - If neighbor is marked and not predecessor,
             found_cycle[0] = True  # then a cycle exists.
             return
         if not marked[v]:  # - Call dfs_visit recursively.
@@ -194,9 +192,7 @@ def detect_rotatble(connectivity_matrix, atoms):
                 pass
 
     conn = [
-        i
-        for i in connectivity_matrix.keys()
-        if all(k in indx_not_terminal for k in i)
+        i for i in connectivity_matrix.keys() if all(k in indx_not_terminal for k in i)
     ]
     list_of_torsions = []
     # If no cycles in the molecule
@@ -667,9 +663,7 @@ def internal_clashes(structure):
     clashes = False
     for i in range(len(structure.molecules)):
         a = sorted(
-            create_connectivity_matrix(
-                structure.molecules[i], bothways=True
-            ).keys(),
+            create_connectivity_matrix(structure.molecules[i], bothways=True).keys(),
             key=lambda element: (element[1:]),
         )
         b = sorted(
@@ -821,9 +815,7 @@ def measure_molecules(molecules, list_of_torsions):
                 )
             )
         # Set orientation
-        vector.append(
-            measure_quaternion(molecules[i], 0, len(molecules[i]) - 1)
-        )
+        vector.append(measure_quaternion(molecules[i], 0, len(molecules[i]) - 1))
         # Set center of mass
         vector.append(molecules[i].get_center_of_mass())
     return vector

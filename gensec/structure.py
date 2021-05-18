@@ -27,9 +27,7 @@ class Structure:
         Args:
             parameters (TYPE): Description
         """
-        self.atoms = read(
-            parameters["geometry"][0], format=parameters["geometry"][1]
-        )
+        self.atoms = read(parameters["geometry"][0], format=parameters["geometry"][1])
         self.connectivity_matrix_full = create_connectivity_matrix(
             self.atoms, bothways=True
         )
@@ -37,10 +35,7 @@ class Structure:
             self.atoms, bothways=False
         )
 
-        if (
-            parameters["configuration"]["torsions"]["list_of_tosrions"]
-            == "auto"
-        ):
+        if parameters["configuration"]["torsions"]["list_of_tosrions"] == "auto":
             self.list_of_torsions = detect_rotatble(
                 self.connectivity_matrix_isolated, self.atoms
             )
@@ -86,13 +81,8 @@ class Structure:
                 TYPE: Description
             """
             if parameters["configuration"]["torsions"]["values"] == "random":
-                torsions = np.array(
-                    [randint(0, 360) for i in self.list_of_torsions]
-                )
-            t = {
-                "m{}t{}".format(label, i): torsions[i]
-                for i in range(len(torsions))
-            }
+                torsions = np.array([randint(0, 360) for i in self.list_of_torsions])
+            t = {"m{}t{}".format(label, i): torsions[i] for i in range(len(torsions))}
             return torsions, t
 
         def make_orientation(self, parameters, label):
@@ -113,42 +103,27 @@ class Structure:
                 }
                 return quaternion, q
 
-            if (
-                parameters["configuration"]["orientations"]["values"]
-                == "random"
-            ):
+            if parameters["configuration"]["orientations"]["values"] == "random":
                 quaternion = produce_quaternion(
                     randint(0, 360), np.array([random(), random(), random()])
                 )
 
-            elif (
-                parameters["configuration"]["orientations"]["values"]
-                == "discretized"
-            ):
+            elif parameters["configuration"]["orientations"]["values"] == "discretized":
                 # Discretizes the values for the main vector of the molecuele
                 # for the angle part the number of allowed rotations
                 turns = int(
-                    360.0
-                    // parameters["configuration"]["orientations"]["angle"]
+                    360.0 // parameters["configuration"]["orientations"]["angle"]
                 )
 
                 angles = np.linspace(0, 360, num=turns + 1)
                 if (
-                    parameters["configuration"]["orientations"]["vector"][
-                        "Type"
-                    ]
+                    parameters["configuration"]["orientations"]["vector"]["Type"]
                     == "exclusion"
                 ):
                     exclude = np.eye(3)[choice([1, 2])]
-                    x = parameters["configuration"]["orientations"]["vector"][
-                        "x"
-                    ]
-                    y = parameters["configuration"]["orientations"]["vector"][
-                        "y"
-                    ]
-                    z = parameters["configuration"]["orientations"]["vector"][
-                        "z"
-                    ]
+                    x = parameters["configuration"]["orientations"]["vector"]["x"]
+                    y = parameters["configuration"]["orientations"]["vector"]["y"]
+                    z = parameters["configuration"]["orientations"]["vector"]["z"]
                     quaternion = produce_quaternion(
                         choice(angles),
                         np.array(
@@ -160,15 +135,9 @@ class Structure:
                         ),
                     )
                 else:
-                    x = parameters["configuration"]["orientations"]["vector"][
-                        "x"
-                    ]
-                    y = parameters["configuration"]["orientations"]["vector"][
-                        "y"
-                    ]
-                    z = parameters["configuration"]["orientations"]["vector"][
-                        "z"
-                    ]
+                    x = parameters["configuration"]["orientations"]["vector"]["x"]
+                    y = parameters["configuration"]["orientations"]["vector"]["y"]
+                    z = parameters["configuration"]["orientations"]["vector"]["z"]
                     quaternion = produce_quaternion(
                         choice(angles),
                         np.array([choice(x), choice(y), choice(z)]),
@@ -190,8 +159,7 @@ class Structure:
                     ),
                 )
             q = {
-                "m{}q{}".format(label, i): quaternion[i]
-                for i in range(len(quaternion))
+                "m{}q{}".format(label, i): quaternion[i] for i in range(len(quaternion))
             }
             return quaternion, q
 
@@ -215,18 +183,10 @@ class Structure:
                 y = parameters["configuration"]["coms"]["y_axis"]
                 z = parameters["configuration"]["coms"]["z_axis"]
 
-                x_space = np.linspace(
-                    start=x[0], stop=x[1], num=x[2], endpoint=True
-                )
-                y_space = np.linspace(
-                    start=y[0], stop=y[1], num=y[2], endpoint=True
-                )
-                z_space = np.linspace(
-                    start=z[0], stop=z[1], num=z[2], endpoint=True
-                )
-                com = np.array(
-                    [choice(x_space), choice(y_space), choice(z_space)]
-                )
+                x_space = np.linspace(start=x[0], stop=x[1], num=x[2], endpoint=True)
+                y_space = np.linspace(start=y[0], stop=y[1], num=y[2], endpoint=True)
+                z_space = np.linspace(start=z[0], stop=z[1], num=z[2], endpoint=True)
+                com = np.array([choice(x_space), choice(y_space), choice(z_space)])
             else:
                 com = np.array(
                     [
@@ -278,9 +238,7 @@ class Structure:
                         for k in range(len(q))
                     }
                 else:
-                    quaternion, q_temp = make_orientation(
-                        self, parameters, label=i
-                    )
+                    quaternion, q_temp = make_orientation(self, parameters, label=i)
 
                 if parameters["configuration"]["coms"]["same"]:
                     c_temp = {
@@ -352,14 +310,9 @@ class Structure:
                         a3=torsion[3],
                     )
                 )
-            orientations = measure_quaternion(
-                self.molecules[ii], 0, len(atoms) - 1
-            )
+            orientations = measure_quaternion(self.molecules[ii], 0, len(atoms) - 1)
             com = self.molecules[ii].get_center_of_mass()
-            t_temp = {
-                "m{}t{}".format(ii, k): torsions[k]
-                for k in range(len(torsions))
-            }
+            t_temp = {"m{}t{}".format(ii, k): torsions[k] for k in range(len(torsions))}
             q_temp = {
                 "m{}q{}".format(ii, k): orientations[k]
                 for k in range(len(orientations))
@@ -437,19 +390,13 @@ class Structure:
                 filter(lambda item: "m{}".format(i) in item[0], conf.items())
             )
             t_dict = dict(
-                filter(
-                    lambda item: "m{}t".format(i) in item[0], mol_dict.items()
-                )
+                filter(lambda item: "m{}t".format(i) in item[0], mol_dict.items())
             )
             q_dict = dict(
-                filter(
-                    lambda item: "m{}q".format(i) in item[0], mol_dict.items()
-                )
+                filter(lambda item: "m{}q".format(i) in item[0], mol_dict.items())
             )
             c_dict = dict(
-                filter(
-                    lambda item: "m{}c".format(i) in item[0], mol_dict.items()
-                )
+                filter(lambda item: "m{}c".format(i) in item[0], mol_dict.items())
             )
             # Set torsions
             for t in range(len(self.list_of_torsions)):
@@ -609,10 +556,7 @@ class Structure:
             )
         else:
             non_periodic_query = ", ".join(
-                [
-                    "{}<{}<{}".format(conf[i] - thresh, i, conf[i] + thresh)
-                    for i in keys
-                ]
+                ["{}<{}<{}".format(conf[i] - thresh, i, conf[i] + thresh) for i in keys]
             )
             periodic_query = {}
             for i in periodic_keys:
