@@ -30,7 +30,8 @@ def set_constrains(atoms, parameters):
 
     Adds the constrains for geometry optimizations to the Atoms object.
     During geometry optimization the forces on the constrained atoms
-    will be always zero.
+    will be always zero. Multiple variants for setting of constrains
+    are possible  for setting of the constrains.
 
     Args:
         atoms (ASE Atoms object): Geometry to optimize
@@ -38,7 +39,9 @@ def set_constrains(atoms, parameters):
     """
 
     z = parameters["calculator"]["constraints"]["z-coord"]
-    c = FixAtoms(indices=[atom.index for atom in atoms if atom.position[2] <= z[-1]])
+    c = FixAtoms(
+        indices=[atom.index for atom in atoms if atom.position[2] <= z[-1]]
+    )
     atoms.set_constraint(c)
 
 
@@ -48,6 +51,15 @@ def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
     Finds the optimal rotation for alignment of two structures
     with use of Kabsh algorithm and then calculates RMSD
     between all the corresponding atoms.
+    Takes the atoms of structure and the reference structure by
+    selecting all the atoms from inixes stored in molindixes.
+    If necessary removes all the Hydrogen atoms from structure.
+    Aligns centers of masses of the structures.
+    Calculates the optimal rotation for aligning.
+    Aligns structures and calculates deviation between positions of the
+    corresponding atoms in both structures.
+    Takes the square root of the sum square of those deviations.
+
 
     Args:
         atoms (ASE Atoms object): The structure to calculate RMSD with the
@@ -86,7 +98,9 @@ def Kabsh_rmsd(atoms, initial, molindixes, removeHs=False):
     coords1 = np.dot(coords1, K)
     rmsd_kabsh = 0.0
     for v, w in zip(coords1, coords2):
-        rmsd_kabsh += sum([(v[i] - w[i]) ** 2.0 for i in range(len(coords1[0]))])
+        rmsd_kabsh += sum(
+            [(v[i] - w[i]) ** 2.0 for i in range(len(coords1[0]))]
+        )
     return np.sqrt(rmsd_kabsh / len(coords1))
 
 
@@ -97,6 +111,8 @@ def ASR(hessian):
     system. With translation of the whole system by a uniform
     displacement, there should be no forces acting on the atoms.
     This function restores the ASR for the given Hessian matrix.
+    Calculates the block-diagonal elements as sum of the corresponding
+    x y or z elements of the other elements in the row.
 
     Arguments:
         hessian (matrix): 3Nx3N where N is lenght of atoms
@@ -130,6 +146,8 @@ def add_jitter(hessian, jitter):
 
     For the reasons of numerical stability adding jitter parameter to the
     diagonal of the matrix allows inverting of the matrix without problems.
+    creates the Identity matrix with scale of jitter and adds
+    it to the input hessian.
 
     Arguments:
         hessian (matrix): 3Nx3N where N is lenght of atoms
@@ -169,6 +187,7 @@ def check_positive_symmetric(hessian):
 
 abohr = 0.52917721  # in AA
 hartree = 27.211383  # in eV
+units = (abohr ** 6) * hartree
 
 k_bond = 0.450 * hartree / abohr ** 2
 k_bending = 0.150 * hartree
@@ -185,51 +204,168 @@ alphas = (
     * abohr ** (-2)
 )
 
-ref_ds = np.array([[1.35, 2.10, 2.53], [2.10, 2.87, 3.40], [2.53, 3.40, 3.40]]) * abohr
+ref_ds = (
+    np.array([[1.35, 2.10, 2.53], [2.10, 2.87, 3.40], [2.53, 3.40, 3.40]])
+    * abohr
+)
+
+
+def RAB(cell_h, cell_ih, qi, qj):
+    """Calculates the vector separating two atoms.
+
+    This file is part of i-PI.
+    i-PI Copyright (C) 2014-2015 i-PI developers
+
+    Note that minimum image convention is used, so only the image of
+    atom j that is the shortest distance from atom i is considered.
+
+    Also note that while this may not work if the simulation
+    box is highly skewed from orthorhombic, as
+    in this case it is possible to return a distance less than the
+    nearest neighbour distance. However, this will not be of
+    importance unless the cut-off radius is more than half the
+    width of the shortest face-face distance of the simulation box,
+    which should never be the case.
+    rij is in Angstroms
+
+    Args:
+        cell_h: The simulation box cell vector matrix.
+        cell_ih: The inverse of the simulation box cell vector matrix.
+        qi: The position vector of atom i.
+        qj: The position vectors of one or many atoms j shaped as (N, 3).
+    Returns:
+        dij: The vectors separating atoms i and {j}.
+        rij: The distances between atoms i and {j}.
+    """
+
+    sij = np.dot(cell_ih, (qi - qj).T)
+    sij -= np.rint(sij)
+    dij = np.dot(cell_h, sij).T
+    rij = np.linalg.norm(dij)
+
+    if np.array_equal(cell_h, np.zeros([3, 3])):
+        rij = np.array(np.linalg.norm(qi - qj))
+
+    return rij
+
+
+def C6AB(A, B):
+    """Calculates C6 coefficients
+
+    C6 coefficients calculated based on the static
+    dipole polarizabilites. Tkatchenko-Scheffler scheme.
+    The units are converted to eV*Angstr^6.
+
+    Args:
+        A (atom type): Chemical symbol of the atom A
+        B (atom type): type): Chemical symbol of the atom B
+
+    Returns:
+        float: C6 coefficient
+    """
+    C6AB = (
+        2.0
+        * C6_vdW[A]
+        * C6_vdW[B]
+        / (
+            ALPHA_vdW[B] / ALPHA_vdW[A] * C6_vdW[A]
+            + ALPHA_vdW[A] / ALPHA_vdW[B] * C6_vdW[B]
+        )
+    )
+    return C6AB * (abohr ** 6) * hartree
+
+
+def get_R0AB(A, B):
+    """Get the average of the two vdW radi of atoms.
+
+    Takes the vdW radii of atom A and B and calculates their
+    average. The units converted to Angstroms
+
+    Args:
+        A (atom type): Chemical symbol of the atom A
+        B (atom type): type): Chemical symbol of the atom B
+
+    Returns:
+        float: average vdW radii of two atoms.
+    """
+    return (VDW_radii[B] + VDW_radii[A]) * 0.5 * abohr
+
+
+def C12AB(A, B, C6):
+    """C12 coefficients between A and B
+
+    Based on the C6 coefficients calculate the C12
+    C12 coefficients are in eV*Angstr^6.
+    Args:
+        A (str): chemical symbol of A
+        B (str): chemical symbol of B
+        C6 (float): C6 coefficients between A and B
+
+    Returns:
+        float: C12 coefficient between A and B
+    """
+
+    R0AB = get_R0AB(A, B)
+    C12AB = 0.5 * C6 * (R0AB ** 6)
+    return C12AB
+
+
+def vdW_element(k, l, C6, C12, R0, R, qi, qj):
+    """VdW element
+
+    Args:
+        k (int): index of cartesian coordinates 0, 1 or 2
+        l (int): index of cartesian coordinates 0, 1 or 2
+        C6 (float): C6 coefficients between A and B
+        C12 (float): C12 coefficients between A and B
+        R0 (float): average vdW radii of atoms A and B
+        R (float): distance between atoms A and B
+        qi (float): Cartesian coordinates of atom A
+        qj (float): Cartesian coordinates of atom B
+
+    Returns:
+        vdW element (float): vdW element of k and l
+    """
+    norm = (R0 / R) ** 2
+    a1 = 48 * C6 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / R0 ** 10
+    a2 = -168 * C12 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / R0 ** 16
+    if k == l:
+        a3 = -6 * C6 / R0 ** 8
+        a4 = 12 * C12 / R0 ** 14
+    else:
+        a3 = 0
+        a4 = 0
+    return a1 + a2 + a3 + a4
+
+
+def rho_ij(A, B, R):
+    """Calculates rho between A and B atoms
+
+    Args:
+        A (str): chemical symbol of A
+        B (str): chemical symbol of B
+        R (float): Distance between atoms
+
+    Returns:
+        float: rho between A and B
+    """
+
+    R0_vdW_AB = get_R0AB(A, B)
+    alpha = alphas_vdW[A][B]
+    return np.exp(alpha * (R0_vdW_AB ** 2 - R ** 2))
 
 
 def vdwHessian(atoms):
-    """Summary
+    """vdW Preconditioning scheme
+
+    Calculates Hessian matrix with use of vdW preconditioning scheme.
 
     Args:
-        atoms (TYPE): Description
+        atoms (ASE atoms object): atoms for which vdW Hessian is calculated
 
     Returns:
-        TYPE: Description
+        matrix: Hessian matrix obtained with vdW preconditioning scheme.
     """
-
-    def periodic_R(cell_h, cell_ih, qi, qj):
-        """Calculates the vector separating two atoms.
-
-        This file is part of i-PI.
-        i-PI Copyright (C) 2014-2015 i-PI developers
-
-        Note that minimum image convention is used, so only the image of
-        atom j that is the shortest distance from atom i is considered.
-
-        Also note that while this may not work if the simulation
-        box is highly skewed from orthorhombic, as
-        in this case it is possible to return a distance less than the
-        nearest neighbour distance. However, this will not be of
-        importance unless the cut-off radius is more than half the
-        width of the shortest face-face distance of the simulation box,
-        which should never be the case.
-
-        Args:
-            cell_h: The simulation box cell vector matrix.
-            cell_ih: The inverse of the simulation box cell vector matrix.
-            qi: The position vector of atom i.
-            qj: The position vectors of one or many atoms j shaped as (N, 3).
-        Returns:
-            dij: The vectors separating atoms i and {j}.
-            rij: The distances between atoms i and {j}.
-        """
-
-        sij = np.dot(cell_ih, (qi - qj).T)
-        sij -= np.rint(sij)
-        dij = np.dot(cell_h, sij).T
-        rij = np.linalg.norm(dij)
-        return dij, rij
 
     N = len(atoms)
     coordinates = atoms.get_positions()
@@ -238,144 +374,6 @@ def vdwHessian(atoms):
     cell_ih = atoms.get_reciprocal_cell()[:]
     hessian = np.zeros(shape=(3 * N, 3 * N))
     atomsRange = list(range(N))
-    units = (abohr ** 6) * hartree
-
-    def C6AB(A, B):
-        """Summary
-
-        Args:
-            A (TYPE): Description
-            B (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        C6AB = (
-            2.0
-            * C6_vdW[A]
-            * C6_vdW[B]
-            / (
-                ALPHA_vdW[B] / ALPHA_vdW[A] * C6_vdW[A]
-                + ALPHA_vdW[A] / ALPHA_vdW[B] * C6_vdW[B]
-            )
-        )
-        # C6AB = 0.5 * (C6_vdW[A] + C6_vdW[B])
-
-        return C6AB * units  # in eV*Angstr^6
-
-    def get_R0AB(A, B):
-        """Summary
-
-        Args:
-            A (TYPE): Description
-            B (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        return (VDW_radii[B] + VDW_radii[A]) * 0.5 * abohr  # in Angstroms
-
-    def rho_ij(A, B, R):
-        """Summary
-
-        Args:
-            A (TYPE): Description
-            B (TYPE): Description
-            R (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-
-        R0_vdW_AB = get_R0AB(A, B)
-        alpha = alphas_vdW[A][B]
-        return np.exp(alpha * (R0_vdW_AB ** 2 - R ** 2))
-
-    def C12AB(A, B, C6):
-        """Summary
-
-        Args:
-            A (TYPE): Description
-            B (TYPE): Description
-            C6 (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        R0AB = get_R0AB(A, B)
-        C12AB = 0.5 * C6 * (R0AB ** 6)
-        return C12AB  # in eV*Angstr^6
-
-    def RAB(cell_h, cell_ih, qi, qj):
-        """Summary
-
-        Args:
-            cell_h (TYPE): Description
-            cell_ih (TYPE): Description
-            qi (TYPE): Description
-            qj (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        if np.array_equal(cell_h, np.zeros([3, 3])):
-            R = np.array(np.linalg.norm(qi - qj))
-        else:
-            dij, R = periodic_R(cell_h, cell_ih, qi, qj)
-        return R  # in Angstroms
-
-    def vdW_element(k, l, C6, C12, R0, R, qi, qj):
-        """Summary
-
-        Args:
-            k (TYPE): Description
-            l (TYPE): Description
-            C6 (TYPE): Description
-            C12 (TYPE): Description
-            R0 (TYPE): Description
-            R (TYPE): Description
-            qi (TYPE): Description
-            qj (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        norm = (R0 / R) ** 2
-        a1 = 48 * C6 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / R0 ** 10
-        a2 = -168 * C12 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / R0 ** 16
-        if k == l:
-            a3 = -6 * C6 / R0 ** 8
-            a4 = 12 * C12 / R0 ** 14
-        else:
-            a3 = 0
-            a4 = 0
-        return a1 + a2 + a3 + a4
-
-    def vdW_element_exact(k, l, C6, C12, R0, R, qi, qj):
-        """Summary
-
-        Args:
-            k (TYPE): Description
-            l (TYPE): Description
-            C6 (TYPE): Description
-            C12 (TYPE): Description
-            R0 (TYPE): Description
-            R (TYPE): Description
-            qi (TYPE): Description
-            qj (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        a1 = 48 * C6 * (qi[k] - qj[k]) * (qi[l] - qj[l]) / R ** 10
-        a2 = -168 * C12 * (qi[k] - qj[k]) * (qi[l] - qj[l]) / R ** 16
-        if k == l:
-            a3 = -6 * C6 / R ** 8
-            a4 = 12 * C12 / R ** 14
-        else:
-            a3 = 0
-            a4 = 0
-        return a1 + a2 + a3 + a4
 
     for i in atomsRange:
         for j in atomsRange:
@@ -404,7 +402,9 @@ def vdwHessian(atoms):
     # Check if positive and symmetric:
     symmetric, positive = check_positive_symmetric(hessian)
     if not symmetric:
-        print("Hessian is not symmetric! Will give troubles during optimization!")
+        print(
+            "Hessian is not symmetric! Will give troubles during optimization!"
+        )
         sys.exit(0)
     if not positive:
         print(
@@ -415,17 +415,18 @@ def vdwHessian(atoms):
 
 
 def ExpHessian(atoms, mu=1, A=3.0, recalc_mu=False):
-    """Summary
+    """Callls Exp Hessian implemented in ASE
 
     Args:
-        atoms (TYPE): Description
-        mu (int, optional): Description
-        A (float, optional): Description
-        recalc_mu (bool, optional): Description
+        atoms (ASE atoms object): atoms
+        mu (int, optional): scaling coefficient mu
+        A (float, optional): user specific value
+        recalc_mu (bool, optional): recalculates mu if True
 
     Returns:
         TYPE: Description
     """
+
     # If needed mu is estimated in the beginning and never changed
     precon = Exp(mu=mu, A=3.0, recalc_mu=False)
     precon.make_precon(atoms)
@@ -464,15 +465,15 @@ def isposvec(vec, eps=1e-10, noself=True):
     True
 
     Args:
-        vec (TYPE): Description
-        eps (float, optional): Description
+        vec (vector): vector
+        eps (float, optional): threshhold
         noself (bool, optional): Description
 
     Returns:
-        TYPE: Description
+        TYPE: True if the vector is positive definite
 
     Raises:
-        ValueError: Description
+        ValueError: If vector is zero
     """
     for x in reversed(vec):
         if x > eps:
@@ -496,10 +497,10 @@ def canonize(atom_name):
         Ru H C
 
     Args:
-        atom_name (TYPE): Description
+        atom_name (str): Symbol of the element
 
     Returns:
-        TYPE: Description
+        TYPE: Canonical representation of Chemical symbol
     """
     name = atom_name
     while name and not name[0].isupper():
@@ -538,18 +539,26 @@ class LindhExponent:
     from the interatomic distance and the atom numbers.
 
     Attributes:
-        alphas (TYPE): Description
-        atom2row (TYPE): Description
-        ref_ds (TYPE): Description
+        alphas (TYPE): reference alpha values  for rows i and j used
+        as the dumping coefficient in the exponent.
+        atom2row (TYPE): list of numbers where for each atom
+        in the structure the row in periodic table is associated.
+        ref_ds (matrix): reference  distance values rij from the paper
+        for more details:
+        R. Lindh et al. /  Chemical Physics Letters 241 (199s) 423-428
     """
 
     def __init__(self, atom2row, alphas=alphas, ref_ds=ref_ds):
         """Summary
 
         Args:
-            atom2row (TYPE): Description
-            alphas (TYPE, optional): Description
-            ref_ds (TYPE, optional): Description
+            alphas (TYPE): reference alpha values  for rows i and j used
+            as the dumping coefficient in the exponent.
+            atom2row (TYPE): list of numbers where for each atom
+            in the structure the row in periodic table is associated.
+            ref_ds (matrix): reference  distance values rij from the paper
+            for more details:
+            R. Lindh et al. /  Chemical Physics Letters 241 (199s) 423-428
         """
         self.alphas = alphas
         self.ref_ds = ref_ds
@@ -559,12 +568,12 @@ class LindhExponent:
         """Return the exponent for distance AB of given types.
 
         Args:
-            AB (TYPE): Description
-            i_atom (TYPE): Description
-            j_atom (TYPE): Description
+            AB (float): Distance between A and B
+            i_atom (int): Number of the atom i in the structure
+            j_atom (int): Number of the atom j in the structure
 
         Returns:
-            TYPE: Description
+            float: Lindh Exponent
         """
         i_row, j_row = self.atom2row[i_atom], self.atom2row[j_atom]
         alpha = self.alphas[i_row, j_row]
@@ -575,15 +584,13 @@ class LindhExponent:
         """Return the maximum distance for given exponent.
 
         Args:
-            max_exponent (TYPE): Description
+            max_exponent (float): Description
 
         Returns:
-            TYPE: Description
+            float: cutoff distance
         """
         lr_alpha = np.min(self.alphas)
         lr_ref_d = np.max(self.ref_ds)
-        # max_exponent == lr_alpha * (Rcut**2 - lr_ref_d**2)
-        # max_exponent / lr_alpha + ref_d**2 == Rcut**2
         Rcut = np.sqrt(max_exponent / lr_alpha + lr_ref_d ** 2)
         return Rcut
 
@@ -607,7 +614,7 @@ class Bravais(object):
         """Initializes Bravais object.
 
         Args:
-            lattice_vectors (TYPE): Description
+            lattice_vectors (array): lattice vectors of the system
         """
         if lattice_vectors is None:
             lattice_vectors = []
@@ -626,10 +633,10 @@ class Bravais(object):
         """Return a lattice vector from integer Bravais indices.
 
         Args:
-            abc (TYPE): Description
+            abc (tuple): three Bravais indices
 
         Returns:
-            TYPE: Description
+            list: lattice vector
         """
         vec = np.zeros(3)
         a, b, c = abc
@@ -643,8 +650,6 @@ class Bravais(object):
 
     def all_within(self, Rcut, add_base_PE=False):
         """Return a list of all lattice vector indices shorter than Rcut.
-
-        If base_PE is True, add one parallel epipede (PE) to the region.
 
         Examples:
             >>> cos60, sin60 = np.cos(np.pi/3), np.sin(np.pi/3)
@@ -664,11 +669,13 @@ class Bravais(object):
             True
 
         Args:
-            Rcut (TYPE): Description
-            add_base_PE (bool, optional): Description
+            Rcut (float): Cutoff distance for the exponent
+            add_base_PE (bool, optional): if True,
+            add one parallel epipede (PE) to the region.
+
 
         Returns:
-            TYPE: Description
+            list: all lattice vector indices shorter than Rcut
         """
         len_rec = np.array([norm(v) for v in self.rec])
         ns = np.floor(len_rec * Rcut / (2 * np.pi))  # cross check with diss
@@ -684,14 +691,14 @@ class Bravais(object):
         if add_base_PE:
             # add one in each direction
             def _around(d, n):
-                """Summary
+                """Reflects if structure periodic or not
 
                 Args:
-                    d (TYPE): Description
-                    n (TYPE): Description
+                    d (int): lattice vector number
+                    n (int): number of lattice vectors
 
                 Returns:
-                    TYPE: Description
+                    list: [-1, 0, 1] if d<n and [0] otherwise
                 """
                 return [-1, 0, 1] if d < n else [0]
 
@@ -703,13 +710,13 @@ class Bravais(object):
                             abcs.add((i + ii, j + jj, k + kk))
 
         def _norm_of_abc(abc):
-            """Summary
+            """Norm of lattice vectors
 
             Args:
-                abc (TYPE): Description
+                abc (matrix): lattice vectors
 
             Returns:
-                TYPE: Description
+                matrix: normalized lattice vectors
             """
             return norm(self.latvec(abc))
 
@@ -717,16 +724,17 @@ class Bravais(object):
 
 
 def get_pairs(atoms1, atoms2, Rcut, use_scipy=True):
-    """Summary
+    """Feor eac atom get pairs within cutoff distance
 
     Args:
-        atoms1 (TYPE): Description
-        atoms2 (TYPE): Description
-        Rcut (TYPE): Description
-        use_scipy (bool, optional): Description
+        atoms1 (array): coordinates of atoms1
+        atoms2 (array): coordinates of atoms2
+        Rcut (float): cutoff distance
+        use_scipy (bool, optional): Use scipyif available
 
     Returns:
-        TYPE: Description
+        list: lists of atoms for each atom a list that is within
+        cutoff distance.
     """
     if use_scipy:
         try:
@@ -771,7 +779,8 @@ class Pairs(object):
         0.2502 [(0, (0, 0, 0)), (1, (0, 0, 0))]
         1.0000 [(0, (0, 0, 0)), (0, (1, 0, 0))]
         1.0000 [(1, (0, 0, 0)), (1, (1, 0, 0))]
-        >>> bendings = list(pairs.chains(3, 1.251))   # 1.251: one short 1->2 bond.
+        >>> bendings = list(pairs.chains(3, 1.251))   # 1.251:
+        one short 1->2 bond.
         >>> for damp, atlist in bendings:
         ...     assert len(atlist) == 3
         ...     print "%6.4f %s" % (damp, atlist)
@@ -781,14 +790,15 @@ class Pairs(object):
         1.2502 [(0, (0, 0, 0)), (1, (0, 0, 0)), (1, (1, 0, 0))]
 
     Attributes:
-        abcs (TYPE): Description
-        atom (TYPE): Description
-        damper (TYPE): Description
-        lat (TYPE): Description
-        max_sing_thres (TYPE): Description
-        n_atom (TYPE): Description
-        pairs (list): Description
-        per_atom (TYPE): Description
+        abcs (array of tuples): bravais lattice multipliers
+        atom (array): coordinates of atoms
+        damper (object): Lindh exponent
+        lat (array): lattice vectors
+        max_sing_thres (float): threshold for dumber
+        n_atom (int): Number of atoms
+        pairs (list): for each atom corresponding with
+        list of atoms that are within cutoff distance
+        periodicatoms (array): coordinates of atoms within lattice vectors
     """
 
     def __init__(self, bra, atom, damper, max_sing_thres):
@@ -798,13 +808,13 @@ class Pairs(object):
         a value smaller than max_sing_thres
 
         Args:
-            bra (TYPE): Description
-            atom (TYPE): Description
-            damper (TYPE): Description
-            max_sing_thres (TYPE): Description
+            bra (array): Bravais lattice vectors
+            atom (array): coordinates of atoms
+            damper (object): Lindh exponent
+            max_sing_thres (float): threshold for dumber
 
         Raises:
-            ValueError: Description
+            ValueError: If not correct shape of atoms
         """
         # save parameters
         self.lat = Bravais(bra)
@@ -818,13 +828,13 @@ class Pairs(object):
 
         # get pairs
         self.abcs = self.lat.all_within(Rcut, add_base_PE=True)
-        per_atom = []
+        periodicatoms = []
         for abc in self.abcs:
             latvec = self.lat.latvec(abc)
             for atomvec in self.atom:
-                per_atom.append(latvec + atomvec)
-        self.per_atom = np.array(per_atom)
-        pairs = get_pairs(self.atom, self.per_atom, Rcut)
+                periodicatoms.append(latvec + atomvec)
+        self.periodicatoms = np.array(periodicatoms)
+        pairs = get_pairs(self.atom, self.periodicatoms, Rcut)
         assert len(pairs) == self.n_atom
 
         # sort pairs
@@ -835,7 +845,7 @@ class Pairs(object):
                 if jj == i:
                     continue
                 Avec = self.atom[i]
-                Bvec = self.per_atom[jj]
+                Bvec = self.periodicatoms[jj]
                 vec = Bvec - Avec
                 j = jj % self.n_atom  # original vector
                 # Can be the conversion problem, Must be integer
@@ -852,10 +862,11 @@ class Pairs(object):
         """Summary
 
         Args:
-            iabc (TYPE): Description
+            iabc (int, tuple): atom index and Bravais multipliers
 
         Returns:
-            TYPE: Description
+            array: coordinate of atom multiplied by lattice vector
+            and Bravais multiplier
         """
         i, abc = iabc
         return self.lat.latvec(abc) + self.atom[i]
@@ -867,12 +878,13 @@ class Pairs(object):
         bonds (n=2), bendings (n=3), or torsions (n=3).
 
         Args:
-            n (TYPE): Description
-            thres (TYPE): Description
-            directed (bool, optional): Description
+            n (int): number of n-chain
+            thres (float): threshhold, default=15.0
+            directed (bool, optional): Specifies the direction
+            in Bravais lattice
 
         Returns:
-            TYPE: Description
+            list: list of (damp, [(i, abc), ...]) tuples of n-chains
         """
         res = []
         for i in range(self.n_atom):
@@ -891,15 +903,15 @@ class Pairs(object):
         """Get all chains of length n from atom i.
 
         Args:
-            i (TYPE): Description
-            n (TYPE): Description
-            thres (TYPE): Description
+            i (int): atom index
+            n (int): number of n-chain
+            thres (float): threshhold, default=15.0
 
         Returns:
-            TYPE: Description
+            TYPE: all chains of length n from atom i.
 
         Raises:
-            ValueError: Description
+            ValueError: n Should be at least 2
         """
         if n < 2:
             raise ValueError("n should be at least 2.")
@@ -949,18 +961,18 @@ class HessianBuilder(object):
     True
 
     Attributes:
-        Hdict (TYPE): Description
-        n_atom (TYPE): Description
-        n_dyn_periodic (TYPE): Description
-        n_vec (TYPE): Description
+        Hdict (dict): Hessian matrix in dictionary representation.
+        n_atom (int): Number of atoms
+        n_dyn_periodic (int): number of periodic cells
+        n_vec (int): number of atoms with periodic Bravais lattice
     """
 
     def __init__(self, n_atom, n_dyn_periodic):
-        """Summary
+        """Initialize values
 
         Args:
-            n_atom (TYPE): Description
-            n_dyn_periodic (TYPE): Description
+            n_atom (int): Number of atoms
+            n_dyn_periodic (int): number of periodic cells
         """
         self.n_atom = n_atom
         self.n_dyn_periodic = n_dyn_periodic
@@ -970,11 +982,10 @@ class HessianBuilder(object):
     def add_rank1(self, fac, vec):
         """Add rank-one term vec * vec * vec^T.
 
-        Here, vec = {i_atom: np.array([xi, yi, zi]), ...}.
-
         Args:
-            fac (TYPE): Description
-            vec (TYPE): Description
+            fac (float): prefactor calculated from dumping object
+            that enters in the formula like fac * k_bond
+            vec (dict): {i_atom: np.array([xi, yi, zi]), ...}
         """
         # Make sure that we have np.ndarrays
         for i_atom in vec:
@@ -988,13 +999,11 @@ class HessianBuilder(object):
     def add_rank1_from_atlist(self, fac, dq_datom, atlist):
         """Add rank-one term vec * vec * vec^T.
 
-        Here, dq_atom = [np.array([xi, yi, zi]), ...], and
-        atlist = [(i_tau, (a, b, c)), ...].
-
         Args:
-            fac (TYPE): Description
-            dq_datom (TYPE): Description
-            atlist (TYPE): Description
+            fac (float): prefactor calculated from dumping object
+            that enters in the formula like fac * k_bond
+            dq_datom (list): [np.array([xi, yi, zi]), ...]
+            atlist (list): [(i_tau, (a, b, c)), ...]
         """
         vecdict = dict()
         for (dqi, (i_atom, abc)) in zip(dq_datom, atlist):
@@ -1011,7 +1020,8 @@ class HessianBuilder(object):
         """Add multiple of unity.
 
         Args:
-            fac (TYPE): Description
+            fac (float): prefactor calculated from dumping object
+            that enters in the formula like fac * k_bond
         """
         blk = fac * np.identity(3)
         for i_vec in range(self.n_vec):
@@ -1021,7 +1031,7 @@ class HessianBuilder(object):
         """Construct full np.ndarray (only atomic coordinates, no stress).
 
         Returns:
-            TYPE: Description
+            matrix: Hessian matrix
         """
         H = np.zeros((self.n_vec, 3, self.n_vec, 3))
         for i_atom, j_atom in self.Hdict:
@@ -1032,15 +1042,11 @@ class HessianBuilder(object):
 def makeorthvec(orth):
     """Construct a (3 component) vector orthogonal to orth.
 
-    >>> import numpy.random
-    >>> vec = numpy.random.random(3)
-    >>> assert np.dot(vec, makeorthvec(vec)) < 1e-12
-
     Args:
-        orth (TYPE): Description
+        orth (vector): vector
 
     Returns:
-        TYPE: Description
+        vector: Orthonormal to the input vector
     """
     orth /= norm(orth)
     vec = np.cross(orth, np.array([0.0, 0.0, 1.0]))
@@ -1052,29 +1058,20 @@ def makeorthvec(orth):
 def model_matrix(bra, atom, builder, damper, thres, logfile=None):
     """Construct model Hessian.  Returns the HessianBuilder object.
 
-    >>> builder = HessianBuilder(2, 0)
-    >>> damper = LindhExponent(atom2row=[0, 0])    # Say, two hydrogens.
-    >>> atom = np.array([[1., 0., 0.], [0., 0., 0.]])
-    >>> HB = model_matrix(None, atom, builder, damper, 10.)
-    >>> assert HB is builder
-    >>> H = builder.to_array().reshape((3*2, 3*2))
-    >>> assert np.allclose(H, H.T)
-    >>> assert np.allclose(H[:,1:3], 0.)
-    >>> assert np.allclose(H[:,4:6], 0.)
-    >>> assert not np.allclose(H[0,0], 0.)
-    >>> assert np.allclose(H[0,0], H[3,3])
-    >>> assert np.allclose(H[0,3], -H[0,0])
+    Implementation of the Lindh Hessian preconditioner routine
 
     Args:
-        bra (TYPE): Description
-        atom (TYPE): Description
-        builder (TYPE): Description
-        damper (TYPE): Description
-        thres (TYPE): Description
-        logfile (None, optional): Description
+        bra (matrix): bravais lattice vectors
+        atom (array): Coordinates of atoms
+        builder (object): Hessian builder
+        damper (object): Lindh damping function LindhExponent(atom2row=[0, 0])
+        two Hydrogens in this case
+        thres (float): cutoff distance for atom pairs and so on
+        logfile (None, optional): Logfile for output. Disabled
+        in the module version of the implementation.
 
     Returns:
-        TYPE: Description
+        object: Builder object that produces Hessian matrix
     """
     thres_fac = np.exp(-thres) * k_bond
     pairs = Pairs(bra, atom, damper, thres)
@@ -1118,7 +1115,6 @@ def model_matrix(bra, atom, builder, damper, thres, logfile=None):
             builder.add_rank1_from_atlist(fac, dq, atlist)
         except ValueError:
             pass  # Bad luck
-
     return builder
 
 
@@ -1136,14 +1132,14 @@ def model_matrix(bra, atom, builder, damper, thres, logfile=None):
 
 
 def _dd_broadcast(val, dval):
-    """Summary
+    """Reshape parameter
 
     Args:
-        val (TYPE): Description
-        dval (TYPE): Description
+        val (float or array): value
+        dval (array): derivative of the value
 
     Returns:
-        TYPE: Description
+        float or array: reshaped value
     """
     val_rank = len(np.shape(val))
     assert np.shape(val) == np.shape(dval)[:val_rank]
@@ -1153,13 +1149,13 @@ def _dd_broadcast(val, dval):
 
 
 def dd_sum(*arg_ds):
-    """Summary
+    """Summation of the value and derivatives
 
     Args:
-        arg_ds: Description
+        arg_ds: tuple that contains all the value and derivatives
 
     Returns:
-        TYPE: Description
+        (array, array): summ of the value and derivatives
     """
     shape = np.shape(arg_ds[0][1])
     res = np.float(0.0)
@@ -1171,27 +1167,27 @@ def dd_sum(*arg_ds):
 
 
 def dd_mult(vec_d, fac):
-    """Summary
+    """Multiply value and derivative by the factor
 
     Args:
-        vec_d (TYPE): Description
-        fac (TYPE): Description
+        vec_d (tuple): value and derivative
+        fac (float): multiplication factor
 
     Returns:
-        TYPE: Description
+        (array, array): value*factor, derivative*factor
     """
     vec, dvec = vec_d
     return fac * vec, fac * dvec
 
 
 def dd_prod(*arg_ds):
-    """Summary
+    """Product of the value and derivatives
 
     Args:
-        arg_ds: Description
+        arg_ds: tuple that contains all the value and derivatives
 
     Returns:
-        TYPE: Description
+        (array, array): product of the value and derivatives
     """
     shape = np.shape(arg_ds[0][1])
     res = np.float(1.0)
@@ -1204,14 +1200,14 @@ def dd_prod(*arg_ds):
 
 
 def dd_power(var_d, n):
-    """Summary
+    """Power value and derivative to n
 
     Args:
-        var_d (TYPE): Description
-        n (TYPE): Description
+        var_d (tuple): value and derivative
+        n (float): power
 
     Returns:
-        TYPE: Description
+        (array, array): value**n, n * (var ** (n - 1)) * dvar
     """
     var, dvar = var_d
     val = var ** n
@@ -1220,31 +1216,35 @@ def dd_power(var_d, n):
 
 
 def dd_dot(vec1_d, vec2_d):
-    """Summary
+    """Dot product of the value and derivatives
 
     Args:
-        vec1_d (TYPE): Description
-        vec2_d (TYPE): Description
+        vec1_d (tuple): value1 and derivative1
+        vec2_d (tuple): value2 and derivative2
 
     Returns:
-        TYPE: Description
+        (array, array): dot product of value1 and value2 and
+        sum of the tensorproducts corresponding value and derivatives
     """
     vec1, dvec1 = vec1_d
     vec2, dvec2 = vec2_d
     res = np.dot(vec1, vec2)
-    dres = np.tensordot(vec1, dvec2, (-1, 0)) + np.tensordot(vec2, dvec1, (-1, 0))
+    dres = np.tensordot(vec1, dvec2, (-1, 0)) + np.tensordot(
+        vec2, dvec1, (-1, 0)
+    )
     return res, dres
 
 
 def dd_cross(vec1_d, vec2_d):
-    """Summary
+    """Cross product of the value and derivatives
 
     Args:
-        vec1_d (TYPE): Description
-        vec2_d (TYPE): Description
+        vec1_d (tuple): value1 and derivative1
+        vec2_d (tuple): value2 and derivative2
 
     Returns:
-        TYPE: Description
+        (array, array): cross product of value1 and value2 and
+        sum of the cross products of corresponding value and derivatives
     """
     vec1, dvec1 = vec1_d
     vec2, dvec2 = vec2_d
@@ -1255,25 +1255,27 @@ def dd_cross(vec1_d, vec2_d):
 
 
 def dd_norm(vec_d):
-    """Normalize
+    """Norm of the parameter and derivative
 
     Args:
-        vec_d (TYPE): Description
+        vec_d (tuple): parameter and derivative
 
     Returns:
-        TYPE: Description
+        tuple: Normalized parameter and derivative
     """
     return dd_power(dd_dot(vec_d, vec_d), 0.5)
 
 
 def dd_normalized(vec_d):
-    """Summary
+    """Norm of the parameter and derivative
 
     Args:
-        vec_d (TYPE): Description
+        vec_d (tuple): parameter and derivative
 
     Returns:
-        TYPE: Description
+        tuple: value divided by it's norm and derivative  and
+        sum of the products : norm of parameter*derivative and
+        parameter* norm of derivative.
     """
     vec, dvec = vec_d
     fac, dfac = dd_power(dd_norm(vec_d), -1.0)
@@ -1283,30 +1285,33 @@ def dd_normalized(vec_d):
 
 
 def dd_cosv1v2(vec1_d, vec2_d):
-    """Summary
+    """Cosine between parameter and derivatives
 
     Args:
-        vec1_d (TYPE): Description
-        vec2_d (TYPE): Description
+        vec1_d (tuple): parameter1 and derivatives1
+        vec2_d (tuple): parameter2 and derivatives2
 
     Returns:
-        TYPE: Description
+        tuple: angle between parameter and derivatives
     """
-    return dd_prod(
+
+    cos = dd_prod(
         dd_dot(vec1_d, vec2_d),
         dd_power(dd_norm(vec1_d), -1.0),
         dd_power(dd_norm(vec2_d), -1.0),
     )
+    return cos
 
 
 def dd_arccos(val_d):
-    """Summary
+    """Arccosine between parameter and derivatives
 
     Args:
-        val_d (TYPE): Description
+        vec1_d (tuple): parameter1 and derivatives1
+        vec2_d (tuple): parameter2 and derivatives2
 
     Returns:
-        TYPE: Description
+        tuple: angle between parameter and derivatives
     """
     val, dval = val_d
     if 1.0 < abs(val) < 1.0 + 1e-10:
@@ -1318,13 +1323,14 @@ def dd_arccos(val_d):
 
 
 def dd_arcsin(val_d):
-    """Summary
+    """Arcsine angle between parameter and derivatives
 
     Args:
-        val_d (TYPE): Description
+        vec1_d (tuple): parameter1 and derivatives1
+        vec2_d (tuple): parameter2 and derivatives2
 
     Returns:
-        TYPE: Description
+        tuple: Arcsine of the angle between parameter and derivatives
     """
     val, dval = val_d
     if 1.0 < abs(val) < 1.0 + 1e-10:
@@ -1336,15 +1342,16 @@ def dd_arcsin(val_d):
 
 
 def dd_directed_angle(vec1_d, vec2_d, dir_d):
-    """Summary
+    """Angle and derivative of the parameter
 
     Args:
-        vec1_d (TYPE): Description
-        vec2_d (TYPE): Description
-        dir_d (TYPE): Description
+        vec1_d (tuple): parameter1 and derivative1
+        vec2_d (tuple): parameter2 and derivative2
+        dir_d (tuple): (direction,
+        np.c_[np.zeros((3, 3)), np.zeros((3, 3)), np.zeros((3, 3))])
 
     Returns:
-        TYPE: Description
+        tuple: Angle and derivative of the parameter
     """
     ndir_d = dd_normalized(dir_d)
     vv1_d = dd_cross(vec1_d, ndir_d)
@@ -1371,13 +1378,8 @@ def dd_directed_angle(vec1_d, vec2_d, dir_d):
     return phi, dphi
 
 
-##############################################################################
-###################################### q #####################################
-##############################################################################
-
-
 def q_bond(Avec, Bvec):
-    """Bond length and derivative wrt vector AB.
+    """Bond length and derivative with respect to vector AB.
 
     Test:
         >>> np.allclose(q_bond([0., 0., 0.], [1., 1., 1.])[0], np.sqrt(3.))
@@ -1385,11 +1387,11 @@ def q_bond(Avec, Bvec):
         >>> assert _test_qgrad(q_bond, 2) < 1e-5
 
     Args:
-        Avec (TYPE): Description
-        Bvec (TYPE): Description
+        Avec (array): coordinate A
+        Bvec (array): coordinate B
 
     Returns:
-        TYPE: Description
+        (float, array): Bond length and derivative with respect to vector AB
     """
     Avec_d = (np.asarray(Avec), np.c_[np.identity(3), np.zeros((3, 3))])
     Bvec_d = (np.asarray(Bvec), np.c_[np.zeros((3, 3)), np.identity(3)])
@@ -1410,13 +1412,14 @@ def q_bending(Avec, Bvec, Cvec, direction=None):
         >>> assert _test_qgrad(q_bending, 3) < 1e-5
 
     Args:
-        Avec (TYPE): Description
-        Bvec (TYPE): Description
-        Cvec (TYPE): Description
-        direction (None, optional): Description
+        Avec (array): coordinate A
+        Bvec (array): coordinate B
+        Cvec (array): coordinate C
+        direction (None, optional): order of atoms A, B and C
 
     Returns:
-        TYPE: Description
+        (float, array): Bond angle and derivative
+        with respect to vectors Ab and BC
     """
     Avec_d = (
         np.asarray(Avec),
@@ -1461,16 +1464,14 @@ def q_torsion(Avec, Bvec, Cvec, Dvec):
         ...    pass
 
     Args:
-        Avec (TYPE): Description
-        Bvec (TYPE): Description
-        Cvec (TYPE): Description
-        Dvec (TYPE): Description
+        Avec (array): coordinate A
+        Bvec (array): coordinate B
+        Cvec (array): coordinate C
+        Dvec (array): coordinate D
 
     Returns:
-        TYPE: Description
-
-    Raises:
-        ValueError: Description
+        (float, array): Bond torsion and derivative
+        with respect to vectors AB, BC, and CD.
     """
     ABvec = Bvec - Avec
     BCvec = Cvec - Bvec
@@ -1524,13 +1525,13 @@ def q_torsion(Avec, Bvec, Cvec, Dvec):
 
 
 def LindhHessian(atoms):
-    """Summary
+    """Construction of Lindh preconditioned Hessian matrix
 
     Args:
-        atoms (TYPE): Description
+        atoms (ASE atoms object): atoms of the system
 
     Returns:
-        TYPE: Description
+        matrix: Lindh Hesian
     """
     cutoff = 15.0
     atom = atoms.get_positions()
@@ -1545,7 +1546,6 @@ def LindhHessian(atoms):
     model_matrix(bra, atom, builder, damper, cutoff, logfile=logfile)
     hessian = builder.to_array().reshape((3 * n_atom, 3 * n_atom))
     hessian = add_jitter(hessian, jitter=0.005)
-    print(hessian)
     return hessian
 
 
@@ -1555,12 +1555,12 @@ def preconditioned_hessian(
     """Summary
 
     Args:
-        structure (TYPE): Description
-        fixed_frame (TYPE): Description
-        parameters (TYPE): Description
-        atoms_current (TYPE): Description
-        H (TYPE): Description
-        task (str, optional): Description
+        structure (ASE Atoms object): template structure object
+        fixed_frame (ASE Atoms object): atoms in the fixed frame
+        parameters (dict): parameters loaded from parameters file
+        atoms_current (ASE Atoms object): atoms
+        H (matrix): Current Hessian matrix
+        task (str, optional): "update" or "initial"
     """
     if len(structure.molecules) > 1:
         a0 = structure.molecules[0].copy()
@@ -1576,8 +1576,6 @@ def preconditioned_hessian(
     atoms = all_atoms.copy()
     atoms.set_positions(atoms_current.get_positions())
     set_constrains(atoms, parameters)
-
-    # Preconditioner part
 
     # Isolate indices
     hessian_indices = []
@@ -1597,10 +1595,12 @@ def preconditioned_hessian(
 
     precons_parameters = {
         "mol": parameters["calculator"]["preconditioner"]["mol"]["precon"],
-        "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][
+        "fixed_frame": parameters["calculator"]["preconditioner"][
+            "fixed_frame"
+        ]["precon"],
+        "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
             "precon"
         ],
-        "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
         "mol-fixed_frame": parameters["calculator"]["preconditioner"][
             "mol-fixed_frame"
         ]["precon"],
@@ -1608,7 +1608,9 @@ def preconditioned_hessian(
 
     routine = {
         "mol": parameters["calculator"]["preconditioner"]["mol"][task],
-        "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][task],
+        "fixed_frame": parameters["calculator"]["preconditioner"][
+            "fixed_frame"
+        ][task],
         "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][task],
         "mol-fixed_frame": parameters["calculator"]["preconditioner"][
             "mol-fixed_frame"
@@ -1619,11 +1621,6 @@ def preconditioned_hessian(
         for i in range(len(routine))
         if list(routine.values())[i]
     ]
-
-    # find for which atoms Lindh should be calculated
-    # find for which atoms vdW should be calculated
-    # find for which atoms Exp should be calculated
-    # find for which atoms ID should be calculated
 
     def nearestPD(A):
         """Find the nearest positive-definite matrix to input
@@ -1684,7 +1681,9 @@ def preconditioned_hessian(
     if "Lindh" in precon_names:
         precons["Lindh"] = LindhHessian(atoms)
     if "Exp" in precon_names:
-        precons["Exp"] = ExpHessian(atoms, mu=structure.mu, A=3.0, recalc_mu=False)
+        precons["Exp"] = ExpHessian(
+            atoms, mu=structure.mu, A=3.0, recalc_mu=False
+        )
     if "vdW" in precon_names:
         precons["vdW"] = vdwHessian(atoms)
     if "ID" in precon_names:
@@ -1722,7 +1721,9 @@ def preconditioned_hessian(
                             p = precons_parameters["mol-fixed_frame"]
                             preconditioned_hessian[i, j] = precons[p][i, j]
 
-            if np.array_equal(preconditioned_hessian, np.eye(3 * len(atoms)) * 70):
+            if np.array_equal(
+                preconditioned_hessian, np.eye(3 * len(atoms)) * 70
+            ):
                 return preconditioned_hessian
             else:
                 # Fill the down triangle
@@ -1731,16 +1732,24 @@ def preconditioned_hessian(
                 preconditioned_hessian = ASR(preconditioned_hessian)
                 # Add stabilization to the diagonal
                 jitter = 0.005
-                preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
+                preconditioned_hessian = add_jitter(
+                    preconditioned_hessian, jitter
+                )
                 # Check if positive and symmetric:
-                symmetric, positive = check_positive_symmetric(preconditioned_hessian)
+                symmetric, positive = check_positive_symmetric(
+                    preconditioned_hessian
+                )
 
                 if not positive:
                     p = preconditioned_hessian.copy()
                     preconditioned_hessian = nearestPD(preconditioned_hessian)
-                    preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
+                    preconditioned_hessian = add_jitter(
+                        preconditioned_hessian, jitter
+                    )
 
-                symmetric, positive = check_positive_symmetric(preconditioned_hessian)
+                symmetric, positive = check_positive_symmetric(
+                    preconditioned_hessian
+                )
 
                 if not symmetric:
                     print(
@@ -1787,14 +1796,18 @@ def preconditioned_hessian(
             return preconditioned_hessian
         else:
             # Fill the down triangle
-            preconditioned_hessian = preconditioned_hessian + preconditioned_hessian.T
+            preconditioned_hessian = (
+                preconditioned_hessian + preconditioned_hessian.T
+            )
             # Calculate Acoustic sum rule
             preconditioned_hessian = ASR(preconditioned_hessian)
             # Add stabilization to the diagonal
             jitter = 0.005
             preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
             # Check if positive and symmetric:
-            symmetric, positive = check_positive_symmetric(preconditioned_hessian)
+            symmetric, positive = check_positive_symmetric(
+                preconditioned_hessian
+            )
 
             p = preconditioned_hessian.copy()
             preconditioned_hessian = nearestPD(preconditioned_hessian)
