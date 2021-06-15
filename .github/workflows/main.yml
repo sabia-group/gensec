@@ -41,6 +41,7 @@ jobs:
           pip install ase
           pip install scipy
           pip install networkx
+          pip install pandas
           pip install flake8
          
       # Running the tests for GenSec
