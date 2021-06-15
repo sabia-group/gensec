@@ -75,7 +75,9 @@ class Protocol:
             while self.trials < parameters["trials"]:
                 while self.success < parameters["success"]:
                     # Generate the vector in internal degrees of freedom
-                    configuration, conf = structure.create_configuration(parameters)
+                    configuration, conf = structure.create_configuration(
+                        parameters
+                    )
                     # Apply the configuration to structure
                     structure.apply_conf(conf)
                     # Check if that structure is sensible
@@ -90,13 +92,17 @@ class Protocol:
                                 if not structure.find_in_database(
                                     conf, db_trajectories, parameters
                                 ):
-                                    db_generated.write(structure.atoms_object(), **conf)
+                                    db_generated.write(
+                                        structure.atoms_object(), **conf
+                                    )
                                     self.success = db_generated.count()
                                     self.trials = 0
+                                    print("Good", conf)
                                     print("Generated structures", self.success)
                         else:
                             print("Found in database")
                     else:
+                        print("BAD", conf)
                         write(
                             "bad_luck.xyz",
                             merge_together(structure, fixed_frame),
@@ -156,7 +162,9 @@ class Protocol:
             os.chdir(parameters["protocol"]["search"]["folder"])
 
             # Finish unfinished calculations
-            calculator.finish_relaxation(structure, fixed_frame, parameters, calculator)
+            calculator.finish_relaxation(
+                structure, fixed_frame, parameters, calculator
+            )
 
             while self.success < parameters["success"]:
                 self.success = db_relaxed.count()
@@ -164,7 +172,9 @@ class Protocol:
                 if db_generated.count() == 0:
                     self.trials = 0
                     while self.trials < parameters["trials"]:
-                        configuration, conf = structure.create_configuration(parameters)
+                        configuration, conf = structure.create_configuration(
+                            parameters
+                        )
                         # Apply the configuration to structure
                         structure.apply_conf(conf)
                         # Check if that structure is sensible
@@ -176,7 +186,9 @@ class Protocol:
                                 if not structure.find_in_database(
                                     conf, db_trajectories, parameters
                                 ):
-                                    db_generated.write(structure.atoms_object(), **conf)
+                                    db_generated.write(
+                                        structure.atoms_object(), **conf
+                                    )
                                     print("Structure added to generated")
                                     break
                                 else:
@@ -197,7 +209,9 @@ class Protocol:
                         structure.apply_conf(conf)
                         dirs.dir_num = row.id
                         del db_generated[row.id]
-                        if not structure.find_in_database(conf, db_relaxed, parameters):
+                        if not structure.find_in_database(
+                            conf, db_relaxed, parameters
+                        ):
                             if not structure.find_in_database(
                                 conf, db_trajectories, parameters
                             ):
@@ -216,7 +230,9 @@ class Protocol:
                                     parameters,
                                     dirs.current_dir(parameters),
                                 )
-                                calculator.finished(dirs.current_dir(parameters))
+                                calculator.finished(
+                                    dirs.current_dir(parameters)
+                                )
                                 # Find the final trajectory
                                 traj = Trajectory(
                                     os.path.join(
@@ -226,11 +242,15 @@ class Protocol:
                                 )
                                 print("Structure relaxed")
                                 for step in traj:
-                                    full_conf = structure.read_configuration(step)
+                                    full_conf = structure.read_configuration(
+                                        step
+                                    )
                                     db_trajectories.write(
                                         step, **full_conf, trajectory=traj_id
                                     )
-                                full_conf = structure.read_configuration(traj[-1])
+                                full_conf = structure.read_configuration(
+                                    traj[-1]
+                                )
                                 db_relaxed.write(
                                     traj[-1], **full_conf, trajectory=traj_id
                                 )

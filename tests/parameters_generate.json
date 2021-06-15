@@ -1,0 +1,75 @@
+
+{
+	"name" : "vdW",    
+	"trials": 100,
+	"success": 1000,
+	"number_of_replicas" : 1,
+	"geometry" : ["hexane.in", "aims"], 
+	"fixed_frame" : {"activate" : false,
+					"filename" : "slab.in",
+					"format" : "aims"
+				},
+	"mic" : {"activate" : false,
+			"pbc": [[13.54000000  ,      0.00000000 ,     0],
+			 [6.77000000  ,      11.72598000 ,     0],
+			 [0.00000000  ,      0.00000000 ,     84.0 ]]
+		},
+	"configuration" : {
+		"torsions" : {
+					"activate" : true,
+					"known" : true, 
+					"same" : false, 
+					"list_of_tosrions" : "auto", 
+					"values": "random"
+		}, 
+		"orientations" : {
+					"activate" : false,
+					"known" : false, 
+					"same" : false, 
+					"values": "random",
+					"angle" : [0, 360],
+					"x" : [0, 0],
+					"y" : [0, 0],
+					"z" : [0, 1]
+		},
+		"coms" : {
+					"activate" : false,
+					"known" : false, 
+					"same" : false, 
+					"values": "restricted",
+					"x_axis" : [2, 10, 10],
+					"y_axis" : [2, 10, 10],
+					"z_axis" : [40, 45, 10]
+		}
+	},	
+
+	"protocol" : {
+		"generate" : {
+			"activate":true,
+			"method":"random"
+		},
+    	"search" : {
+			"activate":false,
+			"method":"random",
+			"folder": "temp"
+		}
+	},
+	"calculator" : {
+		"supporting_files_folder": "supporting",
+		"ase_parameters_file" : "ase_command.py",  
+		"optimize" : "generate",
+		"fmax" : 0.075,
+		"preconditioner" : {
+			"mol" : {"initial": false, "update": false, "precon" : "ID"},
+			"fixed_frame" : {"initial": false, "update": false, "precon" : "ID"}, 
+			"mol-mol" : {"initial": false, "update": false, "precon" : "ID"},
+			"mol-fixed_frame" : {"initial": false, "update": false, "precon" : "ID"},
+			"rmsd_update" : {"activate":false, "value":0.25}
+		},
+		"constraints" : {
+			"symbol" : "Al",
+			"z-coord" : [29, 32]
+		}
+	}		 
+    
+}

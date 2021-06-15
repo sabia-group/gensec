@@ -6,13 +6,13 @@ import operator
 
 
 def construct_graph(connectivity_matrix):
-    """Constructu graph from connectivity matrix
+    """Construct the graph from connectivity matrix
 
     Args:
-        connectivity_matrix (TYPE): Description
+        connectivity_matrix {matrix}: ASE connectivity matrix
 
     Returns:
-        TYPE: Description
+        Dictionary: graph of connected atoms
     """
     graph = {}
     for i in connectivity_matrix.keys():
@@ -26,56 +26,6 @@ def construct_graph(connectivity_matrix):
         else:
             graph[i[1]].append(i[0])
     return graph
-
-
-# Cycles detection
-# https://algocoding.wordpress.com/2015/04/02/detecting-cycles-in-an-undirected-graph-with-dfs-python/
-def cycle_exists(G):  # - G is an undirected graph.
-    """Summary
-
-    Args:
-        G (TYPE): Description
-
-    Returns:
-        TYPE: Description
-    """
-    marked = {u: False for u in G}  # - All nodes are initially unmarked.
-    found_cycle = [False]  # - Define found_cycle as a list so we can change
-    # its value per reference, see:
-    # http://stackoverflow.com/questions/11222440/python-variable-reference-assignment
-
-    for u in G:  # - Visit all nodes.
-        if not marked[u]:
-            dfs_visit(
-                G, u, found_cycle, u, marked
-            )  # - u is its own predecessor initially
-        if found_cycle[0]:
-            break
-    return found_cycle[0]
-
-
-def dfs_visit(G, u, found_cycle, pred_node, marked):
-    """Summary
-
-    Args:
-        G (TYPE): Description
-        u (TYPE): Description
-        found_cycle (TYPE): Description
-        pred_node (TYPE): Description
-        marked (TYPE): Description
-
-    Returns:
-        TYPE: Description
-    """
-    if found_cycle[0]:  # - Stop dfs if cycle is found.
-        return
-    marked[u] = True  # - Mark node.
-    for v in G[u]:  # - Check neighbors, where G[u] is the adjacency list of u.
-        if marked[v] and v != pred_node:  # - If neighbor is marked and not predecessor,
-            found_cycle[0] = True  # then a cycle exists.
-            return
-        if not marked[v]:  # - Call dfs_visit recursively.
-            dfs_visit(G, v, found_cycle, u, marked)
 
 
 def create_torsion_list(bond, graph, atoms):
@@ -192,7 +142,9 @@ def detect_rotatble(connectivity_matrix, atoms):
                 pass
 
     conn = [
-        i for i in connectivity_matrix.keys() if all(k in indx_not_terminal for k in i)
+        i
+        for i in connectivity_matrix.keys()
+        if all(k in indx_not_terminal for k in i)
     ]
     list_of_torsions = []
     # If no cycles in the molecule
@@ -221,11 +173,6 @@ def detect_cycles(connectivity_matrix):
     import networkx as nx
     from itertools import combinations
 
-    """Detection of all rotatable bonds
-    2. The bonds does not contain terminate atoms
-    2. 
-    3. 
-    """
     all_cycles = []
     graph = construct_graph(connectivity_matrix)
     G = nx.DiGraph(graph)
@@ -248,8 +195,6 @@ def exclude_rotatable_from_cycles(list_of_torsions, cycles):
         TYPE: Description
     """
     rotatable = []
-    # print(rotatable)
-    # print(list_of_torsions)
     for torsion in list_of_torsions:
         found = False
         for cycle in cycles:
@@ -539,22 +484,6 @@ def produce_quaternion(angle, vector):
     return quaternion
 
 
-def produce_coords_and_masses(coords, masses):
-    """Summary
-
-    Args:
-        coords (TYPE): Description
-        masses (TYPE): Description
-
-    Returns:
-        TYPE: Description
-    """
-    zeros = np.zeros((len(coords), 4))
-    zeros[:, :3] = coords[:]
-    zeros[:, 3] = masses[:]
-    return zeros
-
-
 def measure_quaternion(atoms, atom_1_indx, atom_2_indx):
     """Summary
 
@@ -654,7 +583,6 @@ def internal_clashes(structure):
     account with use of the flag "bothways = True".
 
     Arguments:
-        structure (TYPE): Description
         structure {list} -- list of the molecules
 
     Returns:
@@ -663,7 +591,9 @@ def internal_clashes(structure):
     clashes = False
     for i in range(len(structure.molecules)):
         a = sorted(
-            create_connectivity_matrix(structure.molecules[i], bothways=True).keys(),
+            create_connectivity_matrix(
+                structure.molecules[i], bothways=True
+            ).keys(),
             key=lambda element: (element[1:]),
         )
         b = sorted(
@@ -796,31 +726,6 @@ def all_right(structure, fixed_frame):
     return ready
 
 
-def measure_molecules(molecules, list_of_torsions):
-    """Summary
-
-    Args:
-        molecules (TYPE): Description
-        list_of_torsions (TYPE): Description
-
-    Returns:
-        TYPE: Description
-    """
-    vector = []
-    for i in range(len(molecules)):
-        for torsion in list_of_torsions:
-            vector.append(
-                molecules[i].get_dihedral(
-                    a0=torsion[0], a1=torsion[1], a2=torsion[2], a3=torsion[3]
-                )
-            )
-        # Set orientation
-        vector.append(measure_quaternion(molecules[i], 0, len(molecules[i]) - 1))
-        # Set center of mass
-        vector.append(molecules[i].get_center_of_mass())
-    return vector
-
-
 def measure_torsion_of_last(atoms, list_of_torsions):
     """Summary
 
@@ -841,43 +746,17 @@ def measure_torsion_of_last(atoms, list_of_torsions):
     return torsions
 
 
-def assign_random_state(molecule, list_of_torsions):
-    """Summary
-
-    Args:
-        molecule (TYPE): Description
-        list_of_torsions (TYPE): Description
-    """
-    for torsion in list_of_torsions:
-        value = randint(0, 360)
-        fixed_indices = carried_atoms(connectivity_matrix_isolated, torsion)
-        molecules[i].set_dihedral(
-            angle=value,
-            a0=torsion[0],
-            a1=torsion[1],
-            a2=torsion[2],
-            a3=torsion[3],
-            indices=fixed_indices,
-        )
-    quaternion_set(
-        molecules[i],
-        produce_quaternion(value, np.array([value, value, value])),
-        0,
-        len(atoms) - 1,
-    )
-    value_com = np.array([randint(0, 13), randint(0, 13), randint(32, 36)])
-    set_centre_of_mass(molecules[i], value_com)
-
-
 def merge_together(structure, fixed_frame):
-    """Summary
+    """Merging together structure and fixed frame
+
+    Used for convenient way for output of resulting structure.
 
     Args:
-        structure (TYPE): Description
-        fixed_frame (TYPE): Description
+        structure (GenSec structure): Structure object
+        fixed_frame (GenSec fixed frame): Fixed Frame object
 
     Returns:
-        TYPE: Description
+        ASE Atoms: All atoms together
     """
     ensemble = structure.atoms.copy()
     del ensemble[[atom.index for atom in structure.atoms]]
@@ -885,20 +764,4 @@ def merge_together(structure, fixed_frame):
         ensemble += molecule
     if hasattr(fixed_frame, "fixed_frame"):
         ensemble += fixed_frame.fixed_frame
-    return ensemble
-
-
-def prepare_for_saving(structure):
-    """Summary
-
-    Args:
-        structure (TYPE): Description
-
-    Returns:
-        TYPE: Description
-    """
-    ensemble = structure.atoms.copy()
-    del ensemble[[atom.index for atom in structure.atoms]]
-    for molecule in structure.molecules:
-        ensemble += molecule
     return ensemble

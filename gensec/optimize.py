@@ -1,60 +1,13 @@
 """Structure optimization. 
 """
-
-import sys
-import pickle
 import time
-from math import sqrt
-from os.path import isfile
-
-from ase.calculators.calculator import PropertyNotImplementedError
-from ase.parallel import world, barrier
-from ase.io.trajectory import Trajectory
-import collections
-
-from ase.io import read, write
 import numpy as np
-from itertools import product
-
 from gensec.precon import preconditioned_hessian, Kabsh_rmsd
-from gensec.modules import measure_torsion_of_last
-
 from ase.optimize.bfgs import BFGS
-
-from copy import deepcopy
-from numpy.linalg import eigh
-import os
-from numpy import eye, absolute, sqrt, isinf
+from numpy import eye, sqrt, isinf
 from ase.optimize import BFGSLineSearch
 from ase.optimize import LBFGS
-
-# from ase.utils import basestring
-# from ase.utils.linesearch import LineSearch
-
-from gensec.precon import ASR, add_jitter, check_positive_symmetric
-from ase.optimize.precon import Exp, C1, Pfrommer
-
-
 from ase.optimize.precon import PreconLBFGS
-from scipy.sparse.linalg import spsolve
-from scipy import sparse
-
-import numpy as np
-import matplotlib.pyplot as plt
-import tkinter
-import matplotlib
-
-
-# def heatmap(mat):
-#     matplotlib.use( 'tkagg' )
-#     fig, ax = plt.subplots()
-#     im = ax.imshow(mat)
-#     plt.colorbar(im)
-#     # np.savetxt(f+"Exp_after.hes", self.H)
-#     # ax.set_title("Difference in the Hessians")
-#     # fig.tight_layout()
-#     # plt.savefig("diff_approx.png", dpi=300)
-#     plt.show()
 
 
 class PreconLBFGS_mod(PreconLBFGS):
@@ -189,7 +142,8 @@ class PreconLBFGS_mod(PreconLBFGS):
         # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
         # Calculate RMSD between current and initial steps:
         if (
-            Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev
+            Kabsh_rmsd(self.atoms, self.initial, self.molindixes)
+            > self.rmsd_dev
             and self.parameters["calculator"]["preconditioner"]["rmsd_update"][
                 "activate"
             ]
@@ -213,54 +167,6 @@ class PreconLBFGS_mod(PreconLBFGS):
         else:
             z = np.dot(self.Hinv, q)
 
-        # if self.precon is None:
-        #     if self.Hinv is not None:
-        #         z = np.dot(self.Hinv, q)
-        #     else:
-        #         z = H0 * q
-        # else:
-        #     self.precon.make_precon(self.atoms)
-        #     z = self.precon.solve(q)
-
-        # z = np.dot(np.linalg.inv(preconditioned_hessian(self.structure,
-        #                                 self.fixed_frame,
-        #                                 self.parameters,
-        #                                 self.atoms,
-        #                                 np.eye(3*len(self.atoms)),
-        #                                 task="initial")), q)
-
-        # self.precon.make_precon(self.atoms)
-        # z = self.precon.solve(q)
-
-        # fname = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/Packwood/outputs/precon_Packwood.txt"
-        # np.savetxt(fname, self.precon.P.todense())
-
-        # fname = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/Packwood/outputs/precon_with ASR.txt"
-        # np.savetxt(fname, P)
-
-        # fdiff = "/home/damaksimovda/Insync/da.maksimov.da@gmail.com/GoogleDrive/PhD/Preconditioner/Packwood/outputs/precon_diff.txt"
-        # np.savetxt(fdiff, P-self.precon.P)
-
-        # heatmap(P-self.precon.P)
-
-        # sys.exit(0)
-        # k = np.dot(np.linalg.inv(self.precon.P.todense()), q)
-        # z = np.dot(np.linalg.inv(P), q)
-        # print("MyPrec")
-        # print(sparse.csr_matrix(P))
-        # print("myz")
-        # print(k)
-        # print("From routine")
-        # print(KK[-1, -1])
-        # print(P[-1, -1])
-        # print(np.diag(self.precon.P.todense()))
-        # print(np.diag(P))
-        # print(np.diag(P) - np.diag(self.precon.P.todense()))
-        # print()
-        # print(z)
-        # print(k)
-        # print(P)
-        # sys.exit(0)
         for i in range(loopmax):
             b = rho[i] * np.dot(y[i], z)
             z += s[i] * (a[i] - b)
@@ -398,7 +304,10 @@ class BFGS_mod(BFGS):
         if self.initial:  # Update the Hessian (not inverse!!!)
             # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
             # Calculate RMSD between current and initial steps:
-            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
+            if (
+                Kabsh_rmsd(self.atoms, self.initial, self.molindixes)
+                > self.rmsd_dev
+            ):
                 print("################################Applying update")
                 self.H = preconditioned_hessian(
                     self.structure,
@@ -528,7 +437,9 @@ class BFGSLineSearch_mod(BFGSLineSearch):
             return
         else:
             if self.fmax_last is None:
-                self.fmax_last = sqrt((g0.reshape(-1, 3) ** 2).sum(axis=1).max())
+                self.fmax_last = sqrt(
+                    (g0.reshape(-1, 3) ** 2).sum(axis=1).max()
+                )
 
             dr = r - r0
             dg = g - g0
@@ -777,7 +688,9 @@ class LBFGS_Linesearch_mod(LBFGS):
         # else:
         #     z = H0 * q
 
-        if self.parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:
+        if self.parameters["calculator"]["preconditioner"]["rmsd_update"][
+            "activate"
+        ]:
             # self.steps_in_raw+=1
             # or self.steps_in_raw > 50
             current_fmax = sqrt((f ** 2).sum(axis=1).max())
@@ -863,7 +776,9 @@ class LBFGS_Linesearch_mod(LBFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
+        e = self.atoms.get_potential_energy(
+            force_consistent=self.force_consistent
+        )
         T = time.localtime()
         name = self.__class__.__name__
         w = self.logfile.write
@@ -1054,7 +969,10 @@ class TRM_BFGS(BFGS):
         if self.initial:  # Update the Hessian (not inverse!!!)
             # print("Energy", self.atoms.get_potential_energy(), "Force   ",  fmax)
             # # Calculate RMSD between current and initial steps:
-            if Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev:
+            if (
+                Kabsh_rmsd(self.atoms, self.initial, self.molindixes)
+                > self.rmsd_dev
+            ):
                 print("################################Applying update")
                 self.H = preconditioned_hessian(
                     self.structure,
@@ -1255,7 +1173,9 @@ class TRM_BFGS(BFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
+        e = self.atoms.get_potential_energy(
+            force_consistent=self.force_consistent
+        )
         accept = self.log_accept
         T = time.localtime()
         if self.logfile is not None:
@@ -1303,7 +1223,9 @@ class TRM_BFGS(BFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
+        e = self.atoms.get_potential_energy(
+            force_consistent=self.force_consistent
+        )
         accept = self.log_accept
         T = time.localtime()
         if self.logfile is not None:
@@ -1443,20 +1365,12 @@ class TRM_BFGS_IPI(BFGS):
             self.H = self.H0
             # self.H=np.eye(3*len(self.atoms))*100
 
-        # print(self.tr, self.maxstep)
-        # sys.exit(0)
-
     def update_H(self, dx, df):
-        """Input: DX = X -X_old
-
-        DF = F -F_old
-        DG = -DF
-        H  = hessian
-        Task: updated hessian
+        """Update the Hessian matrix
 
         Args:
-            dx (TYPE): Description
-            df (TYPE): Description
+            dx {array}: displacements x -x_old
+            df {array}: force gradient f -f_old
         """
 
         dx = dx[:, np.newaxis]  # dimension nx1
@@ -1497,7 +1411,8 @@ class TRM_BFGS_IPI(BFGS):
         self.steps += 1
 
         if (
-            Kabsh_rmsd(self.atoms, self.initial, self.molindixes) > self.rmsd_dev
+            Kabsh_rmsd(self.atoms, self.initial, self.molindixes)
+            > self.rmsd_dev
             and self.parameters["calculator"]["preconditioner"]["rmsd_update"][
                 "activate"
             ]
@@ -1534,24 +1449,19 @@ class TRM_BFGS_IPI(BFGS):
             # sys.exit(0)
             # Step 2 Calculate for the found displacemets:
             u = atoms.get_potential_energy()
-            f1 = atoms.get_forces().reshape(-1)  # Already correct sign! f1 = -grad(u)
+            f1 = atoms.get_forces().reshape(
+                -1
+            )  # Already correct sign! f1 = -grad(u)
 
             true_gain = u - u0
             expected_gain = -np.dot(f, s) + 0.5 * np.dot(s, np.dot(self.H, s))
-            harmonic_gain = -0.5 * np.dot(s, (f + f1))
 
             # Compute quality:
             s_norm = np.linalg.norm(s)
-
-            if s_norm > 0.025:
-                quality = true_gain / expected_gain
-            else:
-                quality = harmonic_gain / expected_gain
-
+            quality = true_gain / expected_gain
             accept = quality > 0.1
 
             # Update TrustRadius (self.tr)
-
             if quality < 0.25:
                 self.tr = 0.5 * s_norm
             elif quality > 0.75 and s_norm > 0.9 * self.tr:
@@ -1581,28 +1491,22 @@ class TRM_BFGS_IPI(BFGS):
         E(dx) = -(F * dx + 0.5 * ( dx * H * dx ),
         whithin dx**2 <tr
 
-        IN    f  = forces        (n,)
-              h  = hessian       (nxn)
-              tr = trust-radius
-
-        OUT   DX = displacement in cartesian basis
-
         INTERNAL
-                 ndim = dimension
-                 d    = hessian eigenvalues
-                 w    = hessian eigenvector (in columns)
-                 g    = gradient in cartesian basis
-                 gE   = gradient in eigenvector basis
-                 DX   = displacement in cartesian basis
-                 DXE  = displacement in eigenvector basis
+            ndim = dimension
+            d    = hessian eigenvalues
+            w    = hessian eigenvector (in columns)
+            g    = gradient in cartesian basis
+            gE   = gradient in eigenvector basis
+            DX   = displacement in cartesian basis
+            DXE  = displacement in eigenvector basis
 
         Args:
-            f (TYPE): Description
-            h (TYPE): Description
-            tr (TYPE): Description
+            f (array): forces
+            h (matrix): Hessian
+            tr (float): trust-radius
 
         Returns:
-            TYPE: Description
+            DX: displacement in cartesian basis
         """
 
         # Resize
@@ -1635,7 +1539,8 @@ class TRM_BFGS_IPI(BFGS):
 
         min_d = np.amin(d)
 
-        # Check if h is possitive definite and use trivial result if within trust radius
+        # Check if h is possitive definite and use trivial
+        # result if within trust radius
         if min_d > 0.0:
 
             if neg != 0:
@@ -1684,7 +1589,9 @@ class TRM_BFGS_IPI(BFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
+        e = self.atoms.get_potential_energy(
+            force_consistent=self.force_consistent
+        )
         accept = self.log_accept
         T = time.localtime()
         if self.logfile is not None:
@@ -1732,7 +1639,9 @@ class TRM_BFGS_IPI(BFGS):
         if forces is None:
             forces = self.atoms.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(force_consistent=self.force_consistent)
+        e = self.atoms.get_potential_energy(
+            force_consistent=self.force_consistent
+        )
         accept = self.log_accept
         T = time.localtime()
         if self.logfile is not None:

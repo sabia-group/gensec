@@ -21,17 +21,18 @@ from ase.io.trajectory import Trajectory
 
 class Calculator:
 
-    """Summary
+    """Creates ASE calculator for performing of the geometry optimizations
 
     Attributes:
-        calculator (TYPE): Description
+        calculator (TYPE): ASE calculator
     """
 
     def __init__(self, parameters):
-        """Summary
+        """Loads the calculator from the
+        specified ase_parameters file.
 
         Args:
-            parameters (TYPE): Description
+            parameters {JSON} : Parameters from file
         """
         folder = parameters["calculator"]["supporting_files_folder"]
         ase_file_name = parameters["calculator"]["ase_parameters_file"]
@@ -41,10 +42,9 @@ class Calculator:
     def finished(self, directory):
         """Mark, that calculation finished successfully
 
-        Write file "finished" if the
+        Write file "finished" if the geometry optimiztion is finished
 
         Arguments:
-            directory (TYPE): Description
             directory {str} -- Directory, where the calculation was carried out
         """
 
@@ -53,11 +53,14 @@ class Calculator:
         f.close()
 
     def set_constrains(self, atoms, parameters):
-        """Summary
+        """Setting the constrains for geometry optimization
+
+        For now only freezing of the atoms within
+        specified values of z-coordinate is implemented.
 
         Args:
-            atoms (TYPE): Description
-            parameters (TYPE): Description
+            atoms {Atoms}: ASE Atoms  object
+            parameters {JSON} : Parameters from file
         """
         z = parameters["calculator"]["constraints"]["z-coord"]
         c = FixAtoms(
@@ -66,43 +69,65 @@ class Calculator:
         atoms.set_constraint(c)
 
     def estimate_mu(self, structure, fixed_frame, parameters):
-        """Summary
+        """Estimate scaling parameter mu for
+        Expoential preconditioner scheme.
+        For more implementation detail see Packwood et. al:
+        A universal preconditioner for simulating condensed phase materials,
+        J. Chem. Phys. 144, 164109 (2016).
+        https://aip.scitation.org/doi/full/10.1063/1.4947024
+
+        and
+
+        https://wiki.fysik.dtu.dk/ase/ase/optimize.html
+
+        First reads the parameters file and checks if the
+        estimation of mu is necessary. Then Estimates mu
+        with default parameters of r_cut=2*r_NN, where r_NN
+        is estimated nearest neighbour distance. Parameter
+        A=3.0 set to default value as was mentioned in the
+        paper.
 
         Args:
-            structure (TYPE): Description
-            fixed_frame (TYPE): Description
-            parameters (TYPE): Description
+            structure {GenSec structure}: structure object
+            fixed_frame {GenSec fixed frame}: fixed frame object
+            parameters {JSON} : Parameters from file
 
         Returns:
-            TYPE: Description
+            float: Scaling parameter mu
         """
         # Figure out for which atoms Exp is applicapble
         precons_parameters = {
             "mol": parameters["calculator"]["preconditioner"]["mol"]["precon"],
-            "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][
+            "fixed_frame": parameters["calculator"]["preconditioner"][
+                "fixed_frame"
+            ]["precon"],
+            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
                 "precon"
             ],
-            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"]["precon"],
             "mol-fixed_frame": parameters["calculator"]["preconditioner"][
                 "mol-fixed_frame"
             ]["precon"],
         }
         precons_parameters_init = {
             "mol": parameters["calculator"]["preconditioner"]["mol"]["initial"],
-            "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][
+            "fixed_frame": parameters["calculator"]["preconditioner"][
+                "fixed_frame"
+            ]["initial"],
+            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
                 "initial"
             ],
-            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"]["initial"],
             "mol-fixed_frame": parameters["calculator"]["preconditioner"][
                 "mol-fixed_frame"
             ]["initial"],
         }
         precons_parameters_update = {
             "mol": parameters["calculator"]["preconditioner"]["mol"]["update"],
-            "fixed_frame": parameters["calculator"]["preconditioner"]["fixed_frame"][
+            "fixed_frame": parameters["calculator"]["preconditioner"][
+                "fixed_frame"
+            ]["update"],
+            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
                 "update"
             ],
-            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"]["update"],
             "mol-fixed_frame": parameters["calculator"]["preconditioner"][
                 "mol-fixed_frame"
             ]["update"],
@@ -138,13 +163,18 @@ class Calculator:
         return mu
 
     def relax(self, structure, fixed_frame, parameters, directory):
-        """Summary
+        """Perform geometry optimization with specified ASE
+        calculator.
+
+        Merge the fixed frame and structure object into the
+        Atoms object that enters then the geometry optimization
+        routine.
 
         Args:
-            structure (TYPE): Description
-            fixed_frame (TYPE): Description
-            parameters (TYPE): Description
-            directory (TYPE): Description
+            structure {GenSec structure}: structure object
+            fixed_frame {GenSec fixed frame}: fixed frame object
+            parameters {JSON} : Parameters from file
+            directory {str} -- Directory, where the calculation was carried out
         """
         if len(structure.molecules) > 1:
             a0 = structure.molecules[0].copy()
@@ -163,17 +193,18 @@ class Calculator:
         atoms = all_atoms.copy()
         self.set_constrains(atoms, parameters)
         atoms.set_calculator(self.calculator)
-        # write(os.path.join(directory, "initial_configuration_{}.in".format(name)), atoms, format="aims" )
-        if parameters["calculator"]["preconditioner"]["rmsd_update"]["activate"]:
-            rmsd_threshhold = parameters["calculator"]["preconditioner"]["rmsd_update"][
-                "value"
-            ]
+        if parameters["calculator"]["preconditioner"]["rmsd_update"][
+            "activate"
+        ]:
+            rmsd_threshhold = parameters["calculator"]["preconditioner"][
+                "rmsd_update"
+            ]["value"]
         else:
             rmsd_threshhold = 100000000000
         if not hasattr(structure, "mu"):
             structure.mu = 1
         if not hasattr(structure, "A"):
-            structure.A = 1
+            structure.A = 3
         H0 = np.eye(3 * len(atoms)) * 70
         H0_init = precon.preconditioned_hessian(
             structure, fixed_frame, parameters, atoms, H0, task="initial"
@@ -181,7 +212,9 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "bfgs":
             opt = BFGS_mod(
                 atoms,
-                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
                 maxstep=0.004,
                 initial=a0,
                 molindixes=list(range(len(a0))),
@@ -198,7 +231,9 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "bfgs_linesearch":
             opt = BFGSLineSearch_mod(
                 atoms,
-                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
                 initial=a0,
                 molindixes=list(range(len(a0))),
                 rmsd_dev=rmsd_threshhold,
@@ -220,7 +255,9 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "lbfgs":
             opt = LBFGS_Linesearch_mod(
                 atoms,
-                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
                 initial=a0,
                 molindixes=list(range(len(a0))),
                 rmsd_dev=rmsd_threshhold,
@@ -238,7 +275,9 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "trm_nocedal":
             opt = TRM_BFGS(
                 atoms,
-                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
                 maxstep=0.2,
                 initial=a0,
                 molindixes=list(range(len(a0))),
@@ -256,7 +295,9 @@ class Calculator:
         if parameters["calculator"]["algorithm"] == "trm":
             opt = TRM_BFGS_IPI(
                 atoms,
-                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name)),
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
                 maxstep=0.15,
                 initial=a0,
                 molindixes=list(range(len(a0))),
@@ -277,7 +318,6 @@ class Calculator:
             atoms,
             format="aims",
         )
-        # np.savetxt(os.path.join(directory, "hes_{}_final.hes".format(name)), opt.H)
         try:
             calculator.close()
         except:
@@ -291,14 +331,11 @@ class Calculator:
         relax the structure.
 
         Arguments:
-            structure (TYPE): Description
-            fixed_frame (TYPE): Description
-            parameters (TYPE): Description
-            calculator (TYPE): Description
-            structure {[type]} -- Structure object
-            fixed_frame {[type]} -- Fixed frame object
-            parameters {[type]} -- parameters file
-            directory {[type]} -- the directory with unfinished calculation
+            structure {GenSec structure}: structure object
+            fixed_frame {GenSec fixed frame}: fixed frame object
+            parameters {JSON} : Parameters from file
+            directory {str} -- Directory, where the calculation was carried out
+            calculator (ASE Calculator): Calculator for performing relaxation
         """
 
         def unfinished_directories(working_dir):
@@ -308,7 +345,6 @@ class Calculator:
             where there is no file "finished" in the directory
 
             Arguments:
-                working_dir (TYPE): Description
                 working_dir {str} -- The working directory that is specified
                                     in the parameters file
 
@@ -329,16 +365,18 @@ class Calculator:
         def find_traj(directory):
             """Check the state of previous calculation
 
-            If there are no trajectory file then calculation was interrupted in the very beginning.
-            If there are trajectories with "history" in the name then the calculation was previously
+            If there are no trajectory file then calculation was
+            interrupted in the very beginning. If there are
+            trajectories with "history" in the name then
+            the calculation was previously
             restarted.
 
             Arguments:
-                directory (TYPE): Description
                 directory {str} -- the directory with unfinished calculation
 
             Returns:
-                [trajectory name] -- returns the trajectory file with the last step that have been made.
+                [trajectory name] -- returns the trajectory file with the last
+                step that have been made.
             """
 
             for output in os.listdir(directory):
@@ -356,11 +394,16 @@ class Calculator:
 
             1. If the trajectory is None then the calculation didn't started and resumming
             of the calculation should start from the created initial molecular geometry.
-            2. If the
+            2. If the trajectory file found, we calculate it's size and:
+                2.1 If the size is zero and history trajectory file is found -
+                rename the last trajectory file to trajectory and perform
+                calculation from the this renamed traectory
+                2.2 If no history files found, perform calculation
+                from initial molecular geometry.
+                2.3 If trajectory file found and it's size is not 0 -
+                perform restart from this trajectory
 
             Arguments:
-                directory (TYPE): Description
-                traj (TYPE): Description
                 directory {str} -- the directory with unfinished calculation
                 traj {trajectory name} -- name of trajectory file
 
@@ -420,15 +463,15 @@ class Calculator:
                 step will be taken from the just renamed last history trajectory
 
             Arguments:
-                directory (TYPE): Description
-                traj (TYPE): Description
                 directory {str} -- the directory with unfinished calculation
                 traj {trajectory name} -- name of trajectory file
             """
 
             t = os.path.join(directory, "{}".format(traj))
             history_trajs = [i for i in os.listdir(directory) if "history" in i]
-            name_history_traj = "{:05d}_history_{}".format(len(history_trajs) + 1, traj)
+            name_history_traj = "{:05d}_history_{}".format(
+                len(history_trajs) + 1, traj
+            )
             shutil.copyfile(t, os.path.join(directory, name_history_traj))
 
         def concatenate_trajs(directory, traj):
@@ -438,8 +481,6 @@ class Calculator:
             in one full trajectory of relaxation
 
             Arguments:
-                directory (TYPE): Description
-                traj (TYPE): Description
                 directory {str} -- the directory with unfinished calculation
                 traj {trajectory name} -- name of trajectory file
 
@@ -473,7 +514,6 @@ class Calculator:
             If the restart Hessian file is corrupted it will delete it
 
             Arguments:
-                directory (TYPE): Description
                 directory {str} -- the directory with unfinished calculation
             """
 
