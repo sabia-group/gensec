@@ -460,17 +460,6 @@ v2 (TYPE): Description</dd>
 </dd></dl>
 
 <dl class="function">
-<dt id="gensec.modules.assign_random_state">
-<code class="descclassname">gensec.modules.</code><code class="descname">assign_random_state</code><span class="sig-paren">(</span><em>molecule</em>, <em>list_of_torsions</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.assign_random_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>molecule (TYPE): Description
-list_of_torsions (TYPE): Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
 <dt id="gensec.modules.carried_atoms">
 <code class="descclassname">gensec.modules.</code><code class="descname">carried_atoms</code><span class="sig-paren">(</span><em>connectivity_matrix_isolated</em>, <em>positions</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.carried_atoms" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns list of carried atoms</p>
@@ -506,12 +495,12 @@ fixed_frame {Atoms object} – atoms in fixed frame</dd>
 <dl class="function">
 <dt id="gensec.modules.construct_graph">
 <code class="descclassname">gensec.modules.</code><code class="descname">construct_graph</code><span class="sig-paren">(</span><em>connectivity_matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.construct_graph" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructu graph from connectivity matrix</p>
+<dd><p>Construct the graph from connectivity matrix</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>connectivity_matrix (TYPE): Description</dd>
+<dd>connectivity_matrix {matrix}: ASE connectivity matrix</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>Dictionary: graph of connected atoms</dd>
 </dl>
 </dd></dl>
 
@@ -543,18 +532,6 @@ atoms (TYPE): Description</dd>
 </dd></dl>
 
 <dl class="function">
-<dt id="gensec.modules.cycle_exists">
-<code class="descclassname">gensec.modules.</code><code class="descname">cycle_exists</code><span class="sig-paren">(</span><em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.cycle_exists" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>G (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
 <dt id="gensec.modules.detect_cycles">
 <code class="descclassname">gensec.modules.</code><code class="descname">detect_cycles</code><span class="sig-paren">(</span><em>connectivity_matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.detect_cycles" title="Permalink to this definition">¶</a></dt>
 <dd><p>Summary</p>
@@ -577,22 +554,6 @@ atoms (TYPE): Description</dd>
 <dt>Args:</dt>
 <dd>connectivity_matrix (TYPE): Description
 atoms (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gensec.modules.dfs_visit">
-<code class="descclassname">gensec.modules.</code><code class="descname">dfs_visit</code><span class="sig-paren">(</span><em>G</em>, <em>u</em>, <em>found_cycle</em>, <em>pred_node</em>, <em>marked</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.dfs_visit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>G (TYPE): Description
-u (TYPE): Description
-found_cycle (TYPE): Description
-pred_node (TYPE): Description
-marked (TYPE): Description</dd>
 <dt>Returns:</dt>
 <dd>TYPE: Description</dd>
 </dl>
@@ -651,8 +612,7 @@ Periodic boundary conditions are taken into
 account with use of the flag “bothways = True”.</p>
 <dl class="docutils">
 <dt>Arguments:</dt>
-<dd>structure (TYPE): Description
-structure {list} – list of the molecules</dd>
+<dd>structure {list} – list of the molecules</dd>
 <dt>Returns:</dt>
 <dd>bollean – False if no clashes found</dd>
 </dl>
@@ -690,19 +650,6 @@ cycle (TYPE): Description</dd>
 </dd></dl>
 
 <dl class="function">
-<dt id="gensec.modules.measure_molecules">
-<code class="descclassname">gensec.modules.</code><code class="descname">measure_molecules</code><span class="sig-paren">(</span><em>molecules</em>, <em>list_of_torsions</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.measure_molecules" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>molecules (TYPE): Description
-list_of_torsions (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
 <dt id="gensec.modules.measure_quaternion">
 <code class="descclassname">gensec.modules.</code><code class="descname">measure_quaternion</code><span class="sig-paren">(</span><em>atoms</em>, <em>atom_1_indx</em>, <em>atom_2_indx</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.measure_quaternion" title="Permalink to this definition">¶</a></dt>
 <dd><p>Summary</p>
@@ -732,13 +679,14 @@ list_of_torsions (TYPE): Description</dd>
 <dl class="function">
 <dt id="gensec.modules.merge_together">
 <code class="descclassname">gensec.modules.</code><code class="descname">merge_together</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.merge_together" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Merging together structure and fixed frame</p>
+<p>Used for convenient way for output of resulting structure.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>structure (TYPE): Description
-fixed_frame (TYPE): Description</dd>
+<dd>structure (GenSec structure): Structure object
+fixed_frame (GenSec fixed frame): Fixed Frame object</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>ASE Atoms: All atoms together</dd>
 </dl>
 </dd></dl>
 
@@ -750,31 +698,6 @@ fixed_frame (TYPE): Description</dd>
 <dt>Args:</dt>
 <dd>q_1 (TYPE): Description
 q_2 (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gensec.modules.prepare_for_saving">
-<code class="descclassname">gensec.modules.</code><code class="descname">prepare_for_saving</code><span class="sig-paren">(</span><em>structure</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.prepare_for_saving" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>structure (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gensec.modules.produce_coords_and_masses">
-<code class="descclassname">gensec.modules.</code><code class="descname">produce_coords_and_masses</code><span class="sig-paren">(</span><em>coords</em>, <em>masses</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.modules.produce_coords_and_masses" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>coords (TYPE): Description
-masses (TYPE): Description</dd>
 <dt>Returns:</dt>
 <dd>TYPE: Description</dd>
 </dl>
@@ -1208,12 +1131,6 @@ tr_init (TYPE): Description</dd>
 E(dx) = -(F * dx + 0.5 * ( dx * H * dx ),
 whithin dx**2 &lt;tr</p>
 <dl class="docutils">
-<dt>IN    f  = forces        (n,)</dt>
-<dd>h  = hessian       (nxn)
-tr = trust-radius</dd>
-</dl>
-<p>OUT   DX = displacement in cartesian basis</p>
-<dl class="docutils">
 <dt>INTERNAL</dt>
 <dd>ndim = dimension
 d    = hessian eigenvalues
@@ -1223,11 +1140,11 @@ gE   = gradient in eigenvector basis
 DX   = displacement in cartesian basis
 DXE  = displacement in eigenvector basis</dd>
 <dt>Args:</dt>
-<dd>f (TYPE): Description
-h (TYPE): Description
-tr (TYPE): Description</dd>
+<dd>f (array): forces
+h (matrix): Hessian
+tr (float): trust-radius</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>DX: displacement in cartesian basis</dd>
 </dl>
 </dd></dl>
 
@@ -1244,15 +1161,11 @@ tr (TYPE): Description</dd>
 <dl class="method">
 <dt id="gensec.optimize.TRM_BFGS_IPI.update_H">
 <code class="descname">update_H</code><span class="sig-paren">(</span><em>dx</em>, <em>df</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.optimize.TRM_BFGS_IPI.update_H" title="Permalink to this definition">¶</a></dt>
-<dd><p>Input: DX = X -X_old</p>
-<p>DF = F -F_old
-DG = -DF
-H  = hessian
-Task: updated hessian</p>
+<dd><p>Update the Hessian matrix</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>dx (TYPE): Description
-df (TYPE): Description</dd>
+<dd>dx {array}: displacements x -x_old
+df {array}: force gradient f -f_old</dd>
 </dl>
 </dd></dl>
 
@@ -1364,7 +1277,9 @@ ref_ds (TYPE): Description</dd>
 <p>ASR comes from the continous translational invariance of the periodic
 system. With translation of the whole system by a uniform
 displacement, there should be no forces acting on the atoms.
-This function restores the ASR for the given Hessian matrix.</p>
+This function restores the ASR for the given Hessian matrix.
+Calculates the block-diagonal elements as sum of the corresponding
+x y or z elements of the other elements in the row.</p>
 <dl class="docutils">
 <dt>Arguments:</dt>
 <dd>hessian (matrix): 3Nx3N where N is lenght of atoms</dd>
@@ -1393,7 +1308,6 @@ rec (TYPE): Description</dd>
 <dt id="gensec.precon.Bravais.all_within">
 <code class="descname">all_within</code><span class="sig-paren">(</span><em>Rcut</em>, <em>add_base_PE=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Bravais.all_within" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a list of all lattice vector indices shorter than Rcut.</p>
-<p>If base_PE is True, add one parallel epipede (PE) to the region.</p>
 <dl class="docutils">
 <dt>Examples:</dt>
 <dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cos60</span><span class="p">,</span> <span class="n">sin60</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span>
@@ -1417,31 +1331,11 @@ rec (TYPE): Description</dd>
 </div>
 </dd>
 <dt>Args:</dt>
-<dd>Rcut (TYPE): Description
-add_base_PE (bool, optional): Description</dd>
+<dd>Rcut (float): Cutoff distance for the exponent
+add_base_PE (bool, optional): if True,
+add one parallel epipede (PE) to the region.</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="gensec.precon.Bravais.into_pe">
-<code class="descname">into_pe</code><span class="sig-paren">(</span><em>vecs</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Bravais.into_pe" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fold vectors (last dimension 3) into parallel epipede.</p>
-<dl class="docutils">
-<dt>Examples:</dt>
-<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lat</span> <span class="o">=</span> <span class="n">Bravais</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">lat</span><span class="o">.</span><span class="n">into_pe</span><span class="p">([</span><span class="mf">3.2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]),</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-</dd>
-<dt>Args:</dt>
-<dd>vecs (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-<dt>Raises:</dt>
-<dd>ValueError: Description</dd>
+<dd>list: all lattice vector indices shorter than Rcut</dd>
 </dl>
 </dd></dl>
 
@@ -1451,99 +1345,57 @@ add_base_PE (bool, optional): Description</dd>
 <dd><p>Return a lattice vector from integer Bravais indices.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>abc (TYPE): Description</dd>
+<dd>abc (tuple): three Bravais indices</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="gensec.precon.CovalenceDamper">
-<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">CovalenceDamper</code><span class="sig-paren">(</span><em>atom2name</em>, <em>covrads={'Ac': 2.0</em>, <em>'Ag': 1.34</em>, <em>'Al': 1.18</em>, <em>'Ar': 0.98</em>, <em>'As': 1.2</em>, <em>'At': 2.0</em>, <em>'Au': 1.34</em>, <em>'B': 0.82</em>, <em>'Ba': 1.98</em>, <em>'Be': 0.9</em>, <em>'Bi': 1.46</em>, <em>'Br': 1.14</em>, <em>'C': 0.77</em>, <em>'Ca': 1.74</em>, <em>'Cd': 1.48</em>, <em>'Ce': 1.65</em>, <em>'Cl': 0.99</em>, <em>'Co': 1.16</em>, <em>'Cr': 1.18</em>, <em>'Cs': 2.35</em>, <em>'Cu': 1.17</em>, <em>'Dy': 1.59</em>, <em>'Er': 1.57</em>, <em>'Eu': 1.85</em>, <em>'F': 0.72</em>, <em>'Fe': 1.17</em>, <em>'Fr': 2.0</em>, <em>'Ga': 1.26</em>, <em>'Gd': 1.61</em>, <em>'Ge': 1.22</em>, <em>'H': 0.32</em>, <em>'He': 0.31</em>, <em>'Hf': 1.44</em>, <em>'Hg': 1.49</em>, <em>'Ho': 1.58</em>, <em>'I': 1.33</em>, <em>'In': 1.44</em>, <em>'Ir': 1.27</em>, <em>'K': 2.03</em>, <em>'Kr': 1.12</em>, <em>'La': 1.69</em>, <em>'Li': 1.63</em>, <em>'Lu': 1.56</em>, <em>'Mg': 1.36</em>, <em>'Mn': 1.17</em>, <em>'Mo': 1.3</em>, <em>'N': 0.75</em>, <em>'Na': 1.54</em>, <em>'Nb': 1.34</em>, <em>'Nd': 1.84</em>, <em>'Ne': 0.71</em>, <em>'Ni': 1.15</em>, <em>'O': 0.73</em>, <em>'Os': 1.26</em>, <em>'P': 1.06</em>, <em>'Pa': 2.0</em>, <em>'Pb': 1.47</em>, <em>'Pd': 1.28</em>, <em>'Pm': 1.63</em>, <em>'Po': 1.46</em>, <em>'Pr': 1.65</em>, <em>'Pt': 1.3</em>, <em>'Ra': 2.0</em>, <em>'Rb': 2.16</em>, <em>'Re': 1.28</em>, <em>'Rh': 1.25</em>, <em>'Rn': 2.0</em>, <em>'Ru': 1.25</em>, <em>'S': 1.02</em>, <em>'Sb': 1.4</em>, <em>'Sc': 1.44</em>, <em>'Se': 1.16</em>, <em>'Si': 1.11</em>, <em>'Sm': 1.62</em>, <em>'Sn': 1.41</em>, <em>'Sr': 1.91</em>, <em>'Ta': 1.34</em>, <em>'Tb': 1.59</em>, <em>'Tc': 1.27</em>, <em>'Te': 1.36</em>, <em>'Th': 1.65</em>, <em>'Ti': 1.32</em>, <em>'Tl': 1.48</em>, <em>'Tm': 1.56</em>, <em>'U': 1.42</em>, <em>'V': 1.22</em>, <em>'W': 1.3</em>, <em>'Xe': 1.31</em>, <em>'Y': 1.62</em>, <em>'Yb': 2.0</em>, <em>'Zn': 1.25</em>, <em>'Zr': 1.45}</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.CovalenceDamper" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gensec.precon.Damper" title="gensec.precon.Damper"><code class="xref py py-class docutils literal notranslate"><span class="pre">gensec.precon.Damper</span></code></a></p>
-<p>Damper class for covalent bonds (exponent in set([0, HUGE])).</p>
-<dl class="docutils">
-<dt>Attributes:</dt>
-<dd>atom2name (TYPE): Description
-covrads (TYPE): Description</dd>
-</dl>
-<dl class="method">
-<dt id="gensec.precon.CovalenceDamper.Rcut">
-<code class="descname">Rcut</code><span class="sig-paren">(</span><em>max_exponent</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.CovalenceDamper.Rcut" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the maximum distance leading to max_exponent.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>max_exponent (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="gensec.precon.CovalenceDamper.exponent">
-<code class="descname">exponent</code><span class="sig-paren">(</span><em>AB</em>, <em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.CovalenceDamper.exponent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>AB (TYPE): Description
-i (TYPE): Description
-j (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="gensec.precon.Damper">
-<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">Damper</code><a class="headerlink" href="#gensec.precon.Damper" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Damper interface documentation</p>
-<p>A Damper is an object that can judge the importance of an atom pair from
-the interatomic distance and the atom numbers.</p>
-<dl class="method">
-<dt id="gensec.precon.Damper.Rcut">
-<code class="descname">Rcut</code><span class="sig-paren">(</span><em>max_exponent</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Damper.Rcut" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the maximum distance leading to max_exponent.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>max_exponent (TYPE): Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="gensec.precon.Damper.exponent">
-<code class="descname">exponent</code><span class="sig-paren">(</span><em>AB</em>, <em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.Damper.exponent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return exponent for distance AB and atom types i, j.</p>
-<p>What is actually done with AB, and in particular i, j
-is an implementation detail.  Most probably, the initializer
-should be passed some system related information, i.e. at
-least the atom types within the system.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>AB (TYPE): Description
-i (TYPE): Description
-j (TYPE): Description</dd>
-<dt>Raises:</dt>
-<dd>NotImplementedError: Description</dd>
+<dd>list: lattice vector</dd>
 </dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="function">
-<dt id="gensec.precon.ExpHessian">
-<code class="descclassname">gensec.precon.</code><code class="descname">ExpHessian</code><span class="sig-paren">(</span><em>atoms</em>, <em>mu=1</em>, <em>A=3.0</em>, <em>recalc_mu=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.ExpHessian" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dt id="gensec.precon.C12AB">
+<code class="descclassname">gensec.precon.</code><code class="descname">C12AB</code><span class="sig-paren">(</span><em>A</em>, <em>B</em>, <em>C6</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.C12AB" title="Permalink to this definition">¶</a></dt>
+<dd><p>C12 coefficients between A and B</p>
+<p>Based on the C6 coefficients calculate the C12
+C12 coefficients are in eV*Angstr^6.
+Args:</p>
+<blockquote>
+<div>A (str): chemical symbol of A
+B (str): chemical symbol of B
+C6 (float): C6 coefficients between A and B</div></blockquote>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>float: C12 coefficient between A and B</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.C6AB">
+<code class="descclassname">gensec.precon.</code><code class="descname">C6AB</code><span class="sig-paren">(</span><em>A</em>, <em>B</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.C6AB" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates C6 coefficients</p>
+<p>C6 coefficients calculated based on the static
+dipole polarizabilites. Tkatchenko-Scheffler scheme.
+The units are converted to eV*Angstr^6.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>atoms (TYPE): Description
-mu (int, optional): Description
-A (float, optional): Description
-recalc_mu (bool, optional): Description</dd>
+<dd>A (atom type): Chemical symbol of the atom A
+B (atom type): type): Chemical symbol of the atom B</dd>
+<dt>Returns:</dt>
+<dd>float: C6 coefficient</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.ExpHessian">
+<code class="descclassname">gensec.precon.</code><code class="descname">ExpHessian</code><span class="sig-paren">(</span><em>atoms</em>, <em>mu=1</em>, <em>A=3.0</em>, <em>recalc_mu=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.ExpHessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callls Exp Hessian implemented in ASE</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>atoms (ASE atoms object): atoms
+mu (int, optional): scaling coefficient mu
+A (float, optional): user specific value
+recalc_mu (bool, optional): recalculates mu if True</dd>
 <dt>Returns:</dt>
 <dd>TYPE: Description</dd>
 </dl>
@@ -1572,20 +1424,20 @@ where vec == {nu: [x,y,z], …}</p>
 </div>
 <dl class="docutils">
 <dt>Attributes:</dt>
-<dd>Hdict (TYPE): Description
-n_atom (TYPE): Description
-n_dyn_periodic (TYPE): Description
-n_vec (TYPE): Description</dd>
+<dd>Hdict (dict): Hessian matrix in dictionary representation.
+n_atom (int): Number of atoms
+n_dyn_periodic (int): number of periodic cells
+n_vec (int): number of atoms with periodic Bravais lattice</dd>
 </dl>
 <dl class="method">
 <dt id="gensec.precon.HessianBuilder.add_rank1">
 <code class="descname">add_rank1</code><span class="sig-paren">(</span><em>fac</em>, <em>vec</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.HessianBuilder.add_rank1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add rank-one term vec * vec * vec^T.</p>
-<p>Here, vec = {i_atom: np.array([xi, yi, zi]), …}.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>fac (TYPE): Description
-vec (TYPE): Description</dd>
+<dd>fac (float): prefactor calculated from dumping object
+that enters in the formula like fac * k_bond
+vec (dict): {i_atom: np.array([xi, yi, zi]), …}</dd>
 </dl>
 </dd></dl>
 
@@ -1593,13 +1445,12 @@ vec (TYPE): Description</dd>
 <dt id="gensec.precon.HessianBuilder.add_rank1_from_atlist">
 <code class="descname">add_rank1_from_atlist</code><span class="sig-paren">(</span><em>fac</em>, <em>dq_datom</em>, <em>atlist</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.HessianBuilder.add_rank1_from_atlist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add rank-one term vec * vec * vec^T.</p>
-<p>Here, dq_atom = [np.array([xi, yi, zi]), …], and
-atlist = [(i_tau, (a, b, c)), …].</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>fac (TYPE): Description
-dq_datom (TYPE): Description
-atlist (TYPE): Description</dd>
+<dd>fac (float): prefactor calculated from dumping object
+that enters in the formula like fac * k_bond
+dq_datom (list): [np.array([xi, yi, zi]), …]
+atlist (list): [(i_tau, (a, b, c)), …]</dd>
 </dl>
 </dd></dl>
 
@@ -1609,7 +1460,8 @@ atlist (TYPE): Description</dd>
 <dd><p>Add multiple of unity.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>fac (TYPE): Description</dd>
+<dd>fac (float): prefactor calculated from dumping object
+that enters in the formula like fac * k_bond</dd>
 </dl>
 </dd></dl>
 
@@ -1619,7 +1471,7 @@ atlist (TYPE): Description</dd>
 <dd><p>Construct full np.ndarray (only atomic coordinates, no stress).</p>
 <dl class="docutils">
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>matrix: Hessian matrix</dd>
 </dl>
 </dd></dl>
 
@@ -1631,7 +1483,15 @@ atlist (TYPE): Description</dd>
 <dd><p>Root-mean-square deviation (RMSD) between tructures</p>
 <p>Finds the optimal rotation for alignment of two structures
 with use of Kabsh algorithm and then calculates RMSD
-between all the corresponding atoms.</p>
+between all the corresponding atoms.
+Takes the atoms of structure and the reference structure by
+selecting all the atoms from inixes stored in molindixes.
+If necessary removes all the Hydrogen atoms from structure.
+Aligns centers of masses of the structures.
+Calculates the optimal rotation for aligning.
+Aligns structures and calculates deviation between positions of the
+corresponding atoms in both structures.
+Takes the square root of the sum square of those deviations.</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd>atoms (ASE Atoms object): The structure to calculate RMSD with the
@@ -1649,13 +1509,19 @@ consideration</dd>
 <dl class="class">
 <dt id="gensec.precon.LindhExponent">
 <em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">LindhExponent</code><span class="sig-paren">(</span><em>atom2row, alphas=array([[3.57106484, 1.4102135 , 1.4102135 ],        [1.4102135 , 0.99989815, 0.99989815],        [1.4102135 , 0.99989815, 0.99989815]]), ref_ds=array([[0.71438923, 1.11127214, 1.33881834],        [1.11127214, 1.51873859, 1.79920251],        [1.33881834, 1.79920251, 1.79920251]])</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.LindhExponent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gensec.precon.Damper" title="gensec.precon.Damper"><code class="xref py py-class docutils literal notranslate"><span class="pre">gensec.precon.Damper</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class of the LINDH object which provides the exponent factors.</p>
+<p>A Lindh Damper is an object that can judge the importance of an atom pair
+from the interatomic distance and the atom numbers.</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
-<dd>alphas (TYPE): Description
-atom2row (TYPE): Description
-ref_ds (TYPE): Description</dd>
+<dd>alphas (TYPE): reference alpha values  for rows i and j used
+as the dumping coefficient in the exponent.
+atom2row (TYPE): list of numbers where for each atom
+in the structure the row in periodic table is associated.
+ref_ds (matrix): reference  distance values rij from the paper
+for more details:
+R. Lindh et al. /  Chemical Physics Letters 241 (199s) 423-428</dd>
 </dl>
 <dl class="method">
 <dt id="gensec.precon.LindhExponent.Rcut">
@@ -1663,9 +1529,9 @@ ref_ds (TYPE): Description</dd>
 <dd><p>Return the maximum distance for given exponent.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>max_exponent (TYPE): Description</dd>
+<dd>max_exponent (float): Description</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>float: cutoff distance</dd>
 </dl>
 </dd></dl>
 
@@ -1675,11 +1541,11 @@ ref_ds (TYPE): Description</dd>
 <dd><p>Return the exponent for distance AB of given types.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>AB (TYPE): Description
-i_atom (TYPE): Description
-j_atom (TYPE): Description</dd>
+<dd>AB (float): Distance between A and B
+i_atom (int): Number of the atom i in the structure
+j_atom (int): Number of the atom j in the structure</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>float: Lindh Exponent</dd>
 </dl>
 </dd></dl>
 
@@ -1688,12 +1554,12 @@ j_atom (TYPE): Description</dd>
 <dl class="function">
 <dt id="gensec.precon.LindhHessian">
 <code class="descclassname">gensec.precon.</code><code class="descname">LindhHessian</code><span class="sig-paren">(</span><em>atoms</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.LindhHessian" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Construction of Lindh preconditioned Hessian matrix</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>atoms (TYPE): Description</dd>
+<dd>atoms (ASE atoms object): atoms of the system</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>matrix: Lindh Hesian</dd>
 </dl>
 </dd></dl>
 
@@ -1715,7 +1581,8 @@ j_atom (TYPE): Description</dd>
 0.2502 [(0, (0, 0, 0)), (1, (0, 0, 0))]
 1.0000 [(0, (0, 0, 0)), (0, (1, 0, 0))]
 1.0000 [(1, (0, 0, 0)), (1, (1, 0, 0))]
-&gt;&gt;&gt; bendings = list(pairs.chains(3, 1.251))   # 1.251: one short 1-&gt;2 bond.
+&gt;&gt;&gt; bendings = list(pairs.chains(3, 1.251))   # 1.251:
+one short 1-&gt;2 bond.
 &gt;&gt;&gt; for damp, atlist in bendings:
 …     assert len(atlist) == 3
 …     print “%6.4f %s” % (damp, atlist)
@@ -1724,14 +1591,15 @@ j_atom (TYPE): Description</dd>
 1.2502 [(0, (0, 0, 0)), (1, (0, 0, 0)), (1, (-1, 0, 0))]
 1.2502 [(0, (0, 0, 0)), (1, (0, 0, 0)), (1, (1, 0, 0))]</dd>
 <dt>Attributes:</dt>
-<dd>abcs (TYPE): Description
-atom (TYPE): Description
-damper (TYPE): Description
-lat (TYPE): Description
-max_sing_thres (TYPE): Description
-n_atom (TYPE): Description
-pairs (list): Description
-per_atom (TYPE): Description</dd>
+<dd>abcs (array of tuples): bravais lattice multipliers
+atom (array): coordinates of atoms
+damper (object): Lindh exponent
+lat (array): lattice vectors
+max_sing_thres (float): threshold for dumber
+n_atom (int): Number of atoms
+pairs (list): for each atom corresponding with
+list of atoms that are within cutoff distance
+periodicatoms (array): coordinates of atoms within lattice vectors</dd>
 </dl>
 <dl class="method">
 <dt id="gensec.precon.Pairs.chains">
@@ -1741,11 +1609,12 @@ per_atom (TYPE): Description</dd>
 bonds (n=2), bendings (n=3), or torsions (n=3).</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>n (TYPE): Description
-thres (TYPE): Description
-directed (bool, optional): Description</dd>
+<dd>n (int): number of n-chain
+thres (float): threshhold, default=15.0
+directed (bool, optional): Specifies the direction
+in Bravais lattice</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>list: list of (damp, [(i, abc), …]) tuples of n-chains</dd>
 </dl>
 </dd></dl>
 
@@ -1755,49 +1624,41 @@ directed (bool, optional): Description</dd>
 <dd><p>Summary</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>iabc (TYPE): Description</dd>
+<dd>iabc (int, tuple): atom index and Bravais multipliers</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>array: coordinate of atom multiplied by lattice vector
+and Bravais multiplier</dd>
 </dl>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="gensec.precon.SimpleDamper">
-<em class="property">class </em><code class="descclassname">gensec.precon.</code><code class="descname">SimpleDamper</code><span class="sig-paren">(</span><em>atom2any=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.SimpleDamper" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#gensec.precon.Damper" title="gensec.precon.Damper"><code class="xref py py-class docutils literal notranslate"><span class="pre">gensec.precon.Damper</span></code></a></p>
-<p>Damper for maximum chain lenght (exponent==bondlength).</p>
-<dl class="docutils">
-<dt>Attributes:</dt>
-<dd>atom2any (TYPE): Description</dd>
-</dl>
-<dl class="method">
-<dt id="gensec.precon.SimpleDamper.Rcut">
-<code class="descname">Rcut</code><span class="sig-paren">(</span><em>max_exponent</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.SimpleDamper.Rcut" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the maximum distance leading to max_exponent.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>max_exponent (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="gensec.precon.SimpleDamper.exponent">
-<code class="descname">exponent</code><span class="sig-paren">(</span><em>AB</em>, <em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.SimpleDamper.exponent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dl class="function">
+<dt id="gensec.precon.RAB">
+<code class="descclassname">gensec.precon.</code><code class="descname">RAB</code><span class="sig-paren">(</span><em>cell_h</em>, <em>cell_ih</em>, <em>qi</em>, <em>qj</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.RAB" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the vector separating two atoms.</p>
+<p>This file is part of i-PI.
+i-PI Copyright (C) 2014-2015 i-PI developers</p>
+<p>Note that minimum image convention is used, so only the image of
+atom j that is the shortest distance from atom i is considered.</p>
+<p>Also note that while this may not work if the simulation
+box is highly skewed from orthorhombic, as
+in this case it is possible to return a distance less than the
+nearest neighbour distance. However, this will not be of
+importance unless the cut-off radius is more than half the
+width of the shortest face-face distance of the simulation box,
+which should never be the case.
+rij is in Angstroms</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>AB (TYPE): Description
-i (TYPE): Description
-j (TYPE): Description</dd>
+<dd>cell_h: The simulation box cell vector matrix.
+cell_ih: The inverse of the simulation box cell vector matrix.
+qi: The position vector of atom i.
+qj: The position vectors of one or many atoms j shaped as (N, 3).</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>dij: The vectors separating atoms i and {j}.
+rij: The distances between atoms i and {j}.</dd>
 </dl>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="function">
@@ -1805,7 +1666,9 @@ j (TYPE): Description</dd>
 <code class="descclassname">gensec.precon.</code><code class="descname">add_jitter</code><span class="sig-paren">(</span><em>hessian</em>, <em>jitter</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.add_jitter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add jitter to the diagonal</p>
 <p>For the reasons of numerical stability adding jitter parameter to the
-diagonal of the matrix allows inverting of the matrix without problems.</p>
+diagonal of the matrix allows inverting of the matrix without problems.
+creates the Identity matrix with scale of jitter and adds
+it to the input hessian.</p>
 <dl class="docutils">
 <dt>Arguments:</dt>
 <dd>hessian (matrix): 3Nx3N where N is lenght of atoms
@@ -1829,9 +1692,9 @@ minuskel.</p>
 </div>
 </dd>
 <dt>Args:</dt>
-<dd>atom_name (TYPE): Description</dd>
+<dd>atom_name (str): Symbol of the element</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>TYPE: Canonical representation of Chemical symbol</dd>
 </dl>
 </dd></dl>
 
@@ -1854,267 +1717,191 @@ and positive definite</dd>
 </dd></dl>
 
 <dl class="function">
-<dt id="gensec.precon.dd_angle">
-<code class="descclassname">gensec.precon.</code><code class="descname">dd_angle</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_angle" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>vec1_d (TYPE): Description
-vec2_d (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
 <dt id="gensec.precon.dd_arccos">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_arccos</code><span class="sig-paren">(</span><em>val_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_arccos" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Arccosine between parameter and derivatives</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>val_d (TYPE): Description</dd>
+<dd>vec1_d (tuple): parameter1 and derivatives1
+vec2_d (tuple): parameter2 and derivatives2</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>tuple: angle between parameter and derivatives</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_arcsin">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_arcsin</code><span class="sig-paren">(</span><em>val_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_arcsin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Arcsine angle between parameter and derivatives</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>val_d (TYPE): Description</dd>
+<dd>vec1_d (tuple): parameter1 and derivatives1
+vec2_d (tuple): parameter2 and derivatives2</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gensec.precon.dd_arctan2">
-<code class="descclassname">gensec.precon.</code><code class="descname">dd_arctan2</code><span class="sig-paren">(</span><em>y_d</em>, <em>x_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_arctan2" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>y_d (TYPE): Description
-x_d (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gensec.precon.dd_bondangle">
-<code class="descclassname">gensec.precon.</code><code class="descname">dd_bondangle</code><span class="sig-paren">(</span><em>pos1_d</em>, <em>pos2_d</em>, <em>pos3_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_bondangle" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>pos1_d (TYPE): Description
-pos2_d (TYPE): Description
-pos3_d (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gensec.precon.dd_bondangle_directed">
-<code class="descclassname">gensec.precon.</code><code class="descname">dd_bondangle_directed</code><span class="sig-paren">(</span><em>pos1_d</em>, <em>pos2_d</em>, <em>pos3_d</em>, <em>dir_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_bondangle_directed" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>pos1_d (TYPE): Description
-pos2_d (TYPE): Description
-pos3_d (TYPE): Description
-dir_d (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gensec.precon.dd_bondlength">
-<code class="descclassname">gensec.precon.</code><code class="descname">dd_bondlength</code><span class="sig-paren">(</span><em>pos1_d</em>, <em>pos2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_bondlength" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>pos1_d (TYPE): Description
-pos2_d (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gensec.precon.dd_bondtorsion">
-<code class="descclassname">gensec.precon.</code><code class="descname">dd_bondtorsion</code><span class="sig-paren">(</span><em>pos1_d</em>, <em>pos2_d</em>, <em>pos3_d</em>, <em>pos4_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_bondtorsion" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>pos1_d (TYPE): Description
-pos2_d (TYPE): Description
-pos3_d (TYPE): Description
-pos4_d (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>tuple: Arcsine of the angle between parameter and derivatives</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_cosv1v2">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_cosv1v2</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_cosv1v2" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Cosine between parameter and derivatives</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>vec1_d (TYPE): Description
-vec2_d (TYPE): Description</dd>
+<dd>vec1_d (tuple): parameter1 and derivatives1
+vec2_d (tuple): parameter2 and derivatives2</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>tuple: angle between parameter and derivatives</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_cross">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_cross</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_cross" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Cross product of the value and derivatives</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>vec1_d (TYPE): Description
-vec2_d (TYPE): Description</dd>
+<dd>vec1_d (tuple): value1 and derivative1
+vec2_d (tuple): value2 and derivative2</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>(array, array): cross product of value1 and value2 and
+sum of the cross products of corresponding value and derivatives</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_directed_angle">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_directed_angle</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em>, <em>dir_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_directed_angle" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Angle and derivative of the parameter</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>vec1_d (TYPE): Description
-vec2_d (TYPE): Description
-dir_d (TYPE): Description</dd>
+<dd>vec1_d (tuple): parameter1 and derivative1
+vec2_d (tuple): parameter2 and derivative2
+dir_d (tuple): (direction,
+np.c_[np.zeros((3, 3)), np.zeros((3, 3)), np.zeros((3, 3))])</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>tuple: Angle and derivative of the parameter</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_dot">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_dot</code><span class="sig-paren">(</span><em>vec1_d</em>, <em>vec2_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_dot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Dot product of the value and derivatives</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>vec1_d (TYPE): Description
-vec2_d (TYPE): Description</dd>
+<dd>vec1_d (tuple): value1 and derivative1
+vec2_d (tuple): value2 and derivative2</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>(array, array): dot product of value1 and value2 and
+sum of the tensorproducts corresponding value and derivatives</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_mult">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_mult</code><span class="sig-paren">(</span><em>vec_d</em>, <em>fac</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_mult" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Multiply value and derivative by the factor</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>vec_d (TYPE): Description
-fac (TYPE): Description</dd>
+<dd>vec_d (tuple): value and derivative
+fac (float): multiplication factor</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>(array, array): value*factor, derivative*factor</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_norm">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_norm</code><span class="sig-paren">(</span><em>vec_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_norm" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Norm of the parameter and derivative</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>vec_d (TYPE): Description</dd>
+<dd>vec_d (tuple): parameter and derivative</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>tuple: Normalized parameter and derivative</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_normalized">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_normalized</code><span class="sig-paren">(</span><em>vec_d</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_normalized" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Norm of the parameter and derivative</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>vec_d (TYPE): Description</dd>
+<dd>vec_d (tuple): parameter and derivative</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>tuple: value divided by it’s norm and derivative  and
+sum of the products : norm of parameter*derivative and
+parameter* norm of derivative.</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_power">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_power</code><span class="sig-paren">(</span><em>var_d</em>, <em>n</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_power" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Power value and derivative to n</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>var_d (TYPE): Description
-n (TYPE): Description</dd>
+<dd>var_d (tuple): value and derivative
+n (float): power</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>(array, array): value**n, n * (var ** (n - 1)) * dvar</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_prod">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_prod</code><span class="sig-paren">(</span><em>*arg_ds</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_prod" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Product of the value and derivatives</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>arg_ds: Description</dd>
+<dd>arg_ds: tuple that contains all the value and derivatives</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>(array, array): product of the value and derivatives</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.dd_sum">
 <code class="descclassname">gensec.precon.</code><code class="descname">dd_sum</code><span class="sig-paren">(</span><em>*arg_ds</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.dd_sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Summation of the value and derivatives</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>arg_ds: Description</dd>
+<dd>arg_ds: tuple that contains all the value and derivatives</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>(array, array): summ of the value and derivatives</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
-<dt id="gensec.precon.format_atlist">
-<code class="descclassname">gensec.precon.</code><code class="descname">format_atlist</code><span class="sig-paren">(</span><em>atlist</em>, <em>is_periodic</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.format_atlist" title="Permalink to this definition">¶</a></dt>
-<dd><p>Nicely format an atom list (atlist).</p>
-<p>Additionally adds 1 to atom numbers (-&gt; start with 1):
-&gt;&gt;&gt; print format_atlist([(0, (0, 0, 0)), (1, (0, -1, 0))], True)
-1( 0, 0, 0) –  2( 0,-1, 0)</p>
+<dt id="gensec.precon.get_R0AB">
+<code class="descclassname">gensec.precon.</code><code class="descname">get_R0AB</code><span class="sig-paren">(</span><em>A</em>, <em>B</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.get_R0AB" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the average of the two vdW radi of atoms.</p>
+<p>Takes the vdW radii of atom A and B and calculates their
+average. The units converted to Angstroms</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>atlist (TYPE): Description
-is_periodic (TYPE): Description</dd>
+<dd>A (atom type): Chemical symbol of the atom A
+B (atom type): type): Chemical symbol of the atom B</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>float: average vdW radii of two atoms.</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.get_pairs">
 <code class="descclassname">gensec.precon.</code><code class="descname">get_pairs</code><span class="sig-paren">(</span><em>atoms1</em>, <em>atoms2</em>, <em>Rcut</em>, <em>use_scipy=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.get_pairs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Feor eac atom get pairs within cutoff distance</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>atoms1 (TYPE): Description
-atoms2 (TYPE): Description
-Rcut (TYPE): Description
-use_scipy (bool, optional): Description</dd>
+<dd>atoms1 (array): coordinates of atoms1
+atoms2 (array): coordinates of atoms2
+Rcut (float): cutoff distance
+use_scipy (bool, optional): Use scipyif available</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>list: lists of atoms for each atom a list that is within
+cutoff distance.</dd>
 </dl>
 </dd></dl>
 
@@ -2131,13 +1918,13 @@ True
 True</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>vec (TYPE): Description
-eps (float, optional): Description
+<dd>vec (vector): vector
+eps (float, optional): threshhold
 noself (bool, optional): Description</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>TYPE: True if the vector is positive definite</dd>
 <dt>Raises:</dt>
-<dd>ValueError: Description</dd>
+<dd>ValueError: If vector is zero</dd>
 </dl>
 </dd></dl>
 
@@ -2145,16 +1932,11 @@ noself (bool, optional): Description</dd>
 <dt id="gensec.precon.makeorthvec">
 <code class="descclassname">gensec.precon.</code><code class="descname">makeorthvec</code><span class="sig-paren">(</span><em>orth</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.makeorthvec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Construct a (3 component) vector orthogonal to orth.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy.random</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">vec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">makeorthvec</span><span class="p">(</span><span class="n">vec</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1e-12</span>
-</pre></div>
-</div>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>orth (TYPE): Description</dd>
+<dd>orth (vector): vector</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>vector: Orthonormal to the input vector</dd>
 </dl>
 </dd></dl>
 
@@ -2162,42 +1944,32 @@ noself (bool, optional): Description</dd>
 <dt id="gensec.precon.model_matrix">
 <code class="descclassname">gensec.precon.</code><code class="descname">model_matrix</code><span class="sig-paren">(</span><em>bra</em>, <em>atom</em>, <em>builder</em>, <em>damper</em>, <em>thres</em>, <em>logfile=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.model_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Construct model Hessian.  Returns the HessianBuilder object.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">builder</span> <span class="o">=</span> <span class="n">HessianBuilder</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">damper</span> <span class="o">=</span> <span class="n">LindhExponent</span><span class="p">(</span><span class="n">atom2row</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>    <span class="c1"># Say, two hydrogens.</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">atom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">HB</span> <span class="o">=</span> <span class="n">model_matrix</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">atom</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">damper</span><span class="p">,</span> <span class="mf">10.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">HB</span> <span class="ow">is</span> <span class="n">builder</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">H</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="o">*</span><span class="mi">2</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="n">H</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="mf">0.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[:,</span><span class="mi">4</span><span class="p">:</span><span class="mi">6</span><span class="p">],</span> <span class="mf">0.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="mf">0.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">H</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="o">-</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
-</pre></div>
-</div>
+<p>Implementation of the Lindh Hessian preconditioner routine</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>bra (TYPE): Description
-atom (TYPE): Description
-builder (TYPE): Description
-damper (TYPE): Description
-thres (TYPE): Description
-logfile (None, optional): Description</dd>
+<dd>bra (matrix): bravais lattice vectors
+atom (array): Coordinates of atoms
+builder (object): Hessian builder
+damper (object): Lindh damping function LindhExponent(atom2row=[0, 0])
+two Hydrogens in this case
+thres (float): cutoff distance for atom pairs and so on
+logfile (None, optional): Logfile for output. Disabled
+in the module version of the implementation.</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>object: Builder object that produces Hessian matrix</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.name2row">
 <code class="descclassname">gensec.precon.</code><code class="descname">name2row</code><span class="sig-paren">(</span><em>atom_name</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.name2row" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return row number of atom type (starting with 0, max 2).</p>
+<dd><p>Name to row</p>
+<p>Returns row number of atom type (starting with 0, max 2).</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>atom_name (TYPE): Description</dd>
+<dd>atom_name (str): Symbol of the element</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>(int): Number of row of element</dd>
 </dl>
 </dd></dl>
 
@@ -2207,12 +1979,12 @@ logfile (None, optional): Description</dd>
 <dd><p>Summary</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>structure (TYPE): Description
-fixed_frame (TYPE): Description
-parameters (TYPE): Description
-atoms_current (TYPE): Description
-H (TYPE): Description
-task (str, optional): Description</dd>
+<dd>structure (ASE Atoms object): template structure object
+fixed_frame (ASE Atoms object): atoms in the fixed frame
+parameters (dict): parameters loaded from parameters file
+atoms_current (ASE Atoms object): atoms
+H (matrix): Current Hessian matrix
+task (str, optional): “update” or “initial”</dd>
 </dl>
 </dd></dl>
 
@@ -2232,19 +2004,20 @@ task (str, optional): Description</dd>
 </div>
 </dd>
 <dt>Args:</dt>
-<dd>Avec (TYPE): Description
-Bvec (TYPE): Description
-Cvec (TYPE): Description
-direction (None, optional): Description</dd>
+<dd>Avec (array): coordinate A
+Bvec (array): coordinate B
+Cvec (array): coordinate C
+direction (None, optional): order of atoms A, B and C</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>(float, array): Bond angle and derivative
+with respect to vectors Ab and BC</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.q_bond">
 <code class="descclassname">gensec.precon.</code><code class="descname">q_bond</code><span class="sig-paren">(</span><em>Avec</em>, <em>Bvec</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.q_bond" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bond length and derivative wrt vector AB.</p>
+<dd><p>Bond length and derivative with respect to vector AB.</p>
 <dl class="docutils">
 <dt>Test:</dt>
 <dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">q_bond</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">])[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.</span><span class="p">))</span>
@@ -2254,10 +2027,10 @@ direction (None, optional): Description</dd>
 </div>
 </dd>
 <dt>Args:</dt>
-<dd>Avec (TYPE): Description
-Bvec (TYPE): Description</dd>
+<dd>Avec (array): coordinate A
+Bvec (array): coordinate B</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>(float, array): Bond length and derivative with respect to vector AB</dd>
 </dl>
 </dd></dl>
 
@@ -2281,14 +2054,27 @@ Bvec (TYPE): Description</dd>
 </div>
 </dd>
 <dt>Args:</dt>
-<dd>Avec (TYPE): Description
-Bvec (TYPE): Description
-Cvec (TYPE): Description
-Dvec (TYPE): Description</dd>
+<dd>Avec (array): coordinate A
+Bvec (array): coordinate B
+Cvec (array): coordinate C
+Dvec (array): coordinate D</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-<dt>Raises:</dt>
-<dd>ValueError: Description</dd>
+<dd>(float, array): Bond torsion and derivative
+with respect to vectors AB, BC, and CD.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gensec.precon.rho_ij">
+<code class="descclassname">gensec.precon.</code><code class="descname">rho_ij</code><span class="sig-paren">(</span><em>A</em>, <em>B</em>, <em>R</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.rho_ij" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates rho between A and B atoms</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>A (str): chemical symbol of A
+B (str): chemical symbol of B
+R (float): Distance between atoms</dd>
+<dt>Returns:</dt>
+<dd>float: rho between A and B</dd>
 </dl>
 </dd></dl>
 
@@ -2298,7 +2084,8 @@ Dvec (TYPE): Description</dd>
 <dd><p>Set the constrains</p>
 <p>Adds the constrains for geometry optimizations to the Atoms object.
 During geometry optimization the forces on the constrained atoms
-will be always zero.</p>
+will be always zero. Multiple variants for setting of constrains
+are possible  for setting of the constrains.</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd>atoms (ASE Atoms object): Geometry to optimize
@@ -2307,35 +2094,34 @@ parameters (file): file with parameters for constrainings</dd>
 </dd></dl>
 
 <dl class="function">
-<dt id="gensec.precon.testmod">
-<code class="descclassname">gensec.precon.</code><code class="descname">testmod</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.testmod" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dt id="gensec.precon.vdW_element">
+<code class="descclassname">gensec.precon.</code><code class="descname">vdW_element</code><span class="sig-paren">(</span><em>k</em>, <em>l</em>, <em>C6</em>, <em>C12</em>, <em>R0</em>, <em>R</em>, <em>qi</em>, <em>qj</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.vdW_element" title="Permalink to this definition">¶</a></dt>
+<dd><p>VdW element</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>k (int): index of cartesian coordinates 0, 1 or 2
+l (int): index of cartesian coordinates 0, 1 or 2
+C6 (float): C6 coefficients between A and B
+C12 (float): C12 coefficients between A and B
+R0 (float): average vdW radii of atoms A and B
+R (float): distance between atoms A and B
+qi (float): Cartesian coordinates of atom A
+qj (float): Cartesian coordinates of atom B</dd>
+<dt>Returns:</dt>
+<dd>vdW element (float): vdW element of k and l</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="gensec.precon.vdwHessian">
 <code class="descclassname">gensec.precon.</code><code class="descname">vdwHessian</code><span class="sig-paren">(</span><em>atoms</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.vdwHessian" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>vdW Preconditioning scheme</p>
+<p>Calculates Hessian matrix with use of vdW preconditioning scheme.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>atoms (TYPE): Description</dd>
+<dd>atoms (ASE atoms object): atoms for which vdW Hessian is calculated</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="gensec.precon.vector_separation">
-<code class="descclassname">gensec.precon.</code><code class="descname">vector_separation</code><span class="sig-paren">(</span><em>cell_h</em>, <em>cell_ih</em>, <em>qi</em>, <em>qj</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.precon.vector_separation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>cell_h (TYPE): Description
-cell_ih (TYPE): Description
-qi (TYPE): Description
-qj (TYPE): Description</dd>
-<dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>matrix: Hessian matrix obtained with vdW preconditioning scheme.</dd>
 </dl>
 </dd></dl>
 
@@ -2383,22 +2169,35 @@ trials (int): Description</dd>
 <dt id="gensec.relaxation.Calculator">
 <em class="property">class </em><code class="descclassname">gensec.relaxation.</code><code class="descname">Calculator</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Summary</p>
+<p>Creates ASE calculator for performing of the geometry optimizations</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
-<dd>calculator (TYPE): Description</dd>
+<dd>calculator (TYPE): ASE calculator</dd>
 </dl>
 <dl class="method">
 <dt id="gensec.relaxation.Calculator.estimate_mu">
 <code class="descname">estimate_mu</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em>, <em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator.estimate_mu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Estimate scaling parameter mu for
+Expoential preconditioner scheme.
+For more implementation detail see Packwood et. al:
+A universal preconditioner for simulating condensed phase materials,
+J. Chem. Phys. 144, 164109 (2016).
+<a class="reference external" href="https://aip.scitation.org/doi/full/10.1063/1.4947024">https://aip.scitation.org/doi/full/10.1063/1.4947024</a></p>
+<p>and</p>
+<p><a class="reference external" href="https://wiki.fysik.dtu.dk/ase/ase/optimize.html">https://wiki.fysik.dtu.dk/ase/ase/optimize.html</a></p>
+<p>First reads the parameters file and checks if the
+estimation of mu is necessary. Then Estimates mu
+with default parameters of r_cut=2*r_NN, where r_NN
+is estimated nearest neighbour distance. Parameter
+A=3.0 set to default value as was mentioned in the
+paper.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>structure (TYPE): Description
-fixed_frame (TYPE): Description
-parameters (TYPE): Description</dd>
+<dd>structure {GenSec structure}: structure object
+fixed_frame {GenSec fixed frame}: fixed frame object
+parameters {JSON} : Parameters from file</dd>
 <dt>Returns:</dt>
-<dd>TYPE: Description</dd>
+<dd>float: Scaling parameter mu</dd>
 </dl>
 </dd></dl>
 
@@ -2411,14 +2210,11 @@ parameters.json file. If no “finished” reads the trajectory file and
 relax the structure.</p>
 <dl class="docutils">
 <dt>Arguments:</dt>
-<dd>structure (TYPE): Description
-fixed_frame (TYPE): Description
-parameters (TYPE): Description
-calculator (TYPE): Description
-structure {[type]} – Structure object
-fixed_frame {[type]} – Fixed frame object
-parameters {[type]} – parameters file
-directory {[type]} – the directory with unfinished calculation</dd>
+<dd>structure {GenSec structure}: structure object
+fixed_frame {GenSec fixed frame}: fixed frame object
+parameters {JSON} : Parameters from file
+directory {str} – Directory, where the calculation was carried out
+calculator (ASE Calculator): Calculator for performing relaxation</dd>
 </dl>
 </dd></dl>
 
@@ -2426,35 +2222,40 @@ directory {[type]} – the directory with unfinished calculation</dd>
 <dt id="gensec.relaxation.Calculator.finished">
 <code class="descname">finished</code><span class="sig-paren">(</span><em>directory</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator.finished" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mark, that calculation finished successfully</p>
-<p>Write file “finished” if the</p>
+<p>Write file “finished” if the geometry optimiztion is finished</p>
 <dl class="docutils">
 <dt>Arguments:</dt>
-<dd>directory (TYPE): Description
-directory {str} – Directory, where the calculation was carried out</dd>
+<dd>directory {str} – Directory, where the calculation was carried out</dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="gensec.relaxation.Calculator.relax">
 <code class="descname">relax</code><span class="sig-paren">(</span><em>structure</em>, <em>fixed_frame</em>, <em>parameters</em>, <em>directory</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator.relax" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Perform geometry optimization with specified ASE
+calculator.</p>
+<p>Merge the fixed frame and structure object into the
+Atoms object that enters then the geometry optimization
+routine.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>structure (TYPE): Description
-fixed_frame (TYPE): Description
-parameters (TYPE): Description
-directory (TYPE): Description</dd>
+<dd>structure {GenSec structure}: structure object
+fixed_frame {GenSec fixed frame}: fixed frame object
+parameters {JSON} : Parameters from file
+directory {str} – Directory, where the calculation was carried out</dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="gensec.relaxation.Calculator.set_constrains">
 <code class="descname">set_constrains</code><span class="sig-paren">(</span><em>atoms</em>, <em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.relaxation.Calculator.set_constrains" title="Permalink to this definition">¶</a></dt>
-<dd><p>Summary</p>
+<dd><p>Setting the constrains for geometry optimization</p>
+<p>For now only freezing of the atoms within
+specified values of z-coordinate is implemented.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>atoms (TYPE): Description
-parameters (TYPE): Description</dd>
+<dd>atoms {Atoms}: ASE Atoms  object
+parameters {JSON} : Parameters from file</dd>
 </dl>
 </dd></dl>
 
@@ -2468,10 +2269,10 @@ parameters (TYPE): Description</dd>
 <dt id="gensec.structure.Fixed_frame">
 <em class="property">class </em><code class="descclassname">gensec.structure.</code><code class="descname">Fixed_frame</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Fixed_frame" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Summary</p>
+<p>Object for fixed frame.</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
-<dd>fixed_frame (TYPE): Description
+<dd>fixed_frame (ASE Atoms): Atoms from specified file
 mic (bool): Description
 pbc (TYPE): Description</dd>
 </dl>
@@ -2504,7 +2305,7 @@ atoms {ase atoms object} – ASE Atoms object with cordinates</dd>
 <dt id="gensec.structure.Structure">
 <em class="property">class </em><code class="descclassname">gensec.structure.</code><code class="descname">Structure</code><span class="sig-paren">(</span><em>parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#gensec.structure.Structure" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Summary</p>
+<p>Crates the structure object with multiple molecules</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
 <dd>atoms (TYPE): Description
@@ -2603,7 +2404,7 @@ database (TYPE): Description
 parameters (TYPE): Description
 conf {dictionary} – Conformation stored in dictionary
 database {ASE database} – ASE database with other configurations
-parameters {file} – Parameters file</dd>
+parameters {JSON} : Parameters from file</dd>
 <dt>Returns:</dt>
 <dd>[boolean] – True if the configuration found in database</dd>
 </dl>
