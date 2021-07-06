@@ -790,7 +790,7 @@ class LBFGS_Linesearch_mod(LBFGS):
             if self.force_consistent:
                 w("*Force-consistent energies used in optimization.\n")
         w(
-            "%s:  %3d[%3d] %02d:%02d:%02d %15.6f%1s %12.4f\n"
+            "%s:  %3d [%3d] %02d:%02d:%02d %15.6f%1s %12.4f\n"
             % (
                 name,
                 self.nsteps,
@@ -1417,22 +1417,22 @@ class TRM_BFGS_IPI(BFGS):
                 "activate"
             ]
         ):
-            if self.steps > 10 and self.lastforce / current < 2.7:
-                print("################################Applying update")
-                self.H = preconditioned_hessian(
-                    self.structure,
-                    self.fixed_frame,
-                    self.parameters,
-                    self.atoms,
-                    self.H,
-                    task="update",
-                )
+            # if self.lastforce / current < 2.7:
+            print("################################Applying update")
+            self.H = preconditioned_hessian(
+                self.structure,
+                self.fixed_frame,
+                self.parameters,
+                self.atoms,
+                self.H,
+                task="update",
+            )
 
-                a0 = self.atoms.copy()
-                self.initial = a0
-                self.steps = 0
-                self.lastforce = current
-                self.tr = self.tr_init
+            a0 = self.atoms.copy()
+            self.initial = a0
+            self.steps = 0
+            self.lastforce = current
+            self.tr = self.tr_init
 
         accept = False
         while not accept:

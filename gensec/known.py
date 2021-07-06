@@ -29,7 +29,8 @@ class Known:
             parameters (TYPE): Description
         """
         if not any(
-            parameters["configuration"][i]["known"] for i in parameters["configuration"]
+            parameters["configuration"][i]["known"]
+            for i in parameters["configuration"]
         ):
             print("Keeping history is disabled")
             sys.exit(0)
@@ -199,11 +200,13 @@ class Known:
             TYPE: Description
         """
         similar = False
-        if np.linalg.norm(point - vector) < 1:
+        if np.linalg.norm(point - vector) < 0.5:
             similar = True
         return similar
 
-    def find_in_known(self, coords, parameters, structure, fixed_frame, criteria, t):
+    def find_in_known(
+        self, coords, parameters, structure, fixed_frame, criteria, t
+    ):
         """Summary
 
         Args:
@@ -270,7 +273,9 @@ class Known:
                 print("going through orientations")
                 if len(self.orientations.shape) > 1:
                     for point in range(1, len(self.orientations)):
-                        if self.orientational_diff(self.orientations[point], oo):
+                        if self.orientational_diff(
+                            self.orientations[point], oo
+                        ):
                             found = True
                             index = point
                             break
@@ -332,7 +337,9 @@ class Known:
         else:
             return None
 
-    def get_internal_vector(self, configuration, structure, fixed_frame, parameters):
+    def get_internal_vector(
+        self, configuration, structure, fixed_frame, parameters
+    ):
         """Summary
 
         Args:

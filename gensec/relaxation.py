@@ -298,7 +298,7 @@ class Calculator:
                 trajectory=os.path.join(
                     directory, "trajectory_{}.traj".format(name)
                 ),
-                maxstep=0.15,
+                maxstep=0.2,
                 initial=a0,
                 molindixes=list(range(len(a0))),
                 rmsd_dev=rmsd_threshhold,

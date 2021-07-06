@@ -58,10 +58,10 @@ class Structure:
             self.atoms.copy() for i in range(parameters["number_of_replicas"])
         ]
 
-        self.cycles = detect_cycles(self.connectivity_matrix_full)
-        self.list_of_torsions = exclude_rotatable_from_cycles(
-            self.list_of_torsions, self.cycles
-        )
+        # self.cycles = detect_cycles(self.connectivity_matrix_full)
+        # self.list_of_torsions = exclude_rotatable_from_cycles(
+        #     self.list_of_torsions, self.cycles
+        # )
 
         # if len(self.cycles) > 0:
         # for i in range(len(self.cycles)):
@@ -141,7 +141,9 @@ class Structure:
                     ]
                     == "exclusion"
                 ):
-                    exclude = np.eye(3)[choice([1, 2])]
+                    exclude = np.eye(3)[choice([0, 1, 2])]
+                    print("Exclude")
+                    print(exclude)
                     x = parameters["configuration"]["orientations"]["vector"][
                         "x"
                     ]
@@ -640,10 +642,10 @@ class Structure:
 
 class Fixed_frame:
 
-    """Summary
+    """Object for fixed frame.
 
     Attributes:
-        fixed_frame (TYPE): Description
+        fixed_frame (ASE Atoms): Atoms from specified file
         mic (bool): Description
         pbc (TYPE): Description
     """
