@@ -142,8 +142,8 @@ class Structure:
                     == "exclusion"
                 ):
                     exclude = np.eye(3)[choice([0, 1, 2])]
-                    print("Exclude")
-                    print(exclude)
+                    # print("Exclude")
+                    # print(exclude)
                     x = parameters["configuration"]["orientations"]["vector"][
                         "x"
                     ]

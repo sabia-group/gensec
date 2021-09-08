@@ -327,11 +327,38 @@ def vdW_element(k, l, C6, C12, R0, R, qi, qj):
         vdW element (float): vdW element of k and l
     """
     norm = (R0 / R) ** 2
-    a1 = 48 * C6 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / R0 ** 10
-    a2 = -168 * C12 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / R0 ** 16
+    a1 = 48 * C6 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / (R0 ** 10)
+    a2 = -168 * C12 * (qi[k] - qj[k]) * (qi[l] - qj[l]) * norm / (R0 ** 16)
     if k == l:
-        a3 = -6 * C6 / R0 ** 8
-        a4 = 12 * C12 / R0 ** 14
+        a3 = -6 * C6 / (R0 ** 8)
+        a4 = 12 * C12 / (R0 ** 14)
+    else:
+        a3 = 0
+        a4 = 0
+    return a1 + a2 + a3 + a4
+
+
+def vdW_element_exact(k, l, C6, C12, R0, R, qi, qj):
+    """Summary
+
+    Args:
+        k (TYPE): Description
+        l (TYPE): Description
+        C6 (TYPE): Description
+        C12 (TYPE): Description
+        R0 (TYPE): Description
+        R (TYPE): Description
+        qi (TYPE): Description
+        qj (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    a1 = 48 * C6 * (qi[k] - qj[k]) * (qi[l] - qj[l]) / R ** 10
+    a2 = -168 * C12 * (qi[k] - qj[k]) * (qi[l] - qj[l]) / R ** 16
+    if k == l:
+        a3 = -6 * C6 / R ** 8
+        a4 = 12 * C12 / R ** 14
     else:
         a3 = 0
         a4 = 0
@@ -398,7 +425,7 @@ def vdwHessian(atoms):
     # Calculate Acoustic sum rule
     hessian = ASR(hessian)
     # Add stabilization to the diagonal
-    hessian = add_jitter(hessian, jitter=0.005)
+    hessian = add_jitter(hessian, jitter=0.001)
     # Check if positive and symmetric:
     symmetric, positive = check_positive_symmetric(hessian)
     if not symmetric:
@@ -1802,16 +1829,24 @@ def preconditioned_hessian(
             # Calculate Acoustic sum rule
             preconditioned_hessian = ASR(preconditioned_hessian)
             # Add stabilization to the diagonal
-            jitter = 0.005
-            preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
+            preconditioned_hessian = add_jitter(
+                preconditioned_hessian, jitter=0.005
+            )
             # Check if positive and symmetric:
             symmetric, positive = check_positive_symmetric(
                 preconditioned_hessian
             )
 
-            p = preconditioned_hessian.copy()
-            preconditioned_hessian = nearestPD(preconditioned_hessian)
-            # preconditioned_hessian = add_jitter(preconditioned_hessian, jitter)
+            if not positive:
+                p = preconditioned_hessian.copy()
+                preconditioned_hessian = nearestPD(preconditioned_hessian)
+                preconditioned_hessian = add_jitter(
+                    preconditioned_hessian, jitter=0.005
+                )
+
+                symmetric, positive = check_positive_symmetric(
+                    preconditioned_hessian
+                )
 
             if not symmetric:
                 print(

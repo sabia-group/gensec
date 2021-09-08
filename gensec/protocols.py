@@ -74,10 +74,12 @@ class Protocol:
 
             while self.trials < parameters["trials"]:
                 while self.success < parameters["success"]:
+                    print(self.trials, self.success)
                     # Generate the vector in internal degrees of freedom
                     configuration, conf = structure.create_configuration(
                         parameters
                     )
+                    print(conf)
                     # Apply the configuration to structure
                     structure.apply_conf(conf)
                     # Check if that structure is sensible

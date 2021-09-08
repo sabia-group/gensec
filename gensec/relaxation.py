@@ -292,7 +292,7 @@ class Calculator:
                 restart=os.path.join(directory, "qn.pckl"),
             )
 
-        if parameters["calculator"]["algorithm"] == "trm":
+        if parameters["calculator"]["algorithm"] == "bfgs_trm":
             opt = TRM_BFGS_IPI(
                 atoms,
                 trajectory=os.path.join(
