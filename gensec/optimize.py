@@ -1435,6 +1435,7 @@ class TRM_BFGS_IPI(BFGS):
             self.tr = self.tr_init
 
         accept = False
+        rejected_steps = 0
         while not accept:
             # Step 1: r - positions, f - forces, self.H - Hessian, tr - trust region
             # Calculate test displacemets
@@ -1472,8 +1473,27 @@ class TRM_BFGS_IPI(BFGS):
             # print(accept, quality, self.tr )
             self.log_accept = accept
             if not accept:
+                rejected_steps += 1
                 self.log_rejected(forces=f1.reshape(-1, 3))
                 atoms.set_positions(r.reshape(-1, 3))
+                if rejected_steps == 10:
+                    # reset preconditioner
+                    self.H = preconditioned_hessian(
+                        self.structure,
+                        self.fixed_frame,
+                        self.parameters,
+                        self.atoms,
+                        self.H,
+                        task="update",
+                    )
+
+                    a0 = self.atoms.copy()
+                    self.initial = a0
+                    self.steps = 0
+                    self.lastforce = current
+                    self.tr = self.tr_init
+            else:
+                rejected_steps = 0
 
         y = np.subtract(f1, f)
         # print(y)

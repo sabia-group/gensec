@@ -573,7 +573,7 @@ class Structure:
         """
 
         mol_dict = dict(filter(lambda item: "t" in item[0], conf.items()))
-        thresh = 15
+        thresh = 5
         periodic_keys = []
         keys = []
         for i in mol_dict:
