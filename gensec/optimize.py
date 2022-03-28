@@ -1465,8 +1465,8 @@ class TRM_BFGS_IPI(BFGS):
             # Update TrustRadius (self.tr)
             if quality < 0.25:
                 self.tr = 0.5 * s_norm
-                if self.tr < 0.0001:
-                    self.tr = self.maxstep
+                # if self.tr < 0.0001:
+                # self.tr = self.maxstep
             elif quality > 0.75 and s_norm > 0.9 * self.tr:
                 self.tr = 2.0 * self.tr
                 if self.tr > self.maxstep:
@@ -1479,16 +1479,17 @@ class TRM_BFGS_IPI(BFGS):
                 rejected_steps += 1
                 self.log_rejected(forces=f1.reshape(-1, 3))
                 atoms.set_positions(r.reshape(-1, 3))
-                if rejected_steps == 10:
+                if rejected_steps == 20:
                     # reset preconditioner
-                    self.H = preconditioned_hessian(
-                        self.structure,
-                        self.fixed_frame,
-                        self.parameters,
-                        self.atoms,
-                        self.H,
-                        task="update",
-                    )
+                    self.H = np.eye(3 * len(self.atoms)) * 70
+                    # self.H = preconditioned_hessian(
+                    #     self.structure,
+                    #     self.fixed_frame,
+                    #     self.parameters,
+                    #     self.atoms,
+                    #     self.H,
+                    #     task="update",
+                    # )
 
                     a0 = self.atoms.copy()
                     self.initial = a0
