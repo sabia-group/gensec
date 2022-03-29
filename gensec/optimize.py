@@ -1460,7 +1460,7 @@ class TRM_BFGS_IPI(BFGS):
             # Compute quality:
             s_norm = np.linalg.norm(s)
             quality = true_gain / expected_gain
-            accept = quality > 0.1
+            accept = quality > 0.05
 
             # Update TrustRadius (self.tr)
             if quality < 0.25:
@@ -1471,7 +1471,7 @@ class TRM_BFGS_IPI(BFGS):
                 self.tr = 2.0 * self.tr
                 if self.tr > self.maxstep:
                     self.tr = self.maxstep
-            print("######### self.tr {}".format(self.tr))
+            # print("######### self.tr {}".format(self.tr))
 
             # print(accept, quality, self.tr )
             self.log_accept = accept
@@ -1479,7 +1479,7 @@ class TRM_BFGS_IPI(BFGS):
                 rejected_steps += 1
                 self.log_rejected(forces=f1.reshape(-1, 3))
                 atoms.set_positions(r.reshape(-1, 3))
-                if rejected_steps == 10:
+                if rejected_steps == 5:
                     # reset preconditioner
                     # self.H = np.eye(3 * len(self.atoms)) * 10
                     self.H = preconditioned_hessian(
@@ -1491,19 +1491,19 @@ class TRM_BFGS_IPI(BFGS):
                         task="update",
                     )
 
-                    a0 = self.atoms.copy()
-                    self.initial = a0
-                    self.steps = 0
-                    self.lastforce = current
-                    self.tr = self.tr_init
+                    # a0 = self.atoms.copy()
+                    # self.initial = a0
+                    # self.steps = 0
+                    # self.lastforce = current
+                    # self.tr = self.tr_init
                     break
             else:
                 rejected_steps = 0
 
         y = np.subtract(f1, f)
         # print(y)
-        self.update_BFGS(r.reshape(-1, 3) + s.reshape(-1, 3), f1, r, f)
-        # self.update_H(s.flatten(), y.flatten())
+        # self.update_BFGS(r.reshape(-1, 3) + s.reshape(-1, 3), f1, r, f)
+        self.update_H(s.flatten(), y.flatten())
         # sys.exit(0)
         self.r0 = r.flat.copy()
         self.f0 = f.copy()
