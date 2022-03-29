@@ -1464,10 +1464,10 @@ class TRM_BFGS_IPI(BFGS):
 
             # Update TrustRadius (self.tr)
             if quality < 0.25:
-                self.tr = 0.5 * s_norm
+                self.tr = 0.25 * s_norm
                 # if self.tr < 0.0001:
                 # self.tr = self.maxstep
-            elif quality > 0.75 and s_norm > 0.9 * self.tr:
+            elif quality > 0.75 and s_norm == self.tr:
                 self.tr = 2.0 * self.tr
                 if self.tr > self.maxstep:
                     self.tr = self.maxstep
