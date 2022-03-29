@@ -1481,15 +1481,15 @@ class TRM_BFGS_IPI(BFGS):
                 atoms.set_positions(r.reshape(-1, 3))
                 if rejected_steps == 10:
                     # reset preconditioner
-                    # self.H = np.eye(3 * len(self.atoms)) * 70
-                    self.H = preconditioned_hessian(
-                        self.structure,
-                        self.fixed_frame,
-                        self.parameters,
-                        self.atoms,
-                        self.H,
-                        task="update",
-                    )
+                    self.H = np.eye(3 * len(self.atoms)) * 10
+                    # self.H = preconditioned_hessian(
+                    # self.structure,
+                    # self.fixed_frame,
+                    # self.parameters,
+                    # self.atoms,
+                    # self.H,
+                    # task="update",
+                    # )
 
                     a0 = self.atoms.copy()
                     self.initial = a0
