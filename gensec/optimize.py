@@ -1460,11 +1460,11 @@ class TRM_BFGS_IPI(BFGS):
             # Compute quality:
             s_norm = np.linalg.norm(s)
             quality = true_gain / expected_gain
-            accept = quality > 0.05
+            accept = quality > 0.1
 
             # Update TrustRadius (self.tr)
             if quality < 0.25:
-                self.tr = 0.25 * s_norm
+                self.tr = 0.25 * self.tr
                 # if self.tr < 0.0001:
                 # self.tr = self.maxstep
             elif quality > 0.75 and s_norm == self.tr:
