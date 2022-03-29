@@ -1472,7 +1472,10 @@ class TRM_BFGS_IPI(BFGS):
                 if self.tr > self.maxstep:
                     self.tr = self.maxstep
             # print("######### self.tr {}".format(self.tr))
-
+            y = np.subtract(f1, f)
+            # print(y)
+            # self.update_BFGS(r.reshape(-1, 3) + s.reshape(-1, 3), f1, r, f)
+            self.update_H(s.flatten(), y.flatten())
             # print(accept, quality, self.tr )
             self.log_accept = accept
             if not accept:
