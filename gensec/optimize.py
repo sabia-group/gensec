@@ -1502,8 +1502,8 @@ class TRM_BFGS_IPI(BFGS):
 
         y = np.subtract(f1, f)
         # print(y)
-        # self.update_BFGS(r.reshape(-1,3) + s.reshape(-1,3), f1, r, f)
-        self.update_H(s.flatten(), y.flatten())
+        self.update_BFGS(r.reshape(-1, 3) + s.reshape(-1, 3), f1, r, f)
+        # self.update_H(s.flatten(), y.flatten())
         # sys.exit(0)
         self.r0 = r.flat.copy()
         self.f0 = f.copy()
