@@ -1464,45 +1464,47 @@ class TRM_BFGS_IPI(BFGS):
 
             # Update TrustRadius (self.tr)
             if quality < 0.25:
-                self.tr = 0.25 * self.tr
+                self.tr = 0.5 * s_norm
                 # if self.tr < 0.0001:
                 # self.tr = self.maxstep
-            elif quality > 0.75 and s_norm == self.tr:
+            elif quality > 0.75 and s_norm > 0.9 * self.tr:
                 self.tr = 2.0 * self.tr
                 if self.tr > self.maxstep:
                     self.tr = self.maxstep
             # print("######### self.tr {}".format(self.tr))
-            y = np.subtract(f1, f)
-            # print(y)
-            # self.update_BFGS(r.reshape(-1, 3) + s.reshape(-1, 3), f1, r, f)
-            self.update_H(s.flatten(), y.flatten())
+
             # print(accept, quality, self.tr )
-            self.log_accept = accept
-            if not accept:
-                rejected_steps += 1
-                self.log_rejected(forces=f1.reshape(-1, 3))
-                atoms.set_positions(r.reshape(-1, 3))
-                if rejected_steps == 5:
-                    # reset preconditioner
-                    # self.H = np.eye(3 * len(self.atoms)) * 10
-                    self.H = preconditioned_hessian(
-                        self.structure,
-                        self.fixed_frame,
-                        self.parameters,
-                        self.atoms,
-                        self.H,
-                        task="update",
-                    )
 
-                    # a0 = self.atoms.copy()
-                    # self.initial = a0
-                    # self.steps = 0
-                    # self.lastforce = current
-                    # self.tr = self.tr_init
-                    break
-            else:
-                rejected_steps = 0
+            # self.log_accept = accept
+            # if not accept:
+            #     rejected_steps += 1
+            #     self.log_rejected(forces=f1.reshape(-1, 3))
+            #     atoms.set_positions(r.reshape(-1, 3))
+            #     if rejected_steps == 5:
+            #         # reset preconditioner
+            #         # self.H = np.eye(3 * len(self.atoms)) * 10
+            #         self.H = preconditioned_hessian(
+            #             self.structure,
+            #             self.fixed_frame,
+            #             self.parameters,
+            #             self.atoms,
+            #             self.H,
+            #             task="update",
+            #         )
 
+            #         # a0 = self.atoms.copy()
+            #         # self.initial = a0
+            #         # self.steps = 0
+            #         # self.lastforce = current
+            #         # self.tr = self.tr_init
+            #         break
+            # else:
+            #     rejected_steps = 0
+
+        y = np.subtract(f1, f)
+        # print(y)
+        # self.update_BFGS(r.reshape(-1, 3) + s.reshape(-1, 3), f1, r, f)
+        self.update_H(s.flatten(), y.flatten())
         y = np.subtract(f1, f)
         # print(y)
         # self.update_BFGS(r.reshape(-1, 3) + s.reshape(-1, 3), f1, r, f)
