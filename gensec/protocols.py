@@ -92,7 +92,7 @@ class Protocol:
                                 conf, db_relaxed, parameters
                             ):
                                 if not structure.find_in_database(
-                                    conf, db_relaxed, parameters
+                                    conf, db_trajectories, parameters
                                 ):
                                     db_generated.write(
                                         structure.atoms_object(), **conf
@@ -186,7 +186,7 @@ class Protocol:
                                 conf, db_relaxed, parameters
                             ):
                                 if not structure.find_in_database(
-                                    conf, db_relaxed, parameters
+                                    conf, db_trajectories, parameters
                                 ):
                                     db_generated.write(
                                         structure.atoms_object(), **conf
@@ -215,7 +215,7 @@ class Protocol:
                             conf, db_relaxed, parameters
                         ):
                             if not structure.find_in_database(
-                                conf, db_relaxed, parameters
+                                conf, db_trajectories, parameters
                             ):
                                 print(
                                     "This is row ID that is taken for calculation",

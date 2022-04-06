@@ -1294,7 +1294,7 @@ class TRM_BFGS_IPI(BFGS):
         restart=None,
         logfile="-",
         trajectory=None,
-        maxstep=0.15,
+        maxstep=0.2,
         master=None,
         initial=None,
         rmsd_dev=1000.0,
@@ -1360,6 +1360,16 @@ class TRM_BFGS_IPI(BFGS):
         self.steps = 0
         self.lastforce = None
         self.restart = restart
+
+        self.s_norm = None
+        self.quality = None
+        self.f_test = None
+        self.f1_test = None
+        self.u_test = None
+        self.u0_test = None
+        self.true_gain_test = None
+        self.expected_gain_test = None
+        self.force_consistent = False
 
         if self.H is None:
             self.H = self.H0
@@ -1457,64 +1467,47 @@ class TRM_BFGS_IPI(BFGS):
             true_gain = u - u0
             expected_gain = -np.dot(f, s) + 0.5 * np.dot(s, np.dot(self.H, s))
 
+            self.f_test = f
+            self.f1_test = f1
+            self.u_test = u
+            self.u0_test = u0
+            self.true_gain_test = true_gain
+            self.expected_gain_test = expected_gain
+
             # Compute quality:
             s_norm = np.linalg.norm(s)
             quality = true_gain / expected_gain
             accept = quality > 0.1
-
+            self.log_accept = accept
+            self.quality = quality
+            self.s_norm = s_norm
             # Update TrustRadius (self.tr)
+
+            y = np.subtract(f1, f)
+            self.update_H(s.flatten(), y.flatten())
+
+            if not accept:
+                self.log_rejected(forces=f1.reshape(-1, 3))
+
+                # self.H = np.eye(3 * len(self.atoms)) * s_norm
+
             if quality < 0.25:
                 self.tr = 0.25 * self.tr
-                # if self.tr < 0.0001:
-                # self.tr = self.maxstep
-            elif quality > 0.75 and s_norm > 0.9 * self.tr:
+                if quality < -20:
+                    self.H = np.eye(3 * len(self.atoms))
+                    self.tr = 0.1
+                    y = np.subtract(f1, f)
+                    self.update_H(s.flatten(), y.flatten())
+            elif quality > 0.75 and s_norm < 0.8 * self.tr:
                 self.tr = 2.0 * self.tr
                 if self.tr > self.maxstep:
                     self.tr = self.maxstep
-            # print("######### self.tr {}".format(self.tr))
 
-            # print(accept, quality, self.tr )
+                # rejected_steps += 1
+                # atoms.set_positions(r.reshape(-1, 3))
 
-            self.log_accept = accept
-            if not accept:
-                rejected_steps += 1
-                self.log_rejected(forces=f1.reshape(-1, 3))
-                atoms.set_positions(r.reshape(-1, 3))
-                # if rejected_steps == 5:
-                # reset preconditioner
-                # self.H = np.eye(3 * len(self.atoms))
-                # self.H = preconditioned_hessian(
-                # self.structure,
-                # self.fixed_frame,
-                # self.parameters,
-                # self.atoms,
-                # self.H,
-                # task="update",
-                # )
-
-                # a0 = self.atoms.copy()
-                # self.initial = a0
-                # self.steps = 0
-                # self.lastforce = current
-                # self.tr = self.tr_init
-                # break
-                # break
-            else:
-                rejected_steps = 0
-
-        y = np.subtract(f1, f)
-        # print(y)
-        # self.update_BFGS(r.reshape(-1, 3) + s.reshape(-1, 3), f1, r, f)
-        self.update_H(s.flatten(), y.flatten())
-        y = np.subtract(f1, f)
-        # print(y)
-        # self.update_BFGS(r.reshape(-1, 3) + s.reshape(-1, 3), f1, r, f)
-        self.update_H(s.flatten(), y.flatten())
-        # sys.exit(0)
-        self.r0 = r.flat.copy()
-        self.f0 = f.copy()
-        f = f1.copy()
-        r = (r.reshape(-1, 3) + s.reshape(-1, 3)).copy()
+        self.r0 = (r.reshape(-1, 3) + s.reshape(-1, 3)).copy()
+        self.f0 = f1.copy()
         self.dump((self.H, self.r0, self.f0, self.maxstep))
 
     def min_trm(self, f, h, tr):
@@ -1635,8 +1628,20 @@ class TRM_BFGS_IPI(BFGS):
                     "Energy",
                     "fmax",
                     "accepted",
+                    "trust_radius",
+                    "s_norm",
+                    "quality",
+                    # "f",
+                    # "f1",
+                    "u",
+                    "u0",
+                    "true_gain",
+                    "expected_gain",
                 )
-                msg = "%s  %4s %8s %15s %12s %12s\n" % args
+                msg = (
+                    "%s  %4s %8s %15s %12s %12s %12s %12s %12s %12s %12s %12s %12s\n"
+                    % args
+                )
                 self.logfile.write(msg)
 
                 if self.force_consistent:
@@ -1654,8 +1659,20 @@ class TRM_BFGS_IPI(BFGS):
                 ast,
                 fmax,
                 self.log_accept,
+                self.tr,
+                self.s_norm,
+                self.quality,
+                # self.f_test,
+                # self.f1_test,
+                self.u_test,
+                self.u0_test,
+                self.true_gain_test,
+                self.expected_gain_test,
             )
-            msg = "%s:  %3d %02d:%02d:%02d %15.6f%1s %12.4f %12s\n" % args
+            msg = (
+                "%s:  %3d %02d:%02d:%02d %15.6f%1s %12.4f %12s  %12s %12s %12s %12s %12s %12s %12s\n"
+                % args
+            )
             self.logfile.write(msg)
 
             self.logfile.flush()
@@ -1685,8 +1702,20 @@ class TRM_BFGS_IPI(BFGS):
                     "Energy",
                     "fmax",
                     "accepted",
+                    "trust_radius",
+                    "s_norm",
+                    "quality",
+                    # "f",
+                    # "f1",
+                    "u",
+                    "u0",
+                    "true_gain",
+                    "expected_gain",
                 )
-                msg = "%s  %4s %8s %15s %12s %12s\n" % args
+                msg = (
+                    "%s  %4s %8s %15s %12s %12s %12s %12s %12s %12s %12s %12s %12s\n"
+                    % args
+                )
                 # self.logfile.write(msg)
 
                 if self.force_consistent:
@@ -1704,8 +1733,20 @@ class TRM_BFGS_IPI(BFGS):
                 ast,
                 fmax,
                 self.log_accept,
+                self.tr,
+                self.s_norm,
+                self.quality,
+                # self.f_test,
+                # self.f1_test,
+                self.u_test,
+                self.u0_test,
+                self.true_gain_test,
+                self.expected_gain_test,
             )
-            msg = "%s:  %3d %02d:%02d:%02d %15.6f%1s %12.4f %12s\n" % args
+            msg = (
+                "%s:  %3d %02d:%02d:%02d %15.6f%1s %12.4f %12s %12s %12s %12s %12s %12s %12s %12s\n"
+                % args
+            )
             self.logfile.write(msg)
 
             self.logfile.flush()
