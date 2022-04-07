@@ -1,0 +1,78 @@
+
+{
+	"name" : "di_l_alanine_cu110",
+	"trials": 1000,
+	"success": 1500,
+	"number_of_replicas" : 1,
+	"geometry" : ["geometry_3P-SH.in", "aims"], 
+	"fixed_frame" : {"activate" : true,
+					"filename" : "slab.in",
+					"format" : "aims"
+				},
+	"mic" : {"activate" : true,
+			"pbc": [[18.97210800,      0.00000000,      0.00000000],
+			 [-9.48606000,     16.43033800,      0.00000000],
+			 [0.0000000000000000, 0.0000000000000000, 100.0 ]]
+		},
+	"configuration" : {
+		"torsions" : {
+					"activate" : true,
+					"known" : false, 
+					"same" : false, 
+					"list_of_tosrions" :  [[7,8,0,5],[4,3,13,14]], 
+					"values": "random"
+		},  
+		"orientations" : {
+					"activate" : true,
+					"known" : true, 
+					"same" : false, 
+					"values": "random",
+					"angle" : 1,
+					"vector":{
+                        "Type":"exclusion",
+                        "x" : [0],
+                        "y" : [0],
+                        "z" : [1]
+					}
+		},
+		"coms" : {
+					"activate" : true,
+					"same" : false, 
+					"known" : true, 
+					"values": "restricted",
+					"x_axis" : [0, 10, 10],
+					"y_axis" : [0, 10, 10],
+					"z_axis" : [3, 6, 10]
+		}
+	},	
+
+	"protocol" : {
+		"generate" : {
+			"activate":false,
+			"method":"random"
+		},
+    	"search" : {
+			"activate":true,
+			"method":"random",
+			"folder": "temp1"
+		}
+	},
+	"calculator" : {
+		"supporting_files_folder": "supporting",
+		"ase_parameters_file" : "ase_command.py",  
+		"algorithm" : "bfgs_trm",
+		"fmax" : 0.01,
+		"preconditioner" : {
+			"mol" : {"initial": true, "update": false, "precon" : "Lindh"},
+			"fixed_frame" : {"initial": true, "update": false, "precon" : "Lindh"}, 
+			"mol-mol" : {"initial": true, "update": false, "precon" : "Lindh"},
+			"mol-fixed_frame" : {"initial": true, "update": false, "precon" : "Lindh"},
+			"rmsd_update" : {"activate":false, "value":0.05}
+		},
+		"constraints" : {
+			"symbol" : "Cu",
+			"z-coord" : [-10, -9]
+		}
+	}		 
+    
+}

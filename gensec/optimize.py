@@ -1498,7 +1498,7 @@ class TRM_BFGS_IPI(BFGS):
                     self.tr = 0.1
                     y = np.subtract(f1, f)
                     self.update_H(s.flatten(), y.flatten())
-            elif quality > 0.75 and s_norm < 0.8 * self.tr:
+            elif quality > 0.75 and s_norm > 0.9 * self.tr:
                 self.tr = 2.0 * self.tr
                 if self.tr > self.maxstep:
                     self.tr = self.maxstep
