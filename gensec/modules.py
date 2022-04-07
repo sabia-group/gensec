@@ -653,7 +653,49 @@ def intramolecular_clashes(structure):
             + len(structure.molecules[i]),
         ] = values
 
-    return not all(i >= 1.4 for i in distances.flatten())
+    return not all(
+        i >= structure.clashes_intramolecular for i in distances.flatten()
+    )
+
+
+def adsorption_point(structure, fixed_frame):
+    from ase import Atoms
+    import sys
+
+    """Checks for distance between molecules point
+
+    Claculates distances between all atoms in all molecules
+    with selected point. Passed if at least one of the
+    closest atom is within the specified range.
+
+    Arguments:
+        structure {list} -- list of the molecules
+
+    Returns:
+        boolean -- False if at lesat one of the closest molecular atom
+        is within the specified range
+    """
+    mols = structure.molecules[0].copy()
+    for molecule in structure.molecules[1:]:
+        mols.extend(molecule)
+
+    all_atoms = mols + Atoms("X", positions=[structure.adsorption_point])
+    # print(all_atoms)
+    # print(all_atoms.index)
+    d = all_atoms.get_distances(
+        a=-1, indices=range(len(all_atoms) - 1), mic=fixed_frame.mic
+    )
+
+    # closest_ind = list(d).index(min(d))
+    closest_distance = min(d)
+
+    print(closest_distance)
+
+    return (
+        structure.adsorption_range[0]
+        < closest_distance
+        < structure.adsorption_range[-1]
+    )
 
 
 def clashes_with_fixed_frame(structure, fixed_frame):
@@ -661,18 +703,16 @@ def clashes_with_fixed_frame(structure, fixed_frame):
 
     Claculates distances between all atoms in all molecules
     with all atoms in the fixed frame. Passed if all the
-    distances are greater than 2.0 A. Periodic boundary
+    distances are greater than specified distance in A. Periodic boundary
     conditions are taken into account with use of the
     mic=fixed_frame.mic
 
     Arguments:
-        structure (TYPE): Description
-        fixed_frame (TYPE): Description
         structure {list} -- list of the molecules
         fixed_frame {Atoms object} -- atoms in fixed frame
 
     Returns:
-        boolean -- False if all the distances are greater than 2.0 A
+        boolean -- False if all the distances are greater than specified distance in A
     """
     mols = structure.molecules[0].copy()
     for molecule in structure.molecules[1:]:
@@ -694,7 +734,9 @@ def clashes_with_fixed_frame(structure, fixed_frame):
         len(mols) : len(mols) + fixed_frame.get_len(),
     ] = values_fixed
 
-    return not all(i >= 2.0 for i in distances.flatten())
+    return not all(
+        i >= structure.clashes_with_fixed_frame for i in distances.flatten()
+    )
 
 
 def all_right(structure, fixed_frame):
@@ -720,9 +762,14 @@ def all_right(structure, fixed_frame):
         else:
             if hasattr(fixed_frame, "fixed_frame"):
                 if not clashes_with_fixed_frame(structure, fixed_frame):
-                    ready = True
+                    if structure.adsorption:
+                        if adsorption_point(structure, fixed_frame):
+                            ready = True
+                    else:
+                        ready = True
             else:
                 ready = True
+
     return ready
 
 

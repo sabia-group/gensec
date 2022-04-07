@@ -57,7 +57,20 @@ class Structure:
         self.molecules = [
             self.atoms.copy() for i in range(parameters["number_of_replicas"])
         ]
-
+        self.clashes_intramolecular = parameters["configuration"]["clashes"][
+            "intramolecular"
+        ]
+        self.clashes_with_fixed_frame = parameters["configuration"]["clashes"][
+            "with_fixed_frame"
+        ]
+        if parameters["configuration"]["adsorption"]["activate"]:
+            self.adsorption = True
+            self.adsorption_range = parameters["configuration"]["adsorption"][
+                "range"
+            ]
+            self.adsorption_point = parameters["configuration"]["adsorption"][
+                "point"
+            ]
         # self.cycles = detect_cycles(self.connectivity_matrix_full)
         # self.list_of_torsions = exclude_rotatable_from_cycles(
         #     self.list_of_torsions, self.cycles

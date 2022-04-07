@@ -29,10 +29,10 @@
 					"values": "random",
 					"angle" : 1,
 					"vector":{
-                        "Type":"exclusion",
-                        "x" : [0],
-                        "y" : [0],
-                        "z" : [1]
+						"Type":"exclusion",
+						"x" : [0],
+						"y" : [0],
+						"z" : [1]
 					}
 		},
 		"coms" : {
@@ -40,12 +40,19 @@
 					"same" : false, 
 					"known" : true, 
 					"values": "restricted",
-					"x_axis" : [0, 10, 10],
-					"y_axis" : [0, 10, 10],
-					"z_axis" : [3, 6, 10]
+					"x_axis" : [0, 15, 20],
+					"y_axis" : [0, 15, 20],
+					"z_axis" : [4, 7, 20]
+		},
+		"clashes" : {"intramolecular" : 2.0,
+					"with_fixed_frame" : 1.5
+		},
+		"adsorption" : {"activate":true,
+						"range": [0.5, 3.0],
+						"point": [9.5629, 0.2583, -0.1758]
 		}
-	},	
-
+},
+	
 	"protocol" : {
 		"generate" : {
 			"activate":true,
@@ -70,9 +77,7 @@
 			"rmsd_update" : {"activate":false, "value":0.05}
 		},
 		"constraints" : {
-			"symbol" : "Cu",
-			"z-coord" : [-10, -9]
+			"fix_atoms" : [-10, -9]
 		}
-	}		 
-    
+	}
 }

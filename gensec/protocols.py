@@ -100,6 +100,11 @@ class Protocol:
                                     self.success = db_generated.count()
                                     self.trials = 0
                                     print("Good", conf)
+                                    write(
+                                        "good_luck.xyz",
+                                        merge_together(structure, fixed_frame),
+                                        format="xyz",
+                                    )
                                     print("Generated structures", self.success)
                         else:
                             print("Found in database")
