@@ -38,7 +38,7 @@ def set_constrains(atoms, parameters):
         parameters (file): file with parameters for constrainings
     """
 
-    z = parameters["calculator"]["constraints"]["z-coord"]
+    z = parameters["calculator"]["constraints"]["fix_atoms"]
     c = FixAtoms(
         indices=[atom.index for atom in atoms if atom.position[2] <= z[-1]]
     )
