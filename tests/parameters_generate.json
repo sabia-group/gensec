@@ -43,7 +43,7 @@
 		},
 		"clashes" : {"intramolecular" : 2.0,
 					"with_fixed_frame" : 1.5
-		},
+		}
 	},	
 
 	"protocol" : {
