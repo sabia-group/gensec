@@ -40,7 +40,10 @@
 					"x_axis" : [2, 10, 10],
 					"y_axis" : [2, 10, 10],
 					"z_axis" : [40, 45, 10]
-		}
+		},
+		"clashes" : {"intramolecular" : 2.0,
+					"with_fixed_frame" : 1.5
+		},
 	},	
 
 	"protocol" : {
@@ -57,7 +60,7 @@
 	"calculator" : {
 		"supporting_files_folder": "supporting",
 		"ase_parameters_file" : "ase_command.py",  
-		"optimize" : "generate",
+		"algorithm" : "bfgs_trm",
 		"fmax" : 0.075,
 		"preconditioner" : {
 			"mol" : {"initial": false, "update": false, "precon" : "ID"},
@@ -67,8 +70,7 @@
 			"rmsd_update" : {"activate":false, "value":0.25}
 		},
 		"constraints" : {
-			"symbol" : "Al",
-			"z-coord" : [29, 32]
+			"fix_atoms" : [29, 32]
 		}
 	}		 
     
