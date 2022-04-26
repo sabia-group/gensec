@@ -2,7 +2,7 @@
 GenSec (Generation and Search)
 """""""""""""""""""""""""""""""
 ++++++++++++++++++++++++++++++++++
-The life is much better if it sampled enough
+Will send structures to local minima
 ++++++++++++++++++++++++++++++++++
 
 .. contents:: Overview
@@ -11,11 +11,8 @@ The life is much better if it sampled enough
 ============
 Introduction
 ============
-Structure search for organic/inorganic interfaces is a challenging task due to large amount of degrees of freedom that presented by high flexibility of biomolecules. We develop structure search sampling package intended to explore conformational spaces of flexible molecules also with respect to fixed surroundings. In the package we implement flexible way for preconditioning of geometry optimization BFGS algorithm based on Exp (cite), vdW (cite) and FF (cite) like terms. 
 
-Authors: Dmitrii Maksimov
-
-! This page is under construction !
+GenSec performs a quasi-random global structure search, with the ability to choose different internal degrees of freedom of molecules and sample them with respect to specified fixed surroundings that can be, in general, 1D (e.g. ions), 2D (e.g. surfaces) or 3D (e.g. solids) static references. The efficiency of the random structure search can be increased dramatically first by imposing constraints on the generated structures, avoiding clashes between atoms and keeping the database of previously calculated structures in order to avoid repetitive calculations.  The geometry optimizations are performed by a connection with the ASE environment, which can be connected to many electronic structure and FF packages and offers the choice of a variety of geometry optimization routines, which we have improved. The connection to the ASE database support makes it possible to perform multiple searches in parallel with shared access to the information obtained from all the searches. 
 
 ============
 Installation
@@ -34,8 +31,7 @@ Installing of dependencies::
 Quick start
 ============================
 
-For performing of the structure search the parameters.json file is required where
-all the settings are specified.
+! This section is under construction !
 
 
 
