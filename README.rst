@@ -22,16 +22,13 @@ Installation
 ============
 GenSec requires Python 3.8, 3.9, or 3.10.
 
-Download the package:
+Download the package::
 
-```
 git clone https://github.com/sabia-group/gensec.git
-```
-Installing of dependencies
 
-```
+Installing of dependencies::
+
 pip install ase numpy networkx
-```
 
 ============================
 Manual
