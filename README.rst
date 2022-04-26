@@ -20,19 +20,18 @@ Authors: Dmitrii Maksimov
 ============
 Installation
 ============
-First download the package
+GenSec requires Python 3.8, 3.9, or 3.10.
 
-```sh
-$ git clone https://github.com/sabia-group/gensec.git
+Download the package:
+
 ```
+git clone https://github.com/sabia-group/gensec.git
+```
+Installing of dependencies
 
-We recommend to install dependensies with use of anaconda environments.
-Numpy
-ASE
-networkx
-
-If you want to use gensec as a python library add it to PYTHONPATH
-import gensec
+```
+pip install ase numpy networkx
+```
 
 ============================
 Manual
