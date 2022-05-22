@@ -167,9 +167,9 @@ class TestStructure(unittest.TestCase):
         np.testing.assert_array_almost_equal(coords, coords_ref)
 
     def test_find_center_of_mass(self):
-        """Identify the orientation of the molecule
+        """Identify the center of mass of the molecule
 
-        Calculate the orientation of the molecule.
+        Calculate the center of mass of the molecule.
         """
         dirname, filename = os.path.split(os.path.abspath(__file__))
         atoms = read(

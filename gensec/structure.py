@@ -2,7 +2,7 @@
 """
 from gensec.modules import *
 from ase.io import read, write
-from random import random, randint, uniform, choice
+from random import random, randint, uniform, choice, sample
 import itertools
 
 
@@ -71,10 +71,10 @@ class Structure:
             self.adsorption_point = parameters["configuration"]["adsorption"][
                 "point"
             ]
-        # self.cycles = detect_cycles(self.connectivity_matrix_full)
-        # self.list_of_torsions = exclude_rotatable_from_cycles(
-        #     self.list_of_torsions, self.cycles
-        # )
+        self.cycles = detect_cycles(self.connectivity_matrix_full)
+        self.list_of_torsions = exclude_rotatable_from_cycles(
+            self.list_of_torsions, self.cycles
+        )
 
         # if len(self.cycles) > 0:
         # for i in range(len(self.cycles)):
@@ -123,7 +123,7 @@ class Structure:
             if not parameters["configuration"]["orientations"]["activate"]:
                 quaternion = [0, 0, 0, 1]
                 q = {
-                    "m{}q{}".format(label, i): default[i]
+                    "m{}q{}".format(label, i): quaternion[i]
                     for i in range(len(quaternion))
                 }
                 return quaternion, q
@@ -469,18 +469,64 @@ class Structure:
                 )
             )
             # Set torsions
-            for t in range(len(self.list_of_torsions)):
-                fixed_indices = carried_atoms(
-                    self.connectivity_matrix_isolated, self.list_of_torsions[t]
-                )
-                self.molecules[i].set_dihedral(
-                    angle=list(t_dict.values())[t],
-                    a1=self.list_of_torsions[t][0],
-                    a2=self.list_of_torsions[t][1],
-                    a3=self.list_of_torsions[t][2],
-                    a4=self.list_of_torsions[t][3],
-                    indices=fixed_indices,
-                )
+            if len(self.list_of_torsions) >= 10:
+
+                t = 0
+                # for t in range(len(self.list_of_torsions)):
+                while t < len(self.list_of_torsions):
+                    fixed_indices = carried_atoms(
+                        self.connectivity_matrix_isolated,
+                        self.list_of_torsions[t],
+                    )
+                    self.molecules[i].set_dihedral(
+                        angle=randint(1, 360),
+                        a1=self.list_of_torsions[t][0],
+                        a2=self.list_of_torsions[t][1],
+                        a3=self.list_of_torsions[t][2],
+                        a4=self.list_of_torsions[t][3],
+                        indices=fixed_indices,
+                    )
+                    if not internal_clashes(self):
+                        print("Torsion {} is ok".format(t))
+                        t += 1
+                else:
+                    pass
+                # numtorsions = randint(1, 2)
+                # # len(self.list_of_torsions) // 10
+                # # print("Select {} of torsions".format(numtorsions))
+                # torsions_to_change = sample(
+                #     range(len(self.list_of_torsions)), numtorsions
+                # )
+                # print(torsions_to_change)
+                # for t in torsions_to_change:
+                #     fixed_indices = carried_atoms(
+                #         self.connectivity_matrix_isolated,
+                #         self.list_of_torsions[t],
+                #     )
+                #     self.molecules[i].set_dihedral(
+                #         angle=list(t_dict.values())[t],
+                #         a1=self.list_of_torsions[t][0],
+                #         a2=self.list_of_torsions[t][1],
+                #         a3=self.list_of_torsions[t][2],
+                #         a4=self.list_of_torsions[t][3],
+                #         indices=fixed_indices,
+                #     )
+
+            else:
+                for t in range(len(self.list_of_torsions)):
+                    fixed_indices = carried_atoms(
+                        self.connectivity_matrix_isolated,
+                        self.list_of_torsions[t],
+                    )
+                    self.molecules[i].set_dihedral(
+                        angle=list(t_dict.values())[t],
+                        a1=self.list_of_torsions[t][0],
+                        a2=self.list_of_torsions[t][1],
+                        a3=self.list_of_torsions[t][2],
+                        a4=self.list_of_torsions[t][3],
+                        indices=fixed_indices,
+                    )
+
             # Set orientation
             quaternion_set(
                 self.molecules[i],

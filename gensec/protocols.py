@@ -79,7 +79,7 @@ class Protocol:
                     configuration, conf = structure.create_configuration(
                         parameters
                     )
-                    print(conf)
+                    # print(conf)
                     # Apply the configuration to structure
                     structure.apply_conf(conf)
                     # Check if that structure is sensible
@@ -97,8 +97,9 @@ class Protocol:
                                     db_generated.write(
                                         structure.atoms_object(), **conf
                                     )
-                                    self.success = db_generated.count()
                                     self.trials = 0
+                                    self.success = db_generated.count()
+
                                     print("Good", conf)
                                     write(
                                         "good_luck.xyz",
