@@ -472,22 +472,27 @@ class Structure:
             if len(self.list_of_torsions) >= 10:
 
                 t = 0
+                ttt = sample(
+                    range(len(self.list_of_torsions)),
+                    len(self.list_of_torsions),
+                )
+                # print(sampled_torsions)
                 # for t in range(len(self.list_of_torsions)):
                 while t < len(self.list_of_torsions):
                     fixed_indices = carried_atoms(
                         self.connectivity_matrix_isolated,
-                        self.list_of_torsions[t],
+                        self.list_of_torsions[ttt[t]],
                     )
                     self.molecules[i].set_dihedral(
                         angle=randint(1, 360),
-                        a1=self.list_of_torsions[t][0],
-                        a2=self.list_of_torsions[t][1],
-                        a3=self.list_of_torsions[t][2],
-                        a4=self.list_of_torsions[t][3],
+                        a1=self.list_of_torsions[ttt[t]][0],
+                        a2=self.list_of_torsions[ttt[t]][1],
+                        a3=self.list_of_torsions[ttt[t]][2],
+                        a4=self.list_of_torsions[ttt[t]][3],
                         indices=fixed_indices,
                     )
                     if not internal_clashes(self):
-                        print("Torsion {} is ok".format(t))
+                        print("Torsion {} is ok".format(ttt[t]))
                         t += 1
                 else:
                     pass
