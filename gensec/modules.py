@@ -698,6 +698,54 @@ def adsorption_point(structure, fixed_frame):
     )
 
 
+def adsorption_surface(structure, fixed_frame):
+    from ase import Atoms
+    import sys
+
+    """Checks for distance between molecules point
+
+    Claculates distances between all atoms in all molecules
+    with selected point. Passed if at least one of the
+    closest atom is within the specified range.
+
+    Arguments:
+        structure {list} -- list of the molecules
+
+    Returns:
+        boolean -- False if at lesat one of the closest molecular atom
+        is within the specified range
+    """
+
+    zz = structure.adsorption_surface_Z
+    rr = structure.adsorption_surface_range
+
+    if structure.adsorption_surface_mols == "all":
+        ready = True
+        for molecule in structure.molecules:
+            distances = molecule.get_positions()[:, -1] - zz
+            # print(distances)
+            if all(z > 0 for z in distances):
+                check = [x for x in distances if rr[0] <= x <= rr[1]]
+                # print(check)
+                if len(check) < 1:
+                    ready = False
+                    return False
+            else:
+                return False
+
+        return ready
+    elif structure.adsorption_surface_mols == "one":
+        ready = False
+        for molecule in structure.molecules:
+            distances = molecule.get_positions()[:, -1] - zz
+            # print(distances)
+            check = [x for x in distances if rr[0] <= x <= rr[1]]
+            # print(check)
+            if len(check) < 1:
+                ready = True
+                return True
+
+
 def clashes_with_fixed_frame(structure, fixed_frame):
     """Checks for clashes between molecules and fixed frame
 
@@ -756,7 +804,11 @@ def all_right(structure, fixed_frame):
             if not intramolecular_clashes(structure):
                 if hasattr(fixed_frame, "fixed_frame"):
                     if not clashes_with_fixed_frame(structure, fixed_frame):
-                        ready = True
+                        if structure.adsorption_surface:
+                            if adsorption_surface(structure, fixed_frame):
+                                ready = True
+                        else:
+                            ready = True
                 else:
                     ready = True
         else:
@@ -765,6 +817,7 @@ def all_right(structure, fixed_frame):
                     if structure.adsorption:
                         if adsorption_point(structure, fixed_frame):
                             ready = True
+
                     else:
                         ready = True
             else:

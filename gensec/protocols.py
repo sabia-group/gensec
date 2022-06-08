@@ -85,30 +85,47 @@ class Protocol:
                     # Check if that structure is sensible
                     if all_right(structure, fixed_frame):
                         # Check if it is in database
-                        if not structure.find_in_database(
-                            conf, db_generated, parameters
-                        ):
+                        if parameters["configuration"]["torsions"]["activate"]:
+
                             if not structure.find_in_database(
-                                conf, db_relaxed, parameters
+                                conf, db_generated, parameters
                             ):
                                 if not structure.find_in_database(
-                                    conf, db_trajectories, parameters
+                                    conf, db_relaxed, parameters
                                 ):
-                                    db_generated.write(
-                                        structure.atoms_object(), **conf
-                                    )
-                                    self.trials = 0
-                                    self.success = db_generated.count()
+                                    if not structure.find_in_database(
+                                        conf, db_trajectories, parameters
+                                    ):
+                                        db_generated.write(
+                                            structure.atoms_object(), **conf
+                                        )
+                                        self.trials = 0
+                                        self.success = db_generated.count()
 
-                                    print("Good", conf)
-                                    write(
-                                        "good_luck.xyz",
-                                        merge_together(structure, fixed_frame),
-                                        format="xyz",
-                                    )
-                                    print("Generated structures", self.success)
+                                        print("Good", conf)
+                                        write(
+                                            "good_luck.xyz",
+                                            merge_together(
+                                                structure, fixed_frame
+                                            ),
+                                            format="xyz",
+                                        )
+                                        print(
+                                            "Generated structures", self.success
+                                        )
+
                         else:
-                            print("Found in database")
+                            db_generated.write(structure.atoms_object(), **conf)
+                            self.trials = 0
+                            self.success = db_generated.count()
+
+                            print("Good", conf)
+                            write(
+                                "good_luck.xyz",
+                                merge_together(structure, fixed_frame),
+                                format="xyz",
+                            )
+                            print("Generated structures", self.success)
                     else:
                         print("BAD", conf)
                         write(

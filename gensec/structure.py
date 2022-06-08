@@ -27,6 +27,8 @@ class Structure:
         Args:
             parameters {JSON} : Parameters from file
         """
+        self.parameters = parameters
+
         self.atoms = read(
             parameters["geometry"][0], format=parameters["geometry"][1]
         )
@@ -37,17 +39,24 @@ class Structure:
             self.atoms, bothways=False
         )
 
-        if (
-            parameters["configuration"]["torsions"]["list_of_tosrions"]
-            == "auto"
-        ):
-            self.list_of_torsions = detect_rotatble(
-                self.connectivity_matrix_isolated, self.atoms
-            )
-        else:
-            self.list_of_torsions = parameters["configuration"]["torsions"][
-                "list_of_tosrions"
-            ]
+        if parameters["configuration"]["torsions"]["activate"]:
+            if (
+                parameters["configuration"]["torsions"]["list_of_tosrions"]
+                == "auto"
+            ):
+                self.list_of_torsions = detect_rotatble(
+                    self.connectivity_matrix_isolated, self.atoms
+                )
+                self.cycles = detect_cycles(self.connectivity_matrix_full)
+                self.list_of_torsions = exclude_rotatable_from_cycles(
+                    self.list_of_torsions, self.cycles
+                )
+
+            else:
+                self.list_of_torsions = parameters["configuration"]["torsions"][
+                    "list_of_tosrions"
+                ]
+
         if parameters["mic"]["activate"] == True:
             self.pbc = parameters["mic"]["pbc"]
             self.mic = True
@@ -71,11 +80,17 @@ class Structure:
             self.adsorption_point = parameters["configuration"]["adsorption"][
                 "point"
             ]
-        self.cycles = detect_cycles(self.connectivity_matrix_full)
-        self.list_of_torsions = exclude_rotatable_from_cycles(
-            self.list_of_torsions, self.cycles
-        )
-
+        if parameters["configuration"]["adsorption_surface"]["activate"]:
+            self.adsorption_surface = True
+            self.adsorption_surface_range = parameters["configuration"][
+                "adsorption_surface"
+            ]["range"]
+            self.adsorption_surface_Z = parameters["configuration"][
+                "adsorption_surface"
+            ]["surface"]
+            self.adsorption_surface_mols = parameters["configuration"][
+                "adsorption_surface"
+            ]["molecules"]
         # if len(self.cycles) > 0:
         # for i in range(len(self.cycles)):
         # self.cycles[i] = make_canonical_pyranosering(self.atoms, self.cycles[i])
@@ -255,8 +270,8 @@ class Structure:
             c = {"m{}c{}".format(label, i): com[i] for i in range(len(com))}
             return com, c
 
-        # if parameters["configuration"]["torsions"]["activate"]:
-        torsions, t = make_torsion(self, parameters, label=0)
+        if parameters["configuration"]["torsions"]["activate"]:
+            torsions, t = make_torsion(self, parameters, label=0)
         # if parameters["configuration"]["orientations"]["activate"]:
         quaternion, q = make_orientation(self, parameters, label=0)
         # else:
@@ -274,20 +289,27 @@ class Structure:
             print("Nothing to sample")
             sys.exit(0)
         else:
-            configuration = np.hstack((torsions, quaternion, coms))
-            conf = {**t, **q, **c}
+            if parameters["configuration"]["torsions"]["activate"]:
+                configuration = np.hstack((torsions, quaternion, coms))
+                conf = {**t, **q, **c}
+            else:
+                configuration = np.hstack((quaternion, coms))
+                conf = {**q, **c}
 
         full_conf = {}
         full_conf.update(conf)
         if len(self.molecules) > 1:
             for i in range(1, len(self.molecules)):
-                if parameters["configuration"]["torsions"]["same"]:
-                    t_temp = {
-                        "m{}t{}".format(i, k): t["m0t{}".format(k)]
-                        for k in range(len(t))
-                    }
-                else:
-                    torsions, t_temp = make_torsion(self, parameters, label=i)
+                if parameters["configuration"]["torsions"]["activate"]:
+                    if parameters["configuration"]["torsions"]["same"]:
+                        t_temp = {
+                            "m{}t{}".format(i, k): t["m0t{}".format(k)]
+                            for k in range(len(t))
+                        }
+                    else:
+                        torsions, t_temp = make_torsion(
+                            self, parameters, label=i
+                        )
 
                 if parameters["configuration"]["orientations"]["same"]:
                     q_temp = {
@@ -306,8 +328,12 @@ class Structure:
                     }
                 else:
                     coms, c_temp = make_com(self, parameters, label=i)
-                full_conf.update(**t_temp, **q_temp, **c_temp)
-                vec = np.hstack((torsions, quaternion, coms))
+                if parameters["configuration"]["torsions"]["activate"]:
+                    full_conf.update(**t_temp, **q_temp, **c_temp)
+                    vec = np.hstack((torsions, quaternion, coms))
+                else:
+                    full_conf.update(**q_temp, **c_temp)
+                    vec = np.hstack((quaternion, coms))
                 configuration = np.hstack((configuration, vec))
         # print(full_conf)
         return configuration, full_conf
@@ -468,34 +494,36 @@ class Structure:
                     lambda item: "m{}c".format(i) in item[0], mol_dict.items()
                 )
             )
-            # Set torsions
-            if len(self.list_of_torsions) >= 10:
 
-                t = 0
-                ttt = sample(
-                    range(len(self.list_of_torsions)),
-                    len(self.list_of_torsions),
-                )
-                # print(sampled_torsions)
-                # for t in range(len(self.list_of_torsions)):
-                while t < len(self.list_of_torsions):
-                    fixed_indices = carried_atoms(
-                        self.connectivity_matrix_isolated,
-                        self.list_of_torsions[ttt[t]],
+            if self.parameters["configuration"]["torsions"]["activate"]:
+                # Set torsions
+                if len(self.list_of_torsions) >= 10:
+
+                    t = 0
+                    ttt = sample(
+                        range(len(self.list_of_torsions)),
+                        len(self.list_of_torsions),
                     )
-                    self.molecules[i].set_dihedral(
-                        angle=randint(1, 360),
-                        a1=self.list_of_torsions[ttt[t]][0],
-                        a2=self.list_of_torsions[ttt[t]][1],
-                        a3=self.list_of_torsions[ttt[t]][2],
-                        a4=self.list_of_torsions[ttt[t]][3],
-                        indices=fixed_indices,
-                    )
-                    if not internal_clashes(self):
-                        print("Torsion {} is ok".format(ttt[t]))
-                        t += 1
-                else:
-                    pass
+                    # print(sampled_torsions)
+                    # for t in range(len(self.list_of_torsions)):
+                    while t < len(self.list_of_torsions):
+                        fixed_indices = carried_atoms(
+                            self.connectivity_matrix_isolated,
+                            self.list_of_torsions[ttt[t]],
+                        )
+                        self.molecules[i].set_dihedral(
+                            angle=randint(1, 360),
+                            a1=self.list_of_torsions[ttt[t]][0],
+                            a2=self.list_of_torsions[ttt[t]][1],
+                            a3=self.list_of_torsions[ttt[t]][2],
+                            a4=self.list_of_torsions[ttt[t]][3],
+                            indices=fixed_indices,
+                        )
+                        if not internal_clashes(self):
+                            print("Torsion {} is ok".format(ttt[t]))
+                            t += 1
+                    else:
+                        pass
                 # numtorsions = randint(1, 2)
                 # # len(self.list_of_torsions) // 10
                 # # print("Select {} of torsions".format(numtorsions))
@@ -517,20 +545,20 @@ class Structure:
                 #         indices=fixed_indices,
                 #     )
 
-            else:
-                for t in range(len(self.list_of_torsions)):
-                    fixed_indices = carried_atoms(
-                        self.connectivity_matrix_isolated,
-                        self.list_of_torsions[t],
-                    )
-                    self.molecules[i].set_dihedral(
-                        angle=list(t_dict.values())[t],
-                        a1=self.list_of_torsions[t][0],
-                        a2=self.list_of_torsions[t][1],
-                        a3=self.list_of_torsions[t][2],
-                        a4=self.list_of_torsions[t][3],
-                        indices=fixed_indices,
-                    )
+                else:
+                    for t in range(len(self.list_of_torsions)):
+                        fixed_indices = carried_atoms(
+                            self.connectivity_matrix_isolated,
+                            self.list_of_torsions[t],
+                        )
+                        self.molecules[i].set_dihedral(
+                            angle=list(t_dict.values())[t],
+                            a1=self.list_of_torsions[t][0],
+                            a2=self.list_of_torsions[t][1],
+                            a3=self.list_of_torsions[t][2],
+                            a4=self.list_of_torsions[t][3],
+                            indices=fixed_indices,
+                        )
 
             # Set orientation
             quaternion_set(
