@@ -632,6 +632,24 @@ class Structure:
             temp += molecule
         return temp
 
+    def atoms_object_visual(self, fixed_frame):
+        """Convert Structure object to ASE Atoms object
+
+        Goes through Molecules in Structure object and join
+        them to one ASE Atoms object
+
+        Returns:
+            [ASE Atoms] -- ASE Atoms object
+        """
+
+        temp = self.atoms.copy()
+        # Create empty list of the appropriate type
+        del temp[[atom.index for atom in self.atoms]]
+        for molecule in self.molecules:
+            temp += molecule
+        temp += fixed_frame.fixed_frame
+        return temp
+
     def set_structure_positions(self, atoms):
         """Apply the coordinates from atoms object
 

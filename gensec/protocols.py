@@ -65,6 +65,15 @@ class Protocol:
 
             db_trajectories = ase.db.connect("db_trajectories.db")
 
+            if not os.path.exists("db_generated_visual.db"):
+                db_generated_visual = open("db_generated_visual.db", "w")
+            # if os.path.exists("db_generated.db-journal"):
+            # os.remove("db_generated.db-journal")
+            # if os.path.exists("db_generated.lock"):
+            # os.remove("db_generated.lock")
+
+            db_generated_visual = ase.db.connect("db_generated_visual.db")
+
             self.trials = 0
             self.success = db_generated.count()
             print("Generated structures", db_generated.count())
@@ -99,6 +108,7 @@ class Protocol:
                                         db_generated.write(
                                             structure.atoms_object(), **conf
                                         )
+
                                         self.trials = 0
                                         self.success = db_generated.count()
 
@@ -116,6 +126,10 @@ class Protocol:
 
                         else:
                             db_generated.write(structure.atoms_object(), **conf)
+                            db_generated_visual.write(
+                                structure.atoms_object_visual(fixed_frame),
+                                **conf
+                            )
                             self.trials = 0
                             self.success = db_generated.count()
 
