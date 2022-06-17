@@ -108,6 +108,12 @@ class Protocol:
                                         db_generated.write(
                                             structure.atoms_object(), **conf
                                         )
+                                        db_generated_visual.write(
+                                            structure.atoms_object_visual(
+                                                fixed_frame
+                                            ),
+                                            **conf
+                                        )
 
                                         self.trials = 0
                                         self.success = db_generated.count()

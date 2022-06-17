@@ -804,7 +804,10 @@ def all_right(structure, fixed_frame):
             if not intramolecular_clashes(structure):
                 if hasattr(fixed_frame, "fixed_frame"):
                     if not clashes_with_fixed_frame(structure, fixed_frame):
-                        if structure.adsorption_surface:
+                        if (
+                            hasattr(structure, "adsorption_surface")
+                            and structure.adsorption_surface
+                        ):
                             if adsorption_surface(structure, fixed_frame):
                                 ready = True
                         else:
@@ -814,10 +817,12 @@ def all_right(structure, fixed_frame):
         else:
             if hasattr(fixed_frame, "fixed_frame"):
                 if not clashes_with_fixed_frame(structure, fixed_frame):
-                    if structure.adsorption:
+                    if (
+                        hasattr(structure, "adsorption")
+                        and structure.adsorption
+                    ):
                         if adsorption_point(structure, fixed_frame):
                             ready = True
-
                     else:
                         ready = True
             else:

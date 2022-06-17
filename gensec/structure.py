@@ -352,14 +352,19 @@ class Structure:
         """
 
         full_conf = {}
-        t = np.zeros(len(self.list_of_torsions))
+        if self.parameters["configuration"]["torsions"]["activate"]:
+            t = np.zeros(len(self.list_of_torsions))
         q = [0, 0, 0, 1]
         c = [0, 0, 0]
         for i in range(0, len(self.molecules)):
-            t_temp = {"m{}t{}".format(i, k): t for k in range(len(t))}
+            if self.parameters["configuration"]["torsions"]["activate"]:
+                t_temp = {"m{}t{}".format(i, k): t for k in range(len(t))}
             q_temp = {"m{}q{}".format(i, k): q for k in range(len(q))}
             c_temp = {"m{}c{}".format(i, k): c for k in range(len(c))}
-            full_conf.update(**t_temp, **q_temp, **c_temp)
+            if self.parameters["configuration"]["torsions"]["activate"]:
+                full_conf.update(**t_temp, **q_temp, **c_temp)
+            else:
+                full_conf.update(**q_temp, **c_temp)
 
         return list(full_conf.keys())
 
