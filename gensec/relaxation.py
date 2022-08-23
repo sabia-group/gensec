@@ -545,7 +545,7 @@ class Calculator:
                 atoms = t[-1].copy()
                 # apply positions from atoms aobject to structure and fixed frame
                 structure.set_structure_positions(atoms)
-                if fixed_frame is not None:
+                if hasattr(structure, "fixed_frame"):
                     fixed_frame.set_fixed_frame_positions(structure, atoms)
 
                 calculator.relax(structure, fixed_frame, parameters, d)
@@ -568,7 +568,7 @@ class Calculator:
                 atoms = read(os.path.join(structure_file), format="aims")
                 # apply positions from atoms aobject to structure and fixed frame
                 structure.set_structure_positions(atoms)
-                if fixed_frame is not None:
+                if hasattr(structure, "fixed_frame"):
                     fixed_frame.set_fixed_frame_positions(structure, atoms)
 
                 calculator.relax(structure, fixed_frame, parameters, d)

@@ -108,12 +108,13 @@ class Protocol:
                                         db_generated.write(
                                             structure.atoms_object(), **conf
                                         )
-                                        db_generated_visual.write(
-                                            structure.atoms_object_visual(
-                                                fixed_frame
-                                            ),
-                                            **conf
-                                        )
+                                        if hasattr(self, "fixed_frame"):
+                                            db_generated_visual.write(
+                                                structure.atoms_object_visual(
+                                                    fixed_frame
+                                                ),
+                                                **conf
+                                            )
 
                                         self.trials = 0
                                         self.success = db_generated.count()
@@ -132,10 +133,12 @@ class Protocol:
 
                         else:
                             db_generated.write(structure.atoms_object(), **conf)
-                            db_generated_visual.write(
-                                structure.atoms_object_visual(fixed_frame),
-                                **conf
-                            )
+                            if hasattr(self, "fixed_frame"):
+                                db_generated_visual.write(
+                                    structure.atoms_object_visual(fixed_frame),
+                                    **conf
+                                )
+
                             self.trials = 0
                             self.success = db_generated.count()
 
@@ -232,12 +235,13 @@ class Protocol:
                                     if not structure.find_in_database(
                                         conf, db_trajectories, parameters
                                     ):
-                                        db_generated_visual.write(
-                                            structure.atoms_object_visual(
-                                                fixed_frame
-                                            ),
-                                            **conf
-                                        )
+                                        if hasattr(self, "fixed_frame"):
+                                            db_generated_visual.write(
+                                                structure.atoms_object_visual(
+                                                    fixed_frame
+                                                ),
+                                                **conf
+                                            )
                                         print("Structure added to generated")
                                         break
                                     else:
@@ -252,10 +256,12 @@ class Protocol:
                                 print("Trials made", self.trials)
                         else:
                             db_generated.write(structure.atoms_object(), **conf)
-                            db_generated_visual.write(
-                                structure.atoms_object_visual(fixed_frame),
-                                **conf
-                            )
+
+                            if hasattr(self, "fixed_frame"):
+                                db_generated_visual.write(
+                                    structure.atoms_object_visual(fixed_frame),
+                                    **conf
+                                )
                             self.trials = 0
                             self.success = db_generated.count()
                 else:
