@@ -47,6 +47,11 @@
 		"adsorption" : {"activate":false,
 						"range": [0.5, 3.0],
 						"point": [9.5629, 0.2583, -0.1758]
+		},
+		"adsorption_surface" : {"activate":false,
+						"range": [1.0, 2.0],
+						"surface": 54,
+						"molecules": "all"
 		}
 	},	
 
