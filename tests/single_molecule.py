@@ -206,11 +206,10 @@ class TestStructure(unittest.TestCase):
             format="xyz",
         )
 
-        com = [0, 0, 0]
-        atoms.set_center_of_mass(com)
-        coords_ref = atoms_ref.get_positions()
-        coords = atoms.get_positions()
-        np.testing.assert_array_almost_equal(coords, coords_ref)
+        com_ref = [0, 0, 0]
+        atoms.set_center_of_mass(com_ref)
+        com = atoms.get_center_of_mass()
+        np.testing.assert_array_almost_equal(com, com_ref)
 
     def test_for_internal_clashes(self):
         """Test different conformations
