@@ -5,15 +5,51 @@ import numpy as np
 import operator
 
 
-def construct_graph(connectivity_matrix):
-    """Construct the graph from connectivity matrix
+def create_connectivity_matrix(atoms, bothways):
+    """
+    Creates a connectivity matrix for a given set of atoms.
+
+    This function calculates the natural cutoffs for all atoms (vdW radii) in the molecule, 
+    which are used to determine whether two atoms are bonded. 
+    It then constructs a neighbor list based on these cutoffs. If the `bothways` parameter is True, 
+    it considers the periodic boundary conditions, meaning each bond is counted twice (once for each direction).
+    From this neighbor list, it creates a connectivity matrix where each non-zero entry indicates a bond between two atoms.
 
     Args:
-        connectivity_matrix {matrix}: ASE connectivity matrix
+        atoms (ase.Atoms): An ASE Atoms object representing the molecule.
+        bothways (bool): If True, considers the periodic boundary conditions, each bond is counted twice (once for each direction).
 
     Returns:
-        Dictionary: graph of connected atoms
+        scipy.sparse.csr_matrix: A sparse matrix where each non-zero entry indicates a bond between two atoms.
     """
+
+    cutOff = neighborlist.natural_cutoffs(atoms)
+    neighborList = neighborlist.NeighborList(
+        cutOff, self_interaction=False, bothways=bothways
+    )
+    neighborList.update(atoms)
+    connectivity_matrix = neighborList.get_connectivity_matrix()
+    return connectivity_matrix
+
+
+def construct_graph(connectivity_matrix):
+    """
+    Constructs a graph from a given connectivity matrix.
+
+    This function iterates over the keys of the connectivity matrix, which represent bonded atom pairs in a molecule.
+    For each pair of atoms, it adds an entry to the graph dictionary where the key is the atom index and the value is a list of indices of atoms it is bonded to.
+    The function does this for both atoms in each pair, ensuring that all bonds are represented in both directions.
+
+    Args:
+        connectivity_matrix (dict): A dictionary representing the connectivity matrix of the molecule. 
+                                    The keys are tuples of two integers representing the indices of bonded atoms, 
+                                    and the values are the bond orders.
+
+    Returns:
+        dict: A dictionary representing the graph of connected atoms. The keys are atom indices, 
+              and the values are lists of indices of connected atoms.
+    """
+
     graph = {}
     for i in connectivity_matrix.keys():
         if i[0] not in graph:
@@ -29,16 +65,25 @@ def construct_graph(connectivity_matrix):
 
 
 def create_torsion_list(bond, graph, atoms):
-    """Summary
+    """
+    Generates a list of torsions for a given bond.
+
+    A torsion is defined by four atoms. The first and last atoms are connected to one of the atoms in the bond but are not hydrogen. 
+    and also must be connected to at least one other atom. The middle two atoms are the atoms in the bond.
+    This function iterates over the atoms connected to the atoms in the bond, checks the constraints, and if they are met, 
+    adds the indices of the four atoms to the torsion list.
 
     Args:
-        bond (TYPE): Description
-        graph (TYPE): Description
-        atoms (TYPE): Description
+        bond (tuple): A tuple of two integers representing the indices of the bonded atoms.
+        graph (dict): A dictionary representing the connectivity graph of the molecule. 
+                      The keys are atom indices, and the values are lists of indices of connected atoms.
+        atoms (ASE Atoms object): An ASE Atoms object representing the molecule.
 
     Returns:
-        TYPE: Description
-    """
+        list: A list of four integers representing the indices of the atoms in the torsion. 
+              If no suitable torsion can be found (i.e., the constraints are not met), returns None.
+    """ 
+ 
     symbols = atoms.get_chemical_symbols()
     append = True
     torsions = None
@@ -60,50 +105,26 @@ def create_torsion_list(bond, graph, atoms):
     return append, torsions
 
 
-def set_centre_of_mass(atoms, new_com):
-    """Summary
-
-    Args:
-        atoms (TYPE): Description
-        new_com (TYPE): Description
-    """
-    old_positions = atoms.get_positions()
-    old_com = atoms.get_center_of_mass()
-    atoms.set_positions(old_positions - old_com + new_com)
-
-
-def create_connectivity_matrix(atoms, bothways):
-    """Summary
-
-    Args:
-        atoms (TYPE): Description
-        bothways (TYPE): Description
-
-    Returns:
-        TYPE: Description
-    """
-    cutOff = neighborlist.natural_cutoffs(atoms)
-    neighborList = neighborlist.NeighborList(
-        cutOff, self_interaction=False, bothways=bothways
-    )
-    neighborList.update(atoms)
-    connectivity_matrix = neighborList.get_connectivity_matrix()
-    return connectivity_matrix
-
-
 def detect_rotatble(connectivity_matrix, atoms):
-    """Detection of all rotatable bonds
-    2. The bonds does not contain terminate atoms
-    2.
-    3.
+    """
+    Detects all rotatable bonds in a molecule.
+
+    This function constructs a graph from the connectivity matrix, and then identifies all non-terminal atoms in the molecule.
+    It then iterates over these non-terminal atoms, and for each atom that has exactly four connections, 
+    it checks if three of these connections are to terminal atoms. 
+    If this is the case, the bond is considered rotatable. Additionally, the function checks for cycles in the molecule. 
+    Bonds that are part of a cycle are not considered rotatable.
 
     Args:
-        connectivity_matrix (TYPE): Description
-        atoms (TYPE): Description
+        connectivity_matrix (dict): A dictionary representing the connectivity matrix of the molecule. 
+                                    The keys are tuples of two integers representing the indices of bonded atoms, 
+                                    and the values are the bond orders.
+        atoms (ase.Atoms): An ASE Atoms object representing the molecule.
 
     Returns:
-        TYPE: Description
+        list: A list of tuples, where each tuple represents a rotatable bond and contains the indices of the bonded atoms.
     """
+    
     graph = construct_graph(connectivity_matrix)
     indx_not_terminal = [i for i in graph if len(graph[i]) > 1]
     # Additional checks:
@@ -154,21 +175,25 @@ def detect_rotatble(connectivity_matrix, atoms):
         append, torsions = create_torsion_list(bond, graph, atoms)
         if append:
             list_of_torsions.append(torsions)
-    # else:
-    #      for bond in conn:
-    #         # Check for the index order
-    #         list_of_torsions.append(create_torsion_list(bond, graph, atoms))
+
     return list_of_torsions
 
 
 def detect_cycles(connectivity_matrix):
-    """Summary
+    """
+    Detects all cycles in a molecule.
+
+    This function constructs a graph from the connectivity matrix and uses the NetworkX library to find all simple cycles in the graph.
+    A simple cycle is a closed path where no node appears more than once, and the minimum length of the cycle is 3.
+    It then checks for overlapping cycles and adds them to the list of all cycles.
 
     Args:
-        connectivity_matrix (TYPE): Description
+        connectivity_matrix (dict): A dictionary representing the connectivity matrix of the molecule. 
+                                    The keys are tuples of two integers representing the indices of bonded atoms, 
+                                    and the values are the bond orders.
 
     Returns:
-        TYPE: Description
+        list: A list of lists, where each inner list represents a cycle and contains the indices of the atoms in the cycle.
     """
     import networkx as nx
     from itertools import combinations
@@ -185,14 +210,19 @@ def detect_cycles(connectivity_matrix):
 
 
 def exclude_rotatable_from_cycles(list_of_torsions, cycles):
-    """Summary
+    """
+    Excludes rotatable bonds that are part of a cycle from a list of torsions.
+
+    This function iterates over the list of torsions and checks if any of the bonds in a torsion are part of a cycle.
+    If a bond is part of a cycle, the torsion is removed from the list.
 
     Args:
-        list_of_torsions (TYPE): Description
-        cycles (TYPE): Description
+        list_of_torsions (list): A list of tuples, where each tuple represents a torsion and contains the indices of the atoms in the torsion.
+        cycles (list): A list of lists, where each inner list represents a cycle and contains the indices of the atoms in the cycle.
 
     Returns:
-        TYPE: Description
+        list: A list of tuples, where each tuple represents a torsion and contains the indices of the atoms in the torsion. 
+              Torsions that contain bonds that are part of a cycle are excluded.
     """
     rotatable = []
     for torsion in list_of_torsions:
@@ -207,16 +237,45 @@ def exclude_rotatable_from_cycles(list_of_torsions, cycles):
     return rotatable
 
 
-def make_canonical_pyranosering(atoms, cycle):
-    """Summary
+def set_centre_of_mass(atoms, new_com):
+    """
+    Sets the centre of mass of a given molecule to a specified position. 
+
+    This function translates all atoms in the molecule so that the centre of mass is at the specified position.
+    The centre of mass is calculated using the positions and masses of all atoms in the molecule. 
+    The function then cawrlculates the translation vector needed to move the current centre of mass to the new position,
+    and applies this translation to all atoms in the molecule.
 
     Args:
-        atoms (TYPE): Description
-        cycle (TYPE): Description
+        atoms (ase.Atoms): An ASE Atoms object representing the molecule.
+        new_com (array-like): A 3-element array-like object specifying the desired position 
+                              of the centre of mass in Cartesian coordinates.
 
     Returns:
-        TYPE: Description
+        None. The function modifies the atoms object in-place.
     """
+
+    old_positions = atoms.get_positions()
+    old_com = atoms.get_center_of_mass()
+    atoms.set_positions(old_positions - old_com + new_com)
+
+
+def make_canonical_pyranosering(atoms, cycle):
+    """
+    Adjusts the order of atoms in a pyranose ring to a canonical form.
+
+    This function takes a list of atom indices representing a pyranose ring and a set of atoms.
+    It then rolls the list of atom indices until the order of atom types matches the canonical form ("C", "C", "C", "C", "C", "O").
+    The function continues this process until the order of atom types in the cycle matches the canonical form.
+
+    Args:
+        atoms (ase.Atoms): An ASE Atoms object representing the molecule.
+        cycle (list): A list of integers representing the indices of atoms in a pyranose ring.
+
+    Returns:
+        list: A list of integers representing the indices of atoms in the canonical form of the pyranose ring.
+    """
+
     pattern = ["C", "C", "C", "C", "C", "O"]
     while True:
         cycle = np.roll(cycle, 1)
@@ -226,14 +285,19 @@ def make_canonical_pyranosering(atoms, cycle):
 
 
 def getroots(aNeigh):
-    """Summary
+    """
+    Finds the root nodes in a graph.
+
+    This function takes a dictionary representing a graph where the keys are nodes and the values are lists of connected nodes.
+    It then finds the root nodes in the graph, which are nodes that are not descendants of any other nodes.
 
     Args:
-        aNeigh (TYPE): Description
+        aNeigh (dict): A dictionary representing a graph. The keys are nodes and the values are lists of connected nodes.
 
     Returns:
-        TYPE: Description
+        list: A list of nodes that are root nodes in the graph.
     """
+
     #    source: https://stackoverflow.com/questions/10301000/python-connected-components
     def findroot(aNode, aRoot):
         """Summary
@@ -551,16 +615,24 @@ def align_to_axes(atoms, atom_1_indx, atom_2_indx):
 
 
 def quaternion_set(atoms, quaternion, atom_1_indx, atom_2_indx):
-    """Summary
+    """
+    Sets the positions of atoms based on a quaternion rotation.
+
+    This function takes an ASE Atoms object, a quaternion representing a rotation, and the indices of two atoms.
+    It first aligns the atoms to the axes based on the two given atom indices.
+    Then it produces a quaternion for the first rotation and applies this rotation to the atoms.
+    It calculates the angle and vector for the second rotation based on the remaining three components of the input quaternion,
+    produces a quaternion for this rotation, and applies this rotation to the atoms.
+    The function returns the atoms with their positions set based on the quaternion rotation.
 
     Args:
-        atoms (TYPE): Description
-        quaternion (TYPE): Description
-        atom_1_indx (TYPE): Description
-        atom_2_indx (TYPE): Description
+        atoms (ase.Atoms): An ASE Atoms object representing the molecule.
+        quaternion (np.array): A numpy array representing a quaternion.
+        atom_1_indx (int): The index of the first atom.
+        atom_2_indx (int): The index of the second atom.
 
     Returns:
-        TYPE: Description
+        ase.Atoms: The Atoms object with positions set based on the quaternion rotation.
     """
     coords = atoms.get_positions()
     center = atoms.get_center_of_mass()
@@ -575,18 +647,19 @@ def quaternion_set(atoms, quaternion, atom_1_indx, atom_2_indx):
 
 
 def internal_clashes(structure):
-    """Check for internal clashes within molecule
+    """
+    Checks for internal clashes within a molecule.
 
-    Iterates over the molecules and compare their
-    connectivity matrices with template's one.
-    Periodic boundary conditions are taken into
-    account with use of the flag "bothways = True".
+    This function takes a list of molecules and checks for any internal clashes within each molecule.
+    It iterates over the molecules and compares their connectivity matrices with a template's one.
+    The function takes into account periodic boundary conditions with the use of the flag "bothways = True".
+    If no clashes are found, the function returns False.
 
-    Arguments:
-        structure {list} -- list of the molecules
+    Args:
+        structure (list): A list of the molecules.
 
     Returns:
-        bollean -- False if no clashes found
+        bool: False if no clashes found.
     """
     clashes = False
     for i in range(len(structure.molecules)):
@@ -747,21 +820,24 @@ def adsorption_surface(structure, fixed_frame):
 
 
 def clashes_with_fixed_frame(structure, fixed_frame):
-    """Checks for clashes between molecules and fixed frame
+    """
+    Checks for clashes between a structure and a fixed frame.
 
-    Claculates distances between all atoms in all molecules
-    with all atoms in the fixed frame. Passed if all the
-    distances are greater than specified distance in A. Periodic boundary
-    conditions are taken into account with use of the
-    mic=fixed_frame.mic
+    This function takes a structure and a fixed frame, and checks for any clashes between them.
+    It first combines all atoms from the structure and the fixed frame into a single list.
+    It then calculates the distances between all pairs of atoms, taking into account the minimum image convention if necessary.
+    The function sets the distances between atoms in the same molecule or the same fixed frame to a large value to ignore them.
+    Finally, it checks if all distances are greater than the clash distance defined in the structure.
+    If any distance is smaller than the clash distance, the function returns False, indicating a clash.
 
-    Arguments:
-        structure {list} -- list of the molecules
-        fixed_frame {Atoms object} -- atoms in fixed frame
+    Args:
+        structure (GenSec structure): A structure object.
+        fixed_frame (GenSec fixed frame): A fixed frame object.
 
     Returns:
-        boolean -- False if all the distances are greater than specified distance in A
+        bool: True if there are no clashes between the structure and the fixed frame, False otherwise.
     """
+
     mols = structure.molecules[0].copy()
     for molecule in structure.molecules[1:]:
         mols.extend(molecule)
@@ -788,15 +864,21 @@ def clashes_with_fixed_frame(structure, fixed_frame):
 
 
 def all_right(structure, fixed_frame):
-    """Summary
+    """
+    Checks if a structure is ready to be added to a fixed frame.
+
+    This function takes a structure and a fixed frame, and checks if the structure is ready to be added to the fixed frame.
+    The exact conditions for a structure to be ready are not specified in the code excerpt provided.
+    The function returns a boolean value indicating whether the structure is ready or not.
 
     Args:
-        structure (TYPE): Description
-        fixed_frame (TYPE): Description
+        structure (TYPE): A structure object.
+        fixed_frame (TYPE): A fixed frame object.
 
     Returns:
-        TYPE: Description
+        bool: True if the structure is ready to be added to the fixed frame, False otherwise.
     """
+
     ready = False
 
     if not internal_clashes(structure):
@@ -832,15 +914,22 @@ def all_right(structure, fixed_frame):
 
 
 def measure_torsion_of_last(atoms, list_of_torsions):
-    """Summary
+    """
+    Calculates the dihedral angles for a list of torsions in a molecule.
+
+    This function takes a list of torsions and an ASE Atoms object representing a molecule.
+    For each torsion in the list, it calculates the dihedral angle using the `get_dihedral` method of the Atoms object.
+    The dihedral angle is defined as the angle between two planes formed by three atoms each.
+    The function appends each calculated angle to a list and returns this list.
 
     Args:
-        atoms (TYPE): Description
-        list_of_torsions (TYPE): Description
+        atoms (ase.Atoms): An ASE Atoms object representing the molecule.
+        list_of_torsions (list): A list of tuples, where each tuple represents a torsion and contains the indices of the atoms in the torsion.
 
     Returns:
-        TYPE: Description
+        list: A list of floats representing the dihedral angles for each torsion in the list of torsions.
     """
+
     torsions = []
     for torsion in list_of_torsions:
         torsions.append(
