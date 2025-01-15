@@ -1,0 +1,83 @@
+
+{
+	"name" : "di_l_alanine",
+	"trials": 1000,
+	"success": 2000,
+	"number_of_replicas" : 1,
+	"geometry" : ["system.in", "aims"],
+	"fixed_frame" : {"activate" : false,
+					"filename" : "slab.in",
+					"format" : "aims"
+				},
+	"mic" : {"activate" : false,
+			"pbc": [[18.97210800,      0.00000000,      0.00000000],
+			 [-9.48606000,     16.43033800,      0.00000000],
+			 [0.0000000000000000, 0.0000000000000000, 100.0 ]]
+		},
+	"configuration" : {
+		"torsions" : {
+					"activate" : true,
+					"known" : false, 
+					"same" : false, 
+					"list_of_tosrions" :  "auto",
+					"values": "random"
+		},  
+		"orientations" : {
+					"activate" : false,
+					"known" : false,
+					"same" : false, 
+					"values": "random",
+					"angle" : 1,
+					"vector":{
+						"Type":"exclusion",
+						"x" : [0],
+						"y" : [0],
+						"z" : [1]
+					}
+		},
+		"coms" : {
+					"activate" : false,
+					"same" : false, 
+					"known" : false,
+					"values": "restricted",
+					"x_axis" : [0, 15, 30],
+					"y_axis" : [0, 15, 30],
+					"z_axis" : [1, 10, 30]
+		},
+		"clashes" : {"intramolecular" : 2.0,
+					"with_fixed_frame" : 2.0
+		},
+		"adsorption" : {"activate":false,
+						"range": [0.5, 5.0],
+						"point": [4.84807555,     4.75410992,      1.46173009]
+		}
+},
+	
+	"protocol" : {
+		"generate" : {
+			"activate":true,
+			"method":"random"
+		},
+    	"search" : {
+			"activate":false,
+			"method":"random",
+			"folder": "temp"
+		}
+	},
+	"calculator" : {
+		"supporting_files_folder": "supporting",
+		"ase_parameters_file" : "ase_command.py",  
+		"optimize" : "generate",
+		"fmax" : 0.005,
+		"preconditioner" : {
+			"mol" : {"initial": true, "update": false, "precon" : "Lindh"},
+			"fixed_frame" : {"initial": true, "update": false, "precon" : "Exp"},
+			"mol-mol" : {"initial": true, "update": false, "precon" : "ID"},
+			"mol-fixed_frame" : {"initial": true, "update": false, "precon" : "ID"},
+			"rmsd_update" : {"activate":false, "value":0.05}
+		},
+		"constraints" : {
+			"fix_atoms" : [-10, -9]
+		}
+	}
+}
