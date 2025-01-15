@@ -936,7 +936,7 @@ class TRM_BFGS(BFGS):
             TYPE: Description
         """
         if self.H is None:
-            self.H = self.H0  # This is Heeian - not inverse!!!
+            self.H = self.H0  # This is Hessian - not inverse!!!
             return
         dr = r.flat - r0
 
@@ -1017,7 +1017,9 @@ class TRM_BFGS(BFGS):
             # else:
             #     quality = harmonic_gain / expected_gain
             quality = true_gain / expected_gain
-            accept = quality > 0.1
+            accept = quality > 0.01
+            #print("QUALITY", quality)
+            #print("self.tr", self.tr)
 
             # print("\n")
             # print(s_norm, self.tr)
@@ -1057,6 +1059,8 @@ class TRM_BFGS(BFGS):
 
             if quality < 0.25:
                 self.tr = 0.5 * s_norm
+                if self.tr < 1e-7:
+                   self.tr = self.maxstep
             elif quality > 0.75 and s_norm > 0.9 * self.tr:
                 self.tr = 2.0 * self.tr
                 if self.tr > self.maxstep:
@@ -1477,7 +1481,7 @@ class TRM_BFGS_IPI(BFGS):
             # Compute quality:
             s_norm = np.linalg.norm(s)
             quality = true_gain / expected_gain
-            accept = quality > 0.1
+            accept = quality > 0.01
             self.log_accept = accept
             self.quality = quality
             self.s_norm = s_norm
