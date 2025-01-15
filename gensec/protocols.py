@@ -108,13 +108,13 @@ class Protocol:
                                         db_generated.write(
                                             structure.atoms_object(), **conf
                                         )
-                                        if hasattr(self, "fixed_frame"):
-                                            db_generated_visual.write(
-                                                structure.atoms_object_visual(
-                                                    fixed_frame
-                                                ),
-                                                **conf
-                                            )
+                                        #if hasattr(self, "fixed_frame"):
+                                        db_generated_visual.write(
+                                            structure.atoms_object_visual(
+                                                fixed_frame
+                                            ),
+                                            **conf
+                                        )
 
                                         self.trials = 0
                                         self.success = db_generated.count()
@@ -133,11 +133,11 @@ class Protocol:
 
                         else:
                             db_generated.write(structure.atoms_object(), **conf)
-                            if hasattr(self, "fixed_frame"):
-                                db_generated_visual.write(
-                                    structure.atoms_object_visual(fixed_frame),
-                                    **conf
-                                )
+                            #if hasattr(self, "fixed_frame"):
+                            db_generated_visual.write(
+                                structure.atoms_object_visual(fixed_frame),
+                                **conf
+                            )
 
                             self.trials = 0
                             self.success = db_generated.count()
@@ -192,6 +192,16 @@ class Protocol:
                 os.remove("db_trajectories.db-journal")
             if os.path.exists("db_trajectories.db.lock"):
                 os.remove("db_trajectories.db.lock")
+            if not os.path.exists("db_generated_visual.db"):
+                db_generated_visual = open("db_generated_visual.db", "w")
+            # if os.path.exists("db_generated.db-journal"):
+            # os.remove("db_generated.db-journal")
+            # if os.path.exists("db_generated.lock"):
+            # os.remove("db_generated.lock")
+
+            db_generated_visual = ase.db.connect("db_generated_visual.db")
+
+
 
             db_trajectories = ase.db.connect("db_trajectories.db")
 
@@ -207,6 +217,7 @@ class Protocol:
             if not os.path.exists(parameters["protocol"]["search"]["folder"]):
                 os.mkdir(parameters["protocol"]["search"]["folder"])
             # Perform optimizations in the folder specified in parameters file
+            print("Changing Directory!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             os.chdir(parameters["protocol"]["search"]["folder"])
 
             # Finish unfinished calculations
@@ -235,13 +246,13 @@ class Protocol:
                                     if not structure.find_in_database(
                                         conf, db_trajectories, parameters
                                     ):
-                                        if hasattr(self, "fixed_frame"):
-                                            db_generated_visual.write(
-                                                structure.atoms_object_visual(
-                                                    fixed_frame
-                                                ),
-                                                **conf
-                                            )
+                                        #if hasattr(self, "fixed_frame"):
+                                        db_generated_visual.write(
+                                            structure.atoms_object_visual(
+                                                fixed_frame
+                                            ),
+                                            **conf
+                                        )
                                         print("Structure added to generated")
                                         break
                                     else:
@@ -257,11 +268,11 @@ class Protocol:
                         else:
                             db_generated.write(structure.atoms_object(), **conf)
 
-                            if hasattr(self, "fixed_frame"):
-                                db_generated_visual.write(
-                                    structure.atoms_object_visual(fixed_frame),
-                                    **conf
-                                )
+                            #if hasattr(self, "fixed_frame"):
+                            db_generated_visual.write(
+                                structure.atoms_object_visual(fixed_frame),
+                                **conf
+                            )
                             self.trials = 0
                             self.success = db_generated.count()
                 else:
@@ -269,6 +280,9 @@ class Protocol:
                         traj_id = row.unique_id
                         # Extract the configuration from the row
                         conf = {key: row[key] for key in conf_keys}
+                        print("added line")
+                        print(conf)
+                        print("added line")
                         structure.apply_conf(conf)
                         dirs.dir_num = row.id
                         del db_generated[row.id]
@@ -279,6 +293,7 @@ class Protocol:
                                 if not structure.find_in_database(
                                     conf, db_trajectories, parameters
                                 ):
+                                    print("I'm here")
                                     print(
                                         "This is row ID that is taken for calculation",
                                         row.id,
@@ -365,4 +380,5 @@ class Protocol:
                                 traj[-1], **full_conf, trajectory=traj_id
                             )
                             self.success = db_relaxed.count()
+                            calculator.close()
                             break
