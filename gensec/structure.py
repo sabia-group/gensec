@@ -8,24 +8,20 @@ import itertools
 
 class Structure:
 
-    """Crates the structure object with multiple molecules
+    """
+    Creates the structure object with multiple molecules.
 
-    Attributes:
-        atoms (TYPE): Description
-        connectivity_matrix_full (TYPE): Description
-        connectivity_matrix_isolated (TYPE): Description
-        list_of_torsions (TYPE): Description
-        mic (bool): Description
-        molecules (TYPE): Description
-        mu (TYPE): Description
-        pbc (TYPE): Description
+    This class represents a structure composed of multiple molecules. It includes methods for creating the structure based on parameters from a file, creating a configuration for the structure, and creating a torsion and orientation for the structure. The structure object includes attributes for the atoms in the structure, the full and isolated connectivity matrices, a list of torsions, a minimum image convention (MIC) flag, a list of molecules, a mu parameter for the exponential preconditioner, and periodic boundary conditions (PBC).
     """
 
     def __init__(self, parameters):
-        """Summary
+        """
+        Initializes the structure object.
+
+        This function takes a dictionary of parameters and initializes the structure object based on these parameters. It reads the atoms from a file, creates the full and isolated connectivity matrices, detects rotatable torsions and cycles if activated in the parameters, sets the periodic boundary conditions (PBC) if the minimum image convention (MIC) is activated in the parameters, creates copies of the atoms for each replica, and sets the intramolecular and fixed frame clash parameters. If adsorption is activated in the parameters, it sets the adsorption range and point.
 
         Args:
-            parameters {JSON} : Parameters from file
+            parameters (dict): A dictionary of parameters for initializing the structure object.
         """
         self.parameters = parameters
 
@@ -80,40 +76,46 @@ class Structure:
             self.adsorption_point = parameters["configuration"]["adsorption"][
                 "point"
             ]
-        if parameters["configuration"]["adsorption_surface"]["activate"]:
-            self.adsorption_surface = True
-            self.adsorption_surface_range = parameters["configuration"][
-                "adsorption_surface"
-            ]["range"]
-            self.adsorption_surface_Z = parameters["configuration"][
-                "adsorption_surface"
-            ]["surface"]
-            self.adsorption_surface_mols = parameters["configuration"][
-                "adsorption_surface"
-            ]["molecules"]
+        #if parameters["configuration"]["adsorption_surface"]["activate"]:
+            #self.adsorption_surface = True
+            #self.adsorption_surface_range = parameters["configuration"][
+                #"adsorption_surface"
+            #]["range"]
+            #self.adsorption_surface_Z = parameters["configuration"][
+                #"adsorption_surface"
+            #]["surface"]
+            #self.adsorption_surface_mols = parameters["configuration"][
+                #"adsorption_surface"
+            #]["molecules"]
         # if len(self.cycles) > 0:
         # for i in range(len(self.cycles)):
         # self.cycles[i] = make_canonical_pyranosering(self.atoms, self.cycles[i])
 
     def create_configuration(self, parameters):
-        """Summary
+        """
+        Creates a configuration for the structure.
+
+        This function takes a dictionary of parameters and creates a configuration for the structure based on these parameters. The details of how the configuration is created are not specified in the provided code excerpt.
 
         Args:
-            parameters (TYPE): Description
+            parameters (dict): A dictionary of parameters for creating the configuration.
 
         Returns:
-            TYPE: Description
+            TYPE: The type of the return value is not specified in the provided code excerpt.
         """
 
         def make_torsion(self, parameters, label):
-            """Summary
+            """
+            Creates a torsion for the structure.
+
+            This function takes a dictionary of parameters and a label, and creates a torsion for the structure based on these parameters. If the torsion values are set to "random" in the parameters, it generates random torsion angles for each torsion in the list of torsions. It returns the torsion angles and a dictionary mapping each torsion to its angle.
 
             Args:
-                parameters (TYPE): Description
-                label (TYPE): Description
+                parameters (dict): A dictionary of parameters for creating the torsion.
+                label (TYPE): A label for the torsion.
 
             Returns:
-                TYPE: Description
+                tuple: A tuple containing a numpy array of torsion angles and a dictionary mapping each torsion to its angle.
             """
             if parameters["configuration"]["torsions"]["values"] == "random":
                 torsions = np.array(
@@ -126,14 +128,17 @@ class Structure:
             return torsions, t
 
         def make_orientation(self, parameters, label):
-            """Summary
+            """
+            Creates an orientation for the structure.
+
+            This function takes a dictionary of parameters and a label, and creates an orientation for the structure based on these parameters. The details of how the orientation is created are not specified in the provided code excerpt.
 
             Args:
-                parameters (TYPE): Description
-                label (TYPE): Description
+                parameters (dict): A dictionary of parameters for creating the orientation.
+                label (TYPE): A label for the orientation.
 
             Returns:
-                TYPE: Description
+                TYPE: The type of the return value is not specified in the provided code excerpt.
             """
             if not parameters["configuration"]["orientations"]["activate"]:
                 quaternion = [0, 0, 0, 1]
@@ -228,14 +233,17 @@ class Structure:
             return quaternion, q
 
         def make_com(self, parameters, label):
-            """Summary
+            """
+            Creates the center of mass (COM) for a molecule in the structure.
+
+            This function takes a dictionary of parameters and a label, and creates the COM for a molecule in the structure based on these parameters. If the COM is not activated in the parameters, it sets the COM to the origin. If the COM values are set to "restricted" in the parameters, it generates the COM within a restricted space defined by the x, y, and z axes in the parameters. Otherwise, it generates the COM within a default space from 0 to 10 on each axis. It returns the COM and a dictionary mapping the label and index to the COM coordinates.
 
             Args:
-                parameters (TYPE): Description
-                label (TYPE): Description
+                parameters (dict): A dictionary of parameters for creating the COM.
+                label (int): A label for the molecule.
 
             Returns:
-                TYPE: Description
+                tuple: A tuple containing a numpy array of the COM coordinates and a dictionary mapping the label and index to the COM coordinates.
             """
             if not parameters["configuration"]["coms"]["activate"]:
                 com = [0, 0, 0]
@@ -339,16 +347,13 @@ class Structure:
         return configuration, full_conf
 
     def extract_conf_keys_from_row(self):
-        """Extract configurtion keys
+        """
+        Extracts the configuration keys from a row of the database.
 
-        From the row of the database all keys are read and the
-        configuration is returned as list of keys that correspond to
-        the torsional, rotational and positional degrees of freedom
-        of the structure object
+        This function reads all keys from a row of the database and returns a list of keys that correspond to the torsional, rotational, and positional degrees of freedom of the structure object. It initializes the torsions to zeros, the quaternion to [0, 0, 0, 1], and the COM to the origin, and creates a dictionary mapping the molecule label and index to these values. It repeats this process for each molecule in the structure.
 
         Returns:
-            [list] -- list of keys reflectin the configuration
-                        on internal degrees of freedom
+            list: A list of keys reflecting the configuration on internal degrees of freedom.
         """
 
         full_conf = {}
@@ -369,18 +374,16 @@ class Structure:
         return list(full_conf.keys())
 
     def read_configuration(self, atoms_positions):
-        """Read the configuration from atoms positions
+        """
+        Reads the configuration from atoms positions.
 
-        Read the atoms positions and calculate the values of degrees of freedom
-        using the template and list of torsions stored in the structure object
+        This function takes an ASE Atoms object of atoms positions, and calculates the values of degrees of freedom using the template and list of torsions stored in the structure object. It sets the positions of atoms in each molecule based on the atoms positions, calculates the torsions, orientations, and COM for each molecule, and creates a dictionary mapping the molecule label and index to these values.
 
-        Arguments:
-            atoms_positions (TYPE): Description
-            atoms_positions {ASE Atoms} -- ASE Atoms object
+        Args:
+            atoms_positions (ase.Atoms): An ASE Atoms object.
 
         Returns:
-            [dictionary] -- Dictionary reflecting the cinfiguration on internal
-            degrees of freedom
+            dict: A dictionary reflecting the configuration on internal degrees of freedom.
         """
 
         full_conf = {}
@@ -652,7 +655,8 @@ class Structure:
         del temp[[atom.index for atom in self.atoms]]
         for molecule in self.molecules:
             temp += molecule
-        temp += fixed_frame.fixed_frame
+        if hasattr(fixed_frame, 'fixed_frame'):
+            temp += fixed_frame.fixed_frame
         return temp
 
     def set_structure_positions(self, atoms):
@@ -766,12 +770,19 @@ class Fixed_frame:
     """
 
     def __init__(self, parameters):
-        """Summary
+        """
+        Initializes the Fixed_frame object.
+
+        This function takes a dictionary of parameters and initializes the Fixed_frame object based on these parameters.
+        It sets the minimum image convention (MIC) flag to False by default. If the fixed frame is activated in the parameters, 
+        it reads the fixed frame from a file using the ASE read function, with the filename and format specified in the parameters.
+        The function does not set the periodic boundary conditions (PBC) for the fixed frame within the provided code excerpt.
 
         Args:
-            parameters (TYPE): Description
+            parameters (dict): A dictionary of parameters for initializing the Fixed_frame object. 
+                            It should contain a "fixed_frame" key with a dictionary value that includes "activate", "filename", and "format" keys.
         """
-        # Minimum Image Conventio
+        # Minimum Image Convention
         self.mic = False
         if parameters["fixed_frame"]["activate"] == True:
             self.fixed_frame = read(
@@ -786,22 +797,29 @@ class Fixed_frame:
             self.fixed_frame.set_pbc(True)
 
     def get_len(self):
-        """Summary
+        """
+        Returns the number of atoms in the fixed frame of the structure.
+
+        This function returns the number of atoms in the fixed frame of the structure. 
+        The fixed frame is an ASE Atoms object, so the number of atoms is the length of this object.
 
         Returns:
-            TYPE: Description
+            int: The number of atoms in the fixed frame of the structure.
         """
+
         return len(self.fixed_frame)
 
     def set_fixed_frame_positions(self, structure, atoms):
-        """Apply the coordinates from atoms object
+        """
+        Sets the positions of atoms in the fixed frame based on another Atoms object.
 
-        Set the coordinates from atoms to fixed_frame object
+        This function takes a structure and an Atoms object, and sets the positions of atoms in the fixed frame of the structure 
+        based on the positions of atoms in the Atoms object. 
+        It assumes that the Atoms object and the fixed frame have the same number of atoms in the same order.
 
-        Arguments:
-            structure (TYPE): Description
-            atoms (TYPE): Description
-            atoms {ase atoms object} -- ASE Atoms object with cordinates
+        Args:
+            structure (Structure): The structure object.
+            atoms (ase.Atoms): An ASE Atoms object.
         """
 
         len_mol = len(structure.molecules)
