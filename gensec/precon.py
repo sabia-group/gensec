@@ -1185,7 +1185,7 @@ def dd_sum(*arg_ds):
         (array, array): summ of the value and derivatives
     """
     shape = np.shape(arg_ds[0][1])
-    res = np.float(0.0)
+    res = float(0.0)
     dres = np.zeros(shape)
     for arg, darg in arg_ds:
         res += np.asarray(arg)
@@ -1217,7 +1217,7 @@ def dd_prod(*arg_ds):
         (array, array): product of the value and derivatives
     """
     shape = np.shape(arg_ds[0][1])
-    res = np.float(1.0)
+    res = float(1.0)
     dres = np.zeros(shape)
     for arg, darg in arg_ds:
         dres *= arg  # update previous derivs
