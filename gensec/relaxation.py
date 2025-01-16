@@ -8,7 +8,7 @@ from gensec.optimize import LBFGS_Linesearch_mod
 from ase.constraints import FixAtoms
 from ase.io import write
 import os
-import imp
+#import imp
 import numpy as np
 from ase.io import read
 from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
@@ -17,6 +17,15 @@ import shutil
 import pickle
 from ase.optimize.precon import Exp
 from ase.io.trajectory import Trajectory
+import importlib.util
+import importlib.machinery
+
+def load_source(modname, filename):
+    loader = importlib.machinery.SourceFileLoader(modname, filename)
+    spec = importlib.util.spec_from_file_location(modname, filename, loader=loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
 
 
 class Calculator:
@@ -34,10 +43,13 @@ class Calculator:
         Args:
             parameters {JSON} : Parameters from file
         """
+
         folder = parameters["calculator"]["supporting_files_folder"]
         ase_file_name = parameters["calculator"]["ase_parameters_file"]
-        full_path = os.path.join(os.getcwd(), folder, ase_file_name)
-        self.calculator = imp.load_source(ase_file_name, full_path).calculator
+        self.parent = os.getcwd()
+        full_path = os.path.join(self.parent, folder, ase_file_name)
+        self.calculator = load_source(ase_file_name, full_path).calculator
+
 
     def finished(self, directory):
         """Mark, that calculation finished successfully
@@ -192,7 +204,7 @@ class Calculator:
         name = parameters["name"]
         atoms = all_atoms.copy()
         self.set_constrains(atoms, parameters)
-        atoms.set_calculator(self.calculator)
+        #atoms.set_calculator(self.calculator)
         if parameters["calculator"]["preconditioner"]["rmsd_update"][
             "activate"
         ]:
@@ -312,12 +324,18 @@ class Calculator:
                 restart=os.path.join(directory, "qn.pckl"),
             )
 
+        folder = parameters["calculator"]["supporting_files_folder"]
+        ase_file_name = parameters["calculator"]["ase_parameters_file"]
+        full_path = os.path.join(self.parent, folder, ase_file_name)
+        self.calculator = load_source(ase_file_name, full_path).calculator
+        atoms.set_calculator(self.calculator)
         opt.run(fmax=parameters["calculator"]["fmax"], steps=3000)
         write(
             os.path.join(directory, "final_configuration_{}.in".format(name)),
             atoms,
             format="aims",
         )
+
         try:
             calculator.close()
         except:
@@ -560,7 +578,6 @@ class Calculator:
                 # print("Calculation will be performed from molecular geometry")
                 foldername = os.path.basename(os.path.normpath(d))
                 structure_file = os.path.join(d, foldername + ".in")
-                print(structure_file)
                 # Clean up
                 for i in os.listdir(d):
                     if os.path.join(d, i) != structure_file:
