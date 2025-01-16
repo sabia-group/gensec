@@ -17,8 +17,6 @@ GenSec performs a quasi-random global structure search, with the ability to choo
 ============
 Installation
 ============
-GenSec requires Python 3.8, 3.9, or 3.10.
-
 Download the package::
 
     git clone https://github.com/sabia-group/gensec.git
