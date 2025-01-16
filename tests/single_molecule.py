@@ -41,10 +41,10 @@ class TestStructure(unittest.TestCase):
 
         list_of_torsions_all_ref = [
             [5, 3, 4, 8],
-            [4, 3, 5, 7],
+            [4, 3, 5, 6],
             [2, 4, 8, 0],
-            [6, 5, 7, 10],
             [7, 5, 6, 9],
+            [6, 5, 7, 10],
             [5, 6, 9, 11],
             [5, 7, 10, 11],
             [6, 9, 11, 10],
@@ -53,7 +53,7 @@ class TestStructure(unittest.TestCase):
 
         list_of_torsions_no_cycles_ref = [
             [5, 3, 4, 8],
-            [4, 3, 5, 7],
+            [4, 3, 5, 6],
             [2, 4, 8, 0],
         ]
 
@@ -96,7 +96,7 @@ class TestStructure(unittest.TestCase):
         )
         connectivity = create_connectivity_matrix(atoms, bothways=False)
         list_of_torsions = detect_rotatble(connectivity, atoms)
-        angles = [10, 60, 250]
+        angles = [60, 10, 250]
         # Apply one configuration
         for t in range(len(list_of_torsions)):
             fixed_indices = carried_atoms(connectivity, list_of_torsions[t])
