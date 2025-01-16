@@ -23,7 +23,7 @@ Download the package::
 
 Installing of dependencies::
 
-    pip install ase numpy networkx
+    pip install ase==3.22.0 numpy networkx
 
 ============================
 Quick start
