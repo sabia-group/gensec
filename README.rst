@@ -28,8 +28,20 @@ Installing of dependencies::
 ============================
 Quick start
 ============================
+For generating of strucutres:
 
-! This section is under construction !
+   python gensec.py parameters_generate.json
+
+For geometry optimization of strucutres in database:
+
+   python gensec.py run.json
+
+For visualization of sctructures:
+
+   ase gui db_relaxed.db
+
+
+
 
 
 
