@@ -159,18 +159,6 @@ class Known:
                 similar = False
         return similar
 
-    def angle_between(vec1, vec2):
-        """Summary
-
-        Args:
-            vec1 (TYPE): Description
-            vec2 (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        return np.arccos(np.clip(np.dot(vec1, vec2), -1.0, 1.0))
-
     def orientational_diff(self, point, vector):
         """Summary
 
