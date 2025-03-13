@@ -77,6 +77,11 @@ class Protocol:
             self.trials = 0
             self.success = db_generated.count()
             print("Generated structures", db_generated.count())
+            
+            # Find optimal supercell here
+            # Adjust mic, coms and number of atoms accordingly
+            # Need to eddit coms to give fixed values on top
+            
             structure = Structure(parameters)
             fixed_frame = Fixed_frame(parameters)
             dirs = Directories(parameters)

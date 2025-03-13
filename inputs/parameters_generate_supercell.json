@@ -1,13 +1,21 @@
 
 {
-	"name" : "di_l_alanine",
+	"name" : "MePTCDI_graphene",
 	"trials": 1000,
-	"success": 2000,
+	"success": 1500,
 	"number_of_replicas" : 1,
-	"geometry" : ["system.in", "aims"],
-	"fixed_frame" : {"activate" : false,
-					"filename" : "slab.in",
+	"geometry" : ["geometry_MePTCDI.in", "aims"], 
+	"fixed_frame" : {
+					"activate" : true,
+					"filename" : "geometry_graphene.in",
 					"format" : "aims"
+				},
+	"supercell_finder" : {
+					"activate" : true,
+					"unit_cell_method" : "inputfile",
+					"max_range_s" : [15, 15],
+					"max_range_f" : [3, 3],
+					"max_area_diff": 0.1
 				},
 	"mic" : {"activate" : false,
 			"pbc": [[18.97210800,      0.00000000,      0.00000000],
@@ -16,15 +24,15 @@
 		},
 	"configuration" : {
 		"torsions" : {
-					"activate" : true,
+					"activate" : false,
 					"known" : false, 
 					"same" : false, 
-					"list_of_tosrions" :  "auto",
+					"list_of_tosrions" :  [[7,8,0,5],[4,3,13,14]], 
 					"values": "random"
 		},  
 		"orientations" : {
-					"activate" : false,
-					"known" : false,
+					"activate" : true,
+					"known" : true, 
 					"same" : false, 
 					"values": "random",
 					"angle" : 1,
@@ -36,22 +44,22 @@
 					}
 		},
 		"coms" : {
-					"activate" : false,
+					"activate" : true,
 					"same" : false, 
-					"known" : false,
+					"known" : true, 
 					"values": "restricted",
-					"x_axis" : [0, 15, 30],
-					"y_axis" : [0, 15, 30],
-					"z_axis" : [1, 10, 30]
+					"x_axis" : [0, 15, 20],
+					"y_axis" : [0, 15, 20],
+					"z_axis" : [4, 7, 20]
 		},
 		"clashes" : {"intramolecular" : 2.0,
-					"with_fixed_frame" : 2.0
+					"with_fixed_frame" : 1.5
 		},
-		"adsorption" : {"activate":false,
-						"range": [0.5, 5.0],
-						"point": [4.84807555,     4.75410992,      1.46173009]
+		"adsorption" : {"activate":true,
+						"range": [0.5, 3.0],
+						"point": [9.5629, 0.2583, -0.1758]
 		}
-	},
+},
 	
 	"protocol" : {
 		"generate" : {
@@ -70,10 +78,10 @@
 		"optimize" : "generate",
 		"fmax" : 0.005,
 		"preconditioner" : {
-			"mol" : {"initial": true, "update": false, "precon" : "Lindh"},
-			"fixed_frame" : {"initial": true, "update": false, "precon" : "Exp"},
-			"mol-mol" : {"initial": true, "update": false, "precon" : "ID"},
-			"mol-fixed_frame" : {"initial": true, "update": false, "precon" : "ID"},
+			"mol" : {"initial": true, "update": false, "precon" : "ID"},
+			"fixed_frame" : {"initial": false, "update": false, "precon" : "ID"}, 
+			"mol-mol" : {"initial": false, "update": false, "precon" : "ID"},
+			"mol-fixed_frame" : {"initial": false, "update": false, "precon" : "ID"},
 			"rmsd_update" : {"activate":false, "value":0.05}
 		},
 		"constraints" : {
