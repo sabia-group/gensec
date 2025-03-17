@@ -1,7 +1,7 @@
 import numpy as np
 import json
 
-
+# TODO: Reduce parameters to minimum necessary. If some parameter excludes using another, it could be deleted. For example orientations
 
 def Check_input(parameters):
     '''
@@ -51,6 +51,9 @@ def Check_input(parameters):
         if "coms" not in parameters["configuration"]:
             parameters["configuration"]["coms"] = {"activate": False}
             # TODO: Discuss defaults 
+        elif parameters["configuration"]["coms"]["activate"] is True:
+            if "z_values" not in parameters["configuration"]["coms"]:
+                parameters["configuration"]["coms"]["z_values"] = "identical"
             
         if "orientations" not in parameters["configuration"]:
             parameters["configuration"]["orientations"] = {"activate" : True}
@@ -84,11 +87,17 @@ def Check_input(parameters):
             parameters["supercell_finder"]["max_area_diff"] = 0.1
         if "Z_cell_length" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["Z_cell_length"] = 100
-        # TODO: Determine values for max range from the input file if  method is inputfile
+        # TODO: Determine values for max range from the input file if method is inputfile.
         if "max_range_s" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["max_range_s"] = [10, 10]
         if "max_range_f" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["max_range_f"] = [10, 10]
+            
+        parameters["configuration"]["coms"]["activate"] = True
+        parameters["configuration"]["coms"]["same"] = False
+        if "values" not in parameters["configuration"]["coms"]:
+            parameters["configuration"]["coms"]["values"] = "given"
+    
             
     if "number_of_replicas" not in parameters:
         parameters["number_of_replicas"] = 1

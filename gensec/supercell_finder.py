@@ -16,19 +16,16 @@ class Supercell_finder:
         self.parameters = parameters
         self.set_parameters()
             
-    def run(self, unit_cell_methode = None):
+    def run(self, unit_cell_method = None):
         '''
         Runs the supercell finder and sets the optimal supercell points for center of masses for both film and substrate.
         '''
-        if unit_cell_methode is None:
-            if 'unit_cell_methode' in self.parameters['supercell_finder']:
-                unit_cell_methode = self.parameters['supercell_finder']['unit_cell_methode']
-            else:
-                unit_cell_methode = 'inputfile'
+        if unit_cell_method is None:
+            unit_cell_method = self.parameters['supercell_finder']['unit_cell_method']
                 
-        self.set_unit_cell(unit_cell_methode)
+        self.set_unit_cell(unit_cell_method)
         
-        self.set_search_parameters()
+        self.set_parameters()
         
         Area_S, S_tilde = get_supercells(self.max_range_S_1, self.max_range_S_2, self.S)
         Area_F, F_tilde = get_supercells(self.max_range_F_1, self.max_range_F_2, self.F)
@@ -44,6 +41,10 @@ class Supercell_finder:
             matches[:, i] = area_temp < self.max_area_diff
 
         match_indices = np.argwhere(matches)
+        
+        # TODO: Implement auto increase of parameters?
+        if match_indices.size == 0:
+            raise ValueError("No supercell found. The area difference is too small or the search range for S and F was too small.")
 
         ind_original_F = Area_F_ind[match_indices[:, 1]]
         ind_original_S = Area_S_ind[match_indices[:, 0]]
@@ -124,11 +125,11 @@ class Supercell_finder:
         
         
         
-    def set_unit_cell(self, unit_cell_methode):
+    def set_unit_cell(self, unit_cell_method):
         '''
-        Sets the unit cells according to the methode.
+        Sets the unit cells according to the method.
         '''
-        if unit_cell_methode is 'inputfile': 
+        if unit_cell_method == 'inputfile': 
             '''
             Read the cells provided in the input files and use to find supercells
             '''
@@ -151,7 +152,7 @@ class Supercell_finder:
             self.F = np.array([[F_vec_1[0], F_vec_1[1]], [F_vec_2[0], F_vec_2[1]]])
             
         else:
-            raise NotImplementedError('Unit cell methode not implemented')
+            raise NotImplementedError('Unit cell method not implemented')
         
     def set_parameters(self, new_parameters = None):
         '''
@@ -160,13 +161,13 @@ class Supercell_finder:
         if new_parameters is not None:
             self.parameters = new_parameters
 
-        self.max_range_S_1 = self.parameters['supercell_finder']['max_range_S'][0]
-        self.max_range_S_2 = self.parameters['supercell_finder']['max_range_S'][1]
-        self.max_range_F_1 = self.parameters['supercell_finder']['max_range_F'][0]
-        self.max_range_F_2 = self.parameters['supercell_finder']['max_range_F'][1]
+        self.max_range_S_1 = self.parameters['supercell_finder']['max_range_s'][0]
+        self.max_range_S_2 = self.parameters['supercell_finder']['max_range_s'][1]
+        self.max_range_F_1 = self.parameters['supercell_finder']['max_range_f'][0]
+        self.max_range_F_2 = self.parameters['supercell_finder']['max_range_f'][1]
             
         self.max_area_diff = self.parameters['supercell_finder']['max_area_diff']
-        self.Z_cell_length = self.parameters['supercell_finder']['Z_cell_length']
+        self.Z_cell_length = self.parameters['supercell_finder']['z_cell_length']
         
             
     def create_atoms(self):
@@ -175,6 +176,9 @@ class Supercell_finder:
         '''
         S_geo = read(self.S_in_file, format=self.format_S)
         F_geo = read(self.F_in_file, format=self.format_F)
+        
+        S_geo.set_constraint()
+        F_geo.set_constraint()
 
         for i in range(S_geo.positions.shape[0]):
             S_geo.positions[i, :2] = self.R_pretty @ S_geo.positions[i, :2]

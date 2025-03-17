@@ -2,12 +2,12 @@
 {
 	"name" : "MePTCDI_graphene",
 	"trials": 100,
-	"success": 100,
+	"success": 10,
 	"number_of_replicas" : 1,
-	"geometry" : ["geometry_MePTCDI.in", "aims"], 
+	"geometry" : ["F_geometry.in", "aims"], 
 	"fixed_frame" : {
 					"activate" : true,
-					"filename" : "geometry_graphene.in",
+					"filename" : "S_geometry.in",
 					"format" : "aims"
 				},
 	"supercell_finder" : {

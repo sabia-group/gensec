@@ -10,6 +10,7 @@ from gensec.modules import all_right, merge_together, measure_quaternion
 from gensec.outputs import Directories
 from gensec.relaxation import Calculator
 from gensec.check_input import Check_input
+from gensec.supercell_finder import Supercell_finder
 from ase.io.trajectory import Trajectory
 
 
@@ -88,9 +89,16 @@ class Protocol:
             # Find optimal supercell here
             # Adjust mic, coms and number of atoms accordingly
             # Need to eddit coms to give fixed values on top
-            
-            structure = Structure(parameters)
-            fixed_frame = Fixed_frame(parameters)
+            # TODO: Implement a checkpoint for the supercell finder so if there is already a database we can use the same supercell
+            if parameters["supercell_finder"]["activate"]:
+                # TODO: what part of parameters should be overwritten? Should probably do this in check_input already. Thinking of mic and coms.
+                supercell_finder = Supercell_finder(parameters)
+                supercell_finder.run()
+                structure = Structure(parameters, supercell_finder)
+                fixed_frame = Fixed_frame(parameters, supercell_finder.S_atoms)
+            else:
+                structure = Structure(parameters)
+                fixed_frame = Fixed_frame(parameters)
             dirs = Directories(parameters)
 
             while self.trials < parameters["trials"]:

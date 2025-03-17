@@ -12,9 +12,7 @@ import sys
 
 # TODO: Add comments to code for complex operations
 
-# TODO: Add checks 'if '...' in self.parameters' to avoid errors, includes adding default values. Exceptions are for example input files but this also needs a clear error message.
-
-# TODO: Add default values to parameters if not present and safe at the end
+# TODO: port defaults to check_input
 
 # Long term TODO: Rethink design regarding Frame and Structure classes and simplify the current implementation for development
 
@@ -28,7 +26,7 @@ class Structure:
     This class represents a structure composed of multiple molecules. It includes methods for creating the structure based on parameters from a file, creating a configuration for the structure, and creating a torsion and orientation for the structure. The structure object includes attributes for the atoms in the structure, the full and isolated connectivity matrices, a list of torsions, a minimum image convention (MIC) flag, a list of molecules, a mu parameter for the exponential preconditioner, and periodic boundary conditions (PBC).
     """
 
-    def __init__(self, parameters):
+    def __init__(self, parameters, supercell_finder=None):
         """
         Initializes the structure object.
 
@@ -42,13 +40,14 @@ class Structure:
         self.atoms = read(
             parameters["geometry"][0], format=parameters["geometry"][1]
         )
+        self.atoms.set_constraint()
         self.connectivity_matrix_full = create_connectivity_matrix(
             self.atoms, bothways=True
         )
         self.connectivity_matrix_isolated = create_connectivity_matrix(
             self.atoms, bothways=False
         )
-
+        
         if parameters["configuration"]["torsions"]["activate"]:
             if (
                 parameters["configuration"]["torsions"]["list_of_tosrions"]
@@ -66,30 +65,44 @@ class Structure:
                 self.list_of_torsions = parameters["configuration"]["torsions"][
                     "list_of_tosrions"
                 ]
-
-        if parameters["mic"]["activate"] == True:
-            self.pbc = parameters["mic"]["pbc"]
-            self.mic = True
-            self.atoms.set_cell(self.pbc)
-            self.atoms.set_pbc(True)
-            self.mu = None  # Parameter mu for exponential preconditioner
-        self.molecules = [
-            self.atoms.copy() for i in range(parameters["number_of_replicas"])
-        ]
-        
+                
         self.clashes_intramolecular = parameters["configuration"]["clashes"][
             "intramolecular"
         ]
         self.clashes_with_fixed_frame = parameters["configuration"]["clashes"][
             "with_fixed_frame"
         ]
-        if parameters["configuration"]["adsorption"]["activate"]:
-            self.adsorption = True
-            self.adsorption_range = parameters["configuration"]["adsorption"][
-                "range"
-            ]
-            self.adsorption_point = parameters["configuration"]["adsorption"][
-                "point"
+
+        if supercell_finder is not None:
+            self.coms_given = True
+            self.supercell_finder = supercell_finder
+            self.pbc = supercell_finder.cell
+            self.mic = True
+            self.atoms.set_cell(self.pbc)
+            self.atoms.set_pbc(True)
+            self.mu = None  # Parameter mu for exponential preconditioner
+            
+            self.parameters["number_of_replicas"] = self.supercell_finder.F_sc_points_number
+            
+        else:
+            if parameters["mic"]["activate"] == True:
+                self.pbc = parameters["mic"]["pbc"]
+                self.mic = True
+                self.atoms.set_cell(self.pbc)
+                self.atoms.set_pbc(True)
+                self.mu = None  # Parameter mu for exponential preconditioner
+            
+            if parameters["configuration"]["adsorption"]["activate"]:
+                self.adsorption = True
+                self.adsorption_range = parameters["configuration"]["adsorption"][
+                    "range"
+                ]
+                self.adsorption_point = parameters["configuration"]["adsorption"][
+                    "point"
+                ]
+        
+        self.molecules = [
+                self.atoms.copy() for i in range(self.parameters["number_of_replicas"])
             ]
         
         # TODO: delte comments, keep out of master version. Instead use legacy branch or leave in old versions
@@ -285,6 +298,23 @@ class Structure:
                 com = np.array(
                     [choice(x_space), choice(y_space), choice(z_space)]
                 )
+            elif parameters["configuration"]["coms"]["values"] == "given":
+                
+                # TODO: How do we allow for different z-levels? Should we even? Also rethink if z_values makes it too nested and dificult to understand
+                
+                if parameters["configuration"]["coms"]["z_values"] == "identical":
+                    if label == 0:
+                        z = parameters["configuration"]["coms"]["z_axis"]
+                        self.z_choice_temp = choice(np.linspace(start=z[0], stop=z[1], num=z[2], endpoint=True))
+                else:
+                    z = parameters["configuration"]["coms"]["z_axis"]     
+                    self.z_choice_temp = choice(np.linspace(start=z[0], stop=z[1], num=z[2], endpoint=True))
+                
+                com = np.array([self.supercell_finder.F_sc_points[label, 0], 
+                                self.supercell_finder.F_sc_points[label, 1], 
+                                self.z_choice_temp])
+                
+            # TODO: This default should be ported to check_input. Also rethink if this is the best default    
             else:
                 com = np.array(
                     [
@@ -347,6 +377,7 @@ class Structure:
                         self, parameters, label=i
                     )
 
+                # TODO: Why do we have coms same?
                 if parameters["configuration"]["coms"]["same"]:
                     c_temp = {
                         "m{}c{}".format(i, k): c["m0c{}".format(k)]
@@ -791,7 +822,7 @@ class Fixed_frame:
         pbc (TYPE): Description
     """
 
-    def __init__(self, parameters):
+    def __init__(self, parameters, given_atoms=None):
         """
         Initializes the Fixed_frame object.
 
@@ -804,19 +835,26 @@ class Fixed_frame:
             parameters (dict): A dictionary of parameters for initializing the Fixed_frame object. 
                             It should contain a "fixed_frame" key with a dictionary value that includes "activate", "filename", and "format" keys.
         """
-        # Minimum Image Convention
-        self.mic = False
-        if parameters["fixed_frame"]["activate"] == True:
-            self.fixed_frame = read(
-                parameters["fixed_frame"]["filename"],
-                format=parameters["fixed_frame"]["format"],
-            )
-
-        if parameters["mic"]["activate"] == True:
-            self.pbc = parameters["mic"]["pbc"]
+        if given_atoms is not None:
+            self.fixed_frame = given_atoms
             self.mic = True
-            self.fixed_frame.set_cell(self.pbc)
-            self.fixed_frame.set_pbc(True)
+            self.pbc = self.fixed_frame.get_cell()
+        else:
+            # Minimum Image Convention
+            self.mic = False
+            if parameters["fixed_frame"]["activate"] == True:
+                self.fixed_frame = read(
+                    parameters["fixed_frame"]["filename"],
+                    format=parameters["fixed_frame"]["format"],
+                )
+
+            if parameters["mic"]["activate"] == True:
+                self.pbc = parameters["mic"]["pbc"]
+                self.mic = True
+                self.fixed_frame.set_cell(self.pbc)
+                self.fixed_frame.set_pbc(True)
+        
+        self.fixed_frame.positions[:, 2] = self.fixed_frame.positions[:, 2] - np.max(self.fixed_frame.positions[:, 2])
 
     def get_len(self):
         """
