@@ -15,7 +15,8 @@
 					"unit_cell_method" : "inputfile",
 					"max_range_s" : [15, 15],
 					"max_range_f" : [3, 3],
-					"max_area_diff": 0.1
+					"max_area_diff" : 0.1, 
+					"Z_cell_length" : 100
 				},
 	"mic" : {"activate" : false,
 			"pbc": [[18.97210800,      0.00000000,      0.00000000],
@@ -59,7 +60,7 @@
 						"range": [0.5, 3.0],
 						"point": [9.5629, 0.2583, -0.1758]
 		}
-},
+	},
 	
 	"protocol" : {
 		"generate" : {

@@ -4,6 +4,20 @@ from gensec.modules import *
 from ase.io import read, write
 from random import random, randint, uniform, choice, sample
 import itertools
+import sys
+
+# TODO: Change geometry to have same syntax as fixed frame (in the input and therefore how it is read by GenSec)
+
+# TODO: Check descriptions for completeness and redundancies
+
+# TODO: Add comments to code for complex operations
+
+# TODO: Add checks 'if '...' in self.parameters' to avoid errors, includes adding default values. Exceptions are for example input files but this also needs a clear error message.
+
+# TODO: Add default values to parameters if not present and safe at the end
+
+# Long term TODO: Rethink design regarding Frame and Structure classes and simplify the current implementation for development
+
 
 
 class Structure:
@@ -62,6 +76,7 @@ class Structure:
         self.molecules = [
             self.atoms.copy() for i in range(parameters["number_of_replicas"])
         ]
+        
         self.clashes_intramolecular = parameters["configuration"]["clashes"][
             "intramolecular"
         ]
@@ -76,6 +91,8 @@ class Structure:
             self.adsorption_point = parameters["configuration"]["adsorption"][
                 "point"
             ]
+        
+        # TODO: delte comments, keep out of master version. Instead use legacy branch or leave in old versions
         #if parameters["configuration"]["adsorption_surface"]["activate"]:
             #self.adsorption_surface = True
             #self.adsorption_surface_range = parameters["configuration"][
@@ -245,6 +262,7 @@ class Structure:
             Returns:
                 tuple: A tuple containing a numpy array of the COM coordinates and a dictionary mapping the label and index to the COM coordinates.
             """
+            # Comment: This default procedure will basicaly always have clashes if we have more than one molecule. Rethink for label > 0
             if not parameters["configuration"]["coms"]["activate"]:
                 com = [0, 0, 0]
                 c = {"m{}c{}".format(label, i): com[i] for i in range(len(com))}
@@ -420,6 +438,7 @@ class Structure:
 
         return full_conf
 
+    # TODO: delete, keep out of master version. Instead use legacy branch or leave in old versions
     def apply_configuration(self, configuration):
         """Summary
 
@@ -532,6 +551,8 @@ class Structure:
                             t += 1
                     else:
                         pass
+                
+                # TODO: delete comments and keep out of master version. Instead use legacy branch or leave in old versions
                 # numtorsions = randint(1, 2)
                 # # len(self.list_of_torsions) // 10
                 # # print("Select {} of torsions".format(numtorsions))
@@ -603,6 +624,7 @@ class Structure:
                     indices=fixed_indices,
                 )
 
+    # TODO: delete, keep out of master version. Instead use legacy branch or leave in old versions
     def torsions_from_conf(self, configuration):
         """Summary
 

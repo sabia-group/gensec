@@ -9,8 +9,13 @@ from gensec.structure import Structure, Fixed_frame
 from gensec.modules import all_right, merge_together, measure_quaternion
 from gensec.outputs import Directories
 from gensec.relaxation import Calculator
+from gensec.check_input import Check_input
 from ase.io.trajectory import Trajectory
 
+
+# TODO: Add checks 'if '...' in self.parameters' to avoid errors, includes adding default values. Exceptions are for example input files but this also needs a clear error message.
+
+# TODO: Add default values to parameters if not present and safe at the end
 
 class Protocol:
 
@@ -35,6 +40,8 @@ class Protocol:
         Args:
             parameters (TYPE): Description
         """
+        parameters = Check_input(parameters)
+        
         if parameters["protocol"]["generate"]["activate"] is True:
             # connect to the database and start creating structures there
             print("Start generating of the structures")

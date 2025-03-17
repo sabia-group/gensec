@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import product
 from ase.io import read, write
-
+from typing import Optional
 
 
 
@@ -14,6 +14,7 @@ class Supercell_finder:
     def __init__(self, parameters):
         
         self.parameters = parameters
+        self.set_parameters()
             
     def run(self, unit_cell_methode = None):
         '''
@@ -107,6 +108,9 @@ class Supercell_finder:
         self.S_final_ind[3] -= self.max_range_S_2
 
         self.S_sc_points = (self.R_pretty @ self.S.T @ generate_supercell_points(self.S_final_ind[0:2], self.S_final_ind[2:4]).T).T
+        
+        self.F_sc_points_number = self.F_sc_points.shape[0]
+        self.S_sc_points_number = self.S_sc_points.shape[0]
 
         self.V_final, self.Sigma_final, self.W_final = np.linalg.svd(self.T_final)
 
@@ -116,8 +120,10 @@ class Supercell_finder:
                               [*(self.R_pretty @ S_match_mat[minimum_index, :, 1]), 0],
                               [0, 0, self.Z_cell_length]])
         
+        self.create_atoms()
         
-
+        
+        
     def set_unit_cell(self, unit_cell_methode):
         '''
         Sets the unit cells according to the methode.
@@ -147,33 +153,61 @@ class Supercell_finder:
         else:
             raise NotImplementedError('Unit cell methode not implemented')
         
-        
-    
     def set_parameters(self, new_parameters = None):
         '''
-        Sets the parameters for the supercell finder.
+        Sets the parameters for the supercell finder. Defaults are set and checked by Check_input.
         '''
         if new_parameters is not None:
             self.parameters = new_parameters
-        if 'max_range_S' in self.parameters['supercell_finder']:
-            self.max_range_S_1 = self.parameters['supercell_finder']['max_range_S'][0]
-            self.max_range_S_2 = self.parameters['supercell_finder']['max_range_S'][1]
-        else:
-            self.max_range_S_1 = self.max_range_S_2 = 10  # TODO: replace with convention based on unit cell vectors
-        if 'max_range_F' in self.parameters['supercell_finder']:
-            self.max_range_F_1 = self.parameters['supercell_finder']['max_range_F'][0]
-            self.max_range_F_2 = self.parameters['supercell_finder']['max_range_F'][1]
-        else:
-            self.max_range_F_1 = self.max_range_F_2 = 10  # TODO: replace with convention based on unit cell vectors
-        if 'max_area_diff' in self.parameters['supercell_finder']:
-            self.max_area_diff = self.parameters['supercell_finder']['max_area_diff']
-        else:
-            self.max_area_diff = 0.1    # 0.1 is 
-        if 'Z_cell_length' in self.parameters['supercell_finder']:
-            self.Z_cell_length = self.parameters['supercell_finder']['Z_cell_length']
-        else:
-            self.Z_cell_length = 100.0
+
+        self.max_range_S_1 = self.parameters['supercell_finder']['max_range_S'][0]
+        self.max_range_S_2 = self.parameters['supercell_finder']['max_range_S'][1]
+        self.max_range_F_1 = self.parameters['supercell_finder']['max_range_F'][0]
+        self.max_range_F_2 = self.parameters['supercell_finder']['max_range_F'][1]
             
+        self.max_area_diff = self.parameters['supercell_finder']['max_area_diff']
+        self.Z_cell_length = self.parameters['supercell_finder']['Z_cell_length']
+        
+            
+    def create_atoms(self):
+        '''
+        Create the atoms object for substrate and film. They are not adjusted along the z-axis.
+        '''
+        S_geo = read(self.S_in_file, format=self.format_S)
+        F_geo = read(self.F_in_file, format=self.format_F)
+
+        for i in range(S_geo.positions.shape[0]):
+            S_geo.positions[i, :2] = self.R_pretty @ S_geo.positions[i, :2]
+        for i in range(F_geo.positions.shape[0]):
+            F_geo.positions[i, :2] = self.U_final @ F_geo.positions[i, :2]
+
+        for i in range(self.F_sc_points.shape[0]):
+            if i == 0:
+                F_geo_bunch = F_geo.copy()
+                F_geo_bunch.positions[:, :2] += self.F_sc_points[i, :]
+                F_geo_bunch.cell = self.cell
+                F_geo_bunch.pbc = [True, True, False]
+            else:
+                F_geo_temp = F_geo.copy()
+                F_geo_temp.positions[:, :2] += self.F_sc_points[i, :]
+                F_geo_bunch += F_geo_temp
+
+        for i in range(self.S_sc_points.shape[0]):
+            if i == 0:
+                S_geo_bunch = S_geo.copy()
+                S_geo_bunch.positions[:, :2] += self.S_sc_points[i, :]
+                S_geo_bunch.cell = self.cell
+                S_geo_bunch.pbc = [True, True, False]
+            else:
+                S_geo_temp = S_geo.copy()
+                S_geo_temp.positions[:, :2] += self.S_sc_points[i, :]
+                S_geo_bunch += S_geo_temp
+        
+        self.F_atoms = F_geo_bunch
+        self.S_atoms = S_geo_bunch
+        self.joined_atoms = F_geo_bunch + S_geo_bunch
+        
+        
         
 
 
@@ -181,7 +215,7 @@ class Supercell_finder:
     
 # Helper functions:
 
-def reshape_and_order_with_indices(area_array, tilde_matrix, angle_array=None):
+def reshape_and_order_with_indices(area_array, tilde_matrix, angle_array: Optional[bool] = None):
     """
     Reshape a 4D array into a 1D array, order it, and get the original indices.
 
@@ -195,7 +229,7 @@ def reshape_and_order_with_indices(area_array, tilde_matrix, angle_array=None):
     """
     # Flatten the array to 1D
     flat_area = area_array.ravel()
-    flat_tilde = tilde_matrix.reshape(-1, 2, 2)
+    # flat_tilde = tilde_matrix.reshape(-1, 2, 2)
     
     # Get the sorted indices of the flattened array
     sorted_indices = np.argsort(flat_area)

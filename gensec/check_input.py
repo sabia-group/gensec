@@ -1,0 +1,112 @@
+import numpy as np
+import json
+
+
+
+def Check_input(parameters):
+    '''
+    Purposes:  
+
+    1. Check if a parameter exists; otherwise, set it.  
+    2. Set parameter.activate to false if not necessary.  
+    3. Set to default values if necessary and if default values are available.  
+    4. Throw an error if necessary parameters are not set.  
+    5. Safely save updated parameters to a new .json file. 
+    
+     
+    '''
+    if "protocol" not in parameters:
+        raise ValueError("No protocol in input file. Please define if you want to generate and/or search.")
+    else:
+        if parameters["protocol"]["generate"] is False and parameters["protocol"]["search"] is False:
+            raise ValueError("Both generate and search are set to False. Please set one to True.")
+    
+    if "geometry" not in parameters:
+        raise ValueError("No geometry file given in input.")
+    
+    if "configuration" not in parameters:
+        parameters["configuration"] = {
+            "adsorption" : {"activate": False},
+            "clashes" : {"intramolecular" : 2.0, "with_fixed_frame" : 1.5},
+            "coms" : {"activate": False},
+            "orientations" : {"activate" : True},
+            "torsions" : {"activate" : False},
+        }
+        print("No configuration in input file. Clashes set to default values .")
+    else:
+        if "adsorption" not in parameters["configuration"]:
+            parameters["configuration"]["adsorption"] = {"activate": False}
+        elif parameters["configuration"]["adsorption"]["activate"] is True:
+            if "range" not in parameters["configuration"]["adsorption"]:
+                parameters["configuration"]["adsorption"]["range"] = [0.5, 3.0]
+                print("Range for adsorption not given. Set to default values [0.5, 3.0].")
+            if "point" not in parameters["configuration"]["adsorption"]:
+                parameters["configuration"]["adsorption"]["point"] = [0.0, 0.0, 0.0]
+                print("Point for adsorption not given. Set to default values [0.0, 0.0, 0.0].")
+        
+        if "clashes" not in parameters["configuration"]:
+            parameters["configuration"]["clashes"] = {"intramolecular" : 2.0, "with_fixed_frame" : 1.5}
+            print("No clashes parameters given. Set to default values (intramolecular : 2.0 and fixed frame: 1.5).")
+            
+        if "coms" not in parameters["configuration"]:
+            parameters["configuration"]["coms"] = {"activate": False}
+            # TODO: Discuss defaults 
+            
+        if "orientations" not in parameters["configuration"]:
+            parameters["configuration"]["orientations"] = {"activate" : True}
+            # TODO: Discuss defaults
+            
+        if "torsions" not in parameters["configuration"]:
+            parameters["configuration"]["torsions"] = {"activate" : False}
+            # TODO: Discuss defaults
+        
+    # TODO: Work on calculator and implement chekck after if search is activated.
+    
+    if "fixed_frame" not in parameters:
+        parameters["fixed_frame"] = {"activate" : False}
+    elif parameters["fixed_frame"] is True:
+        if "filename" not in parameters["fixed_frame"]:
+            raise ValueError("Fixed frame is activated but no filename is given. Please also remember to add the format.")
+    
+    if "mic" not in parameters:
+        parameters["mic"] = {"activate" : False}
+    else:
+        if parameters["mic"]["activate"] is True:
+            if "pbe" not in parameters["mic"]:
+                raise ValueError("Mic is activated but no pbe is given. Please add pbe.")   # TODO: check if cell is in fixed frame and set as pbe
+    
+    if "supercell_finder" not in parameters:
+        parameters["supercell_finder"] = {"activate" : False}
+    elif parameters["supercell_finder"]["activate"] is True:
+        if "unit_cell_method" not in parameters["supercell_finder"]:
+            parameters["supercell_finder"]["unit_cell_method"] = "inputfile"
+        if "max_area_diff" not in parameters["supercell_finder"]:
+            parameters["supercell_finder"]["max_area_diff"] = 0.1
+        if "Z_cell_length" not in parameters["supercell_finder"]:
+            parameters["supercell_finder"]["Z_cell_length"] = 100
+        # TODO: Determine values for max range from the input file if  method is inputfile
+        if "max_range_s" not in parameters["supercell_finder"]:
+            parameters["supercell_finder"]["max_range_s"] = [10, 10]
+        if "max_range_f" not in parameters["supercell_finder"]:
+            parameters["supercell_finder"]["max_range_f"] = [10, 10]
+            
+    if "number_of_replicas" not in parameters:
+        parameters["number_of_replicas"] = 1
+    
+    if "trials" not in parameters:
+        parameters["trials"] = 1000
+        
+    if "success" not in parameters:
+        parameters["success"] = 1500
+        
+    if "name" not in parameters:
+        parameters["name"] = "Unnamed"
+        print("No name given. Set to default value 'Unnamed'.")
+        
+    safe_parameters = open("checked_parameters.json", "w")
+    json.dump(parameters, safe_parameters, indent = 4)
+    safe_parameters.close()
+    print("Checked parameters and saved to checked_parameters.json.")
+    
+    return parameters
+    
