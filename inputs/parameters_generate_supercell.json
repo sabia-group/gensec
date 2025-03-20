@@ -4,10 +4,13 @@
 	"trials": 100,
 	"success": 100,
 	"number_of_replicas" : 1,
-	"geometry" : ["geometry_MePTCDI.in", "aims"], 
+	"geometry" : {
+				"filename" : "F_geometry.in",
+				"format" : "aims"
+		},
 	"fixed_frame" : {
 					"activate" : true,
-					"filename" : "geometry_graphene.in",
+					"filename" : "S_graphene.in",
 					"format" : "aims"
 				},
 	"supercell_finder" : {

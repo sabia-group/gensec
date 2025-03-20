@@ -4,7 +4,10 @@
 	"trials": 1000,
 	"success": 2000,
 	"number_of_replicas" : 1,
-	"geometry" : ["system.in", "aims"],
+	"geometry" : {
+				"filename" : "system.in",
+				"format" : "aims"
+		},
 	"fixed_frame" : {"activate" : false,
 					"filename" : "slab.in",
 					"format" : "aims"

@@ -4,7 +4,10 @@
 	"trials": 100,
 	"success": 10,
 	"number_of_replicas" : 1,
-	"geometry" : ["F_geometry.in", "aims"], 
+	"geometry" : {
+				"filename" : "F_geometry.in",
+				"format" : "aims"
+		},
 	"fixed_frame" : {
 					"activate" : true,
 					"filename" : "S_geometry.in",

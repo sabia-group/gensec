@@ -134,10 +134,10 @@ class Supercell_finder:
             Read the cells provided in the input files and use to find supercells
             '''
             self.S_in_file = self.parameters['fixed_frame']['filename']
-            self.F_in_file = self.parameters['geometry'][0]
+            self.F_in_file = self.parameters['geometry']['filename']
 
             self.format_S = self.parameters['fixed_frame']['format']
-            self.format_F = self.parameters['geometry'][1]
+            self.format_F = self.parameters['geometry']['format']
 
             S_initial = read(self.S_in_file, format=self.format_S)
             F_initial = read(self.F_in_file, format=self.format_F)

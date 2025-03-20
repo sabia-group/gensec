@@ -38,7 +38,7 @@ class Structure:
         self.parameters = parameters
 
         self.atoms = read(
-            parameters["geometry"][0], format=parameters["geometry"][1]
+            parameters["geometry"]["filename"], format=parameters["geometry"]["format"]
         )
         self.atoms.set_constraint()
         self.connectivity_matrix_full = create_connectivity_matrix(
