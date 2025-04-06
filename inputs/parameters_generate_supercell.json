@@ -2,7 +2,7 @@
 {
 	"name" : "MePTCDI_graphene",
 	"trials": 100,
-	"success": 100,
+	"success": 20,
 	"number_of_replicas" : 1,
 	"geometry" : {
 				"filename" : "F_geometry.in",
@@ -10,12 +10,13 @@
 		},
 	"fixed_frame" : {
 					"activate" : true,
-					"filename" : "S_graphene.in",
-					"format" : "aims"
+					"filename" : "S_geometry.in",
+					"format" : "aims",
+					"is_unit_cell" : false
 				},
 	"supercell_finder" : {
 					"activate" : true,
-					"unit_cell_method" : "inputfile",
+					"unit_cell_method" : "detect",
 					"max_range_s" : [15, 15],
 					"max_range_f" : [3, 3],
 					"max_area_diff" : 0.1, 
@@ -48,9 +49,11 @@
 		},
 		"coms" : {
 					"activate" : true,
-					"values" : "given",
 					"z_values" : "identical",
-					"z_axis" : [3.0, 7.0, 21]
+					"values": "restricted",
+					"x_axis" : [0, 0, 1],
+					"y_axis" : [0, 0, 1],
+					"z_axis" : [4, 7, 20]
 		},
 		"clashes" : {"intramolecular" : 2.0,
 					"with_fixed_frame" : 1.5

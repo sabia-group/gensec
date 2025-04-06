@@ -1,5 +1,6 @@
 import numpy as np
 from itertools import product
+import ase
 from ase.io import read, write
 from typing import Optional
 
@@ -11,19 +12,20 @@ class Supercell_finder:
     This class is used to run the supercell finder and offer different options to the user.
     '''
     
-    def __init__(self, parameters):
+    def __init__(self, parameters, set_unit_cells = True):
         
         self.parameters = parameters
         self.set_parameters()
+        
+        if set_unit_cells:
+            self.set_unit_cell(self.parameters['supercell_finder']['unit_cell_method'])
             
-    def run(self, unit_cell_method = None):
+    def run(self):
         '''
         Runs the supercell finder and sets the optimal supercell points for center of masses for both film and substrate.
         '''
-        if unit_cell_method is None:
-            unit_cell_method = self.parameters['supercell_finder']['unit_cell_method']
-                
-        self.set_unit_cell(unit_cell_method)
+        if not hasattr(self, 'S') or not hasattr(self, 'F'):
+            raise ValueError("Unit cells not set. Please set unit cells before running the supercell finder.")
         
         self.set_parameters()
         
@@ -125,34 +127,42 @@ class Supercell_finder:
         
         
         
-    def set_unit_cell(self, unit_cell_method):
+    def set_unit_cell(self, unit_cell_method, provided_atoms: Optional[ase.Atoms] = None):
         '''
-        Sets the unit cells according to the method.
+        Sets the unit cells according to the method. Not designed for cases where the unit cell of the substrate is not provided in the input file.
         '''
-        if unit_cell_method == 'inputfile': 
-            '''
-            Read the cells provided in the input files and use to find supercells
-            '''
-            self.S_in_file = self.parameters['fixed_frame']['filename']
+        
+        self.S_in_file = self.parameters['fixed_frame']['filename']
+        self.format_S = self.parameters['fixed_frame']['format']
+        S_initial = read(self.S_in_file, format=self.format_S)
+        S_vec_1 = S_initial.cell[0]
+        S_vec_2 = S_initial.cell[1]
+        self.S = np.array([[S_vec_1[0], S_vec_1[1]], [S_vec_2[0], S_vec_2[1]]])
+        self.S_geo = S_initial.copy()
+        
+        
+        if unit_cell_method == 'inputfile':     # Get the unit cell from the input file
+            
             self.F_in_file = self.parameters['geometry']['filename']
-
-            self.format_S = self.parameters['fixed_frame']['format']
             self.format_F = self.parameters['geometry']['format']
-
-            S_initial = read(self.S_in_file, format=self.format_S)
             F_initial = read(self.F_in_file, format=self.format_F)
 
-            S_vec_1 = S_initial.cell[0]
-            S_vec_2 = S_initial.cell[1]
+
+        elif unit_cell_method == 'detect':    # Get the unit cell from the provided ase.Atoms object (unit cell is detected usning unit cell finder beforehand)
             
-            F_vec_1 = F_initial.cell[0]
-            F_vec_2 = F_initial.cell[1]
-            
-            self.S = np.array([[S_vec_1[0], S_vec_1[1]], [S_vec_2[0], S_vec_2[1]]])
-            self.F = np.array([[F_vec_1[0], F_vec_1[1]], [F_vec_2[0], F_vec_2[1]]])
+            F_initial = provided_atoms
             
         else:
             raise NotImplementedError('Unit cell method not implemented')
+
+        F_vec_1 = F_initial.cell[0]
+        F_vec_2 = F_initial.cell[1]
+            
+        self.F = np.array([[F_vec_1[0], F_vec_1[1]], [F_vec_2[0], F_vec_2[1]]])
+        self.F_geo = F_initial.copy()
+        
+        self.S_geo.positions[:, 2] = self.S_geo.positions[:, 2] - np.max(self.S_geo.positions[:, 2])
+        
         
     def set_parameters(self, new_parameters = None):
         '''
@@ -174,8 +184,8 @@ class Supercell_finder:
         '''
         Create the atoms object for substrate and film. They are not adjusted along the z-axis.
         '''
-        S_geo = read(self.S_in_file, format=self.format_S)
-        F_geo = read(self.F_in_file, format=self.format_F)
+        S_geo = self.S_geo.copy()
+        F_geo = self.F_geo.copy()
         
         S_geo.set_constraint()
         F_geo.set_constraint()

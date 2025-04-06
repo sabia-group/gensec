@@ -13,6 +13,7 @@ from gensec.check_input import Check_input
 from gensec.supercell_finder import Supercell_finder
 from ase.io.trajectory import Trajectory
 
+from gensec.unit_cell_finder import Unit_cell_finder, gen_base_sheet
 
 # TODO: Add checks 'if '...' in self.parameters' to avoid errors, includes adding default values. Exceptions are for example input files but this also needs a clear error message.
 
@@ -90,29 +91,48 @@ class Protocol:
             # Adjust mic, coms and number of atoms accordingly
             # Need to eddit coms to give fixed values on top
             # TODO: Implement a checkpoint for the supercell finder so if there is already a database we can use the same supercell
-            if parameters["supercell_finder"]["activate"]:
+            # TODO: Does still need to be here? Makes things more complicated.But still interesting for cases where you see the cells on images and dont know the exact orientation.
+            if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "inputfile":
                 # TODO: what part of parameters should be overwritten? Should probably do this in check_input already. Thinking of mic and coms.
                 supercell_finder = Supercell_finder(parameters)
                 supercell_finder.run()
                 structure = Structure(parameters, supercell_finder)
                 fixed_frame = Fixed_frame(parameters, supercell_finder.S_atoms)
+                fixed_frame_sheet = Fixed_frame(parameters, supercell_finder.S_atoms)
+            
+            elif parameters["supercell_finder"]["activate"]:
+                structure = Structure(parameters)
+                fixed_frame = Fixed_frame(parameters)
+                base_sheet = gen_base_sheet(structure.atoms, fixed_frame.fixed_frame, num_mol = parameters["number_of_replicas"])
+                fixed_frame_sheet = Fixed_frame(parameters, base_sheet)
+                supercell_finder = Supercell_finder(parameters, set_unit_cells = False)
+                
             else:
                 structure = Structure(parameters)
                 fixed_frame = Fixed_frame(parameters)
+                
+                # Check if we have a base sheet we want to work with or if we need to create one from a unit cell. Only supposed to be used to chcek for clashes with the configured structure.
+                if parameters["fixed_frame"]["activate"] is True:
+                    if parameters["fixed_frame"]["is_unit_cell"] is True:
+                        fixed_frame_sheet = Fixed_frame(parameters)
+                    else:                        
+                        base_sheet = gen_base_sheet(structure.atoms, fixed_frame.fixed_frame, num_mol = parameters["number_of_replicas"])
+                        fixed_frame_sheet = Fixed_frame(parameters, base_sheet)
             dirs = Directories(parameters)
 
             while self.trials < parameters["trials"]:
                 while self.success < parameters["success"]:
                     print(self.trials, self.success)
                     # Generate the vector in internal degrees of freedom
-                    configuration, conf = structure.create_configuration(
-                        parameters
-                    )
+                    _, conf = structure.create_configuration(parameters)
                     # print(conf)
                     # Apply the configuration to structure
                     structure.apply_conf(conf)
+                    if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "detect":
+                        oriented_mol = structure.atoms_object()
+                        
                     # Check if that structure is sensible
-                    if all_right(structure, fixed_frame):
+                    if all_right(structure, fixed_frame_sheet):
                         # Check if it is in database
                         if parameters["configuration"]["torsions"]["activate"]:
 
@@ -125,55 +145,56 @@ class Protocol:
                                     if not structure.find_in_database(
                                         conf, db_trajectories, parameters
                                     ):
-                                        db_generated.write(
-                                            structure.atoms_object(), **conf
-                                        )
-                                        #if hasattr(self, "fixed_frame"):
-                                        db_generated_visual.write(
-                                            structure.atoms_object_visual(
-                                                fixed_frame
-                                            ),
-                                            **conf
-                                        )
-
+                                        
+                                        # TODO: Add option adjust position of each molecule on latice? Makes things very nested and do we even want this?
+                                        if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "detect":
+                                            oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol) # No need to pass cell length as will be set by supercell finder
+                                            supercell_finder.set_unit_cell('detect', oriented_mol_with_cell)
+                                            supercell_finder.run()
+                                            db_generated.write(supercell_finder.F_atoms, **conf)
+                                            db_generated_visual.write(supercell_finder.joined_atoms, **conf)
+                                            write("good_luck.xyz",supercell_finder.joined_atoms,format="xyz")
+                                            
+                                        else:
+                                            db_generated.write(structure.atoms_object(), **conf)
+                                            #if hasattr(self, "fixed_frame"):
+                                            db_generated_visual.write(structure.atoms_object_visual(fixed_frame),**conf)
+                                            write("good_luck.xyz",merge_together(structure, fixed_frame),format="xyz",)
+                                        
                                         self.trials = 0
                                         self.success = db_generated.count()
 
                                         print("Good", conf)
-                                        write(
-                                            "good_luck.xyz",
-                                            merge_together(
-                                                structure, fixed_frame
-                                            ),
-                                            format="xyz",
-                                        )
-                                        print(
-                                            "Generated structures", self.success
-                                        )
+                                        print("Generated structures", self.success)
 
                         else:
-                            db_generated.write(structure.atoms_object(), **conf)
-                            #if hasattr(self, "fixed_frame"):
-                            db_generated_visual.write(
-                                structure.atoms_object_visual(fixed_frame),
-                                **conf
-                            )
+                            # TODO: See above
+                            if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "detect":
+                                oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol) # No need to pass cell length as will be set by supercell finder
+                                supercell_finder.set_unit_cell('detect', oriented_mol_with_cell)
+                                supercell_finder.run()
+                                db_generated.write(supercell_finder.F_atoms, **conf)
+                                db_generated_visual.write(supercell_finder.joined_atoms, **conf)
+                                write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
+                                            
+                                        
+                            else:
+                                db_generated.write(structure.atoms_object(), **conf)
+                                #if hasattr(self, "fixed_frame"):
+                                db_generated_visual.write(structure.atoms_object_visual(fixed_frame),**conf)
+                                write("good_luck.xyz",merge_together(structure, fixed_frame),format="xyz",)
+                                            
 
                             self.trials = 0
                             self.success = db_generated.count()
 
                             print("Good", conf)
-                            write(
-                                "good_luck.xyz",
-                                merge_together(structure, fixed_frame),
-                                format="xyz",
-                            )
                             print("Generated structures", self.success)
                     else:
                         print("BAD", conf)
                         write(
                             "bad_luck.xyz",
-                            merge_together(structure, fixed_frame),
+                            merge_together(structure, fixed_frame_sheet),
                             format="xyz",
                         )
                         print("Trials made", self.trials)

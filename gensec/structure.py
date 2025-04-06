@@ -37,16 +37,62 @@ class Structure:
         """
         self.parameters = parameters
 
-        self.atoms = read(
+        if supercell_finder is not None:
+            self.atoms = supercell_finder.F_geo.copy()
+            self.atoms.set_constraint()
+            
+            self.coms_given = True
+            self.supercell_finder = supercell_finder
+            self.pbc = supercell_finder.cell
+            self.mic = True
+            self.atoms.set_cell(self.pbc)
+            self.atoms.set_pbc(True)
+            self.mu = None  # Parameter mu for exponential preconditioner
+            
+            self.molecules = [
+                self.atoms.copy() for i in range(self.supercell_finder.F_sc_points_number)
+            ]
+            
+            
+        else:
+            self.atoms = read(
             parameters["geometry"]["filename"], format=parameters["geometry"]["format"]
-        )
-        self.atoms.set_constraint()
+            )
+            self.atoms.set_constraint()
+            
+            self.molecules = [
+                self.atoms.copy() for i in range(self.parameters["number_of_replicas"])
+            ]
+            
+            if parameters["mic"]["activate"] == True:
+                self.pbc = parameters["mic"]["pbc"]
+                self.mic = True
+                self.atoms.set_cell(self.pbc)
+                self.atoms.set_pbc(True)
+                self.mu = None  # Parameter mu for exponential preconditioner
+            
+            if parameters["configuration"]["adsorption"]["activate"]:
+                self.adsorption = True
+                self.adsorption_range = parameters["configuration"]["adsorption"][
+                    "range"
+                ]
+                self.adsorption_point = parameters["configuration"]["adsorption"][
+                    "point"
+                ]
+        
         self.connectivity_matrix_full = create_connectivity_matrix(
             self.atoms, bothways=True
         )
         self.connectivity_matrix_isolated = create_connectivity_matrix(
             self.atoms, bothways=False
         )
+                
+        self.clashes_intramolecular = parameters["configuration"]["clashes"][
+            "intramolecular"
+        ]
+        self.clashes_with_fixed_frame = parameters["configuration"]["clashes"][
+            "with_fixed_frame"
+        ]
         
         if parameters["configuration"]["torsions"]["activate"]:
             if (
@@ -65,45 +111,7 @@ class Structure:
                 self.list_of_torsions = parameters["configuration"]["torsions"][
                     "list_of_tosrions"
                 ]
-                
-        self.clashes_intramolecular = parameters["configuration"]["clashes"][
-            "intramolecular"
-        ]
-        self.clashes_with_fixed_frame = parameters["configuration"]["clashes"][
-            "with_fixed_frame"
-        ]
-
-        if supercell_finder is not None:
-            self.coms_given = True
-            self.supercell_finder = supercell_finder
-            self.pbc = supercell_finder.cell
-            self.mic = True
-            self.atoms.set_cell(self.pbc)
-            self.atoms.set_pbc(True)
-            self.mu = None  # Parameter mu for exponential preconditioner
-            
-            self.parameters["number_of_replicas"] = self.supercell_finder.F_sc_points_number
-            
-        else:
-            if parameters["mic"]["activate"] == True:
-                self.pbc = parameters["mic"]["pbc"]
-                self.mic = True
-                self.atoms.set_cell(self.pbc)
-                self.atoms.set_pbc(True)
-                self.mu = None  # Parameter mu for exponential preconditioner
-            
-            if parameters["configuration"]["adsorption"]["activate"]:
-                self.adsorption = True
-                self.adsorption_range = parameters["configuration"]["adsorption"][
-                    "range"
-                ]
-                self.adsorption_point = parameters["configuration"]["adsorption"][
-                    "point"
-                ]
         
-        self.molecules = [
-                self.atoms.copy() for i in range(self.parameters["number_of_replicas"])
-            ]
         
         # TODO: delte comments, keep out of master version. Instead use legacy branch or leave in old versions
         #if parameters["configuration"]["adsorption_surface"]["activate"]:
@@ -205,17 +213,9 @@ class Structure:
                     == "exclusion"
                 ):
                     exclude = np.eye(3)[choice([0, 1, 2])]
-                    # print("Exclude")
-                    # print(exclude)
-                    x = parameters["configuration"]["orientations"]["vector"][
-                        "x"
-                    ]
-                    y = parameters["configuration"]["orientations"]["vector"][
-                        "y"
-                    ]
-                    z = parameters["configuration"]["orientations"]["vector"][
-                        "z"
-                    ]
+                    x = parameters["configuration"]["orientations"]["vector"]["x"]
+                    y = parameters["configuration"]["orientations"]["vector"]["y"]
+                    z = parameters["configuration"]["orientations"]["vector"]["z"]
                     quaternion = produce_quaternion(
                         choice(angles),
                         np.array(
@@ -227,15 +227,9 @@ class Structure:
                         ),
                     )
                 else:
-                    x = parameters["configuration"]["orientations"]["vector"][
-                        "x"
-                    ]
-                    y = parameters["configuration"]["orientations"]["vector"][
-                        "y"
-                    ]
-                    z = parameters["configuration"]["orientations"]["vector"][
-                        "z"
-                    ]
+                    x = parameters["configuration"]["orientations"]["vector"]["x"]
+                    y = parameters["configuration"]["orientations"]["vector"]["y"]
+                    z = parameters["configuration"]["orientations"]["vector"]["z"]
                     quaternion = produce_quaternion(
                         choice(angles),
                         np.array([choice(x), choice(y), choice(z)]),
@@ -275,7 +269,13 @@ class Structure:
             Returns:
                 tuple: A tuple containing a numpy array of the COM coordinates and a dictionary mapping the label and index to the COM coordinates.
             """
+            # TODO: For the case where we first want to generate the molecules inside a unit cell and then get the supercell, how
+            # can we implement that efficiently while not overloading the user input but keeping it understandable?
+            
             # Comment: This default procedure will basicaly always have clashes if we have more than one molecule. Rethink for label > 0
+            if hasattr(self, "supercell_finder"):
+                parameters["configuration"]["coms"]["values"] = "given"
+            
             if not parameters["configuration"]["coms"]["activate"]:
                 com = [0, 0, 0]
                 c = {"m{}c{}".format(label, i): com[i] for i in range(len(com))}
@@ -328,16 +328,11 @@ class Structure:
 
         if parameters["configuration"]["torsions"]["activate"]:
             torsions, t = make_torsion(self, parameters, label=0)
-        # if parameters["configuration"]["orientations"]["activate"]:
+        
         quaternion, q = make_orientation(self, parameters, label=0)
-        # else:
-        # default = [0,0,0,1]
-        # quaternion, q = [0,0,0,1], {"m{}q{}".format(0, i) : default[i] for i in range(len(default))}     # Initial orientation
-        # if parameters["configuration"]["coms"]["activate"]:
+
         coms, c = make_com(self, parameters, label=0)
-        # else:
-        # default = [0, 0, 0]
-        # coms, c = [0,0,0], {"m{}c{}".format(0, i) : default[i] for i in range(len(default))}  # put center of mass to the origin
+        
         if not any(
             parameters["configuration"][i]["activate"]
             for i in parameters["configuration"]
@@ -392,7 +387,7 @@ class Structure:
                     full_conf.update(**q_temp, **c_temp)
                     vec = np.hstack((quaternion, coms))
                 configuration = np.hstack((configuration, vec))
-        # print(full_conf)
+                
         return configuration, full_conf
 
     def extract_conf_keys_from_row(self):
@@ -562,7 +557,6 @@ class Structure:
                         range(len(self.list_of_torsions)),
                         len(self.list_of_torsions),
                     )
-                    # print(sampled_torsions)
                     # for t in range(len(self.list_of_torsions)):
                     while t < len(self.list_of_torsions):
                         fixed_indices = carried_atoms(

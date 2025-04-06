@@ -71,6 +71,8 @@ def Check_input(parameters):
     elif parameters["fixed_frame"] is True:
         if "filename" not in parameters["fixed_frame"]:
             raise ValueError("Fixed frame is activated but no filename is given. Please also remember to add the format.")
+        if "is_unit_cell" not in parameters["fixed_frame"]:
+            parameters["fixed_frame"]["is_unit_cell"] = False
     
     if "mic" not in parameters:
         parameters["mic"] = {"activate" : False}
