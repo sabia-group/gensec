@@ -171,7 +171,7 @@ class Protocol:
                                             write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
                                             
                                         else:
-                                            print("Forces too high")
+                                            print("Forces too large")
                                             is_good = False
                                             
                                     else:
@@ -193,7 +193,7 @@ class Protocol:
                                         write("good_luck.xyz",merged,format="extxyz")
                                         
                                     else:
-                                        print("Forces too high")
+                                        print("Forces too large")
                                         is_good = False
                                         
                                 else:

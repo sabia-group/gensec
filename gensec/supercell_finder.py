@@ -54,16 +54,16 @@ class Supercell_finder:
         F_match_mat_1 = np.transpose(F_tilde[ind_original_F[:, 0], ind_original_F[:, 1], ind_original_F[:, 2], ind_original_F[:, 3], ...], axes=(0, 2, 1))
         F_match_mat_2 = np.copy(F_match_mat_1)[:, :, ::-1]
         S_match_mat = np.transpose(S_tilde[ind_original_S[:, 0], ind_original_S[:, 1], ind_original_S[:, 2], ind_original_S[:, 3], ...], axes=(0, 2, 1))
-        F_match_mat_inv_1 = np.linalg.inv(F_match_mat_1)
-        F_match_mat_inv_2 = np.linalg.inv(F_match_mat_2)
+        F_match_mat_inv_1 = inv2(F_match_mat_1)
+        F_match_mat_inv_2 = inv2(F_match_mat_2)
         T_1 = S_match_mat @ F_match_mat_inv_1
         T_2 = S_match_mat @ F_match_mat_inv_2
 
         # TODO: Think about what to safe (add to self) and what not. Also consider adding another way to determine the optimal supercell, maybe leaving out Sigmas (therefore Ts) with eigenvalues smaller than 1
         # As desribed in the thesis, this would leave out supercells which have any squeezing induced by the transformation
         
-        V_1, _, W_1 = np.linalg.svd(T_1)
-        V_2, _, W_2 = np.linalg.svd(T_2)
+        V_1, _, W_1 = svd2(T_1)
+        V_2, _, W_2 = svd2(T_2)
 
         U_1 = V_1 @ W_1
         U_2 = V_2 @ W_2
@@ -388,3 +388,77 @@ def get_supercells(max_range_1, max_range_2, row_mat, comp_angle = False):
         return Area, np.degrees(Angle), Tilde
     else:
         return Area, Tilde
+    
+def svd2(A):
+    # Code by Jon Barron https://github.com/jonbarron/svd2.git
+    # Adapted from https://lucidar.me/en/mathematics/singular-value-decomposition-of-a-2x2-matrix/
+    '''
+    Computes the singular value decomposition of a N 2x2 matrices A.
+    '''
+    
+    def f(X):
+        a = X[:,0,1] + X[:,1,0]
+        b = X[:,0,0] - X[:,1,1]
+        z = np.sqrt((b + 1j*a)/np.sqrt(a**2 + b**2))
+        z_real = np.real(z)
+        z_imag = np.imag(z)
+        q = (1 + 1/(z_real**2 + z_imag**2))
+        cos = 0.5 * z_real * q
+        sin = 0.5 * z_imag * q
+        Y = np.reshape(np.stack([cos, -sin, sin, cos], -1), [-1, 2, 2])
+        return Y
+    if len(A.shape) == 2:
+        A = np.reshape(A, [1, 2, 2])
+    
+    AAT = np.einsum('nij,nkj->nik', A, A) 
+    U = f(AAT)
+
+    trace = AAT[:,0,0] + AAT[:,1,1]
+    d = np.sqrt((AAT[:,0,0] - AAT[:,1,1])**2 + 4*(AAT[:,0,1] * AAT[:,1,0]))
+    s = np.sqrt(0.5 * (trace[...,None] + np.stack([d, -d], -1)))
+
+    ATA = np.einsum('nji,njk->nik', A, A) 
+    W = f(ATA)
+
+    D00 = np.sign(
+        (U[:,0,0] * A[:,0,0] + U[:,1,0] * A[:,1,0]) * W[:,0,0] +
+        (U[:,0,0] * A[:,0,1] + U[:,1,0] * A[:,1,1]) * W[:,1,0])
+    D11 = np.sign(
+        (U[:,0,1] * A[:,0,0] + U[:,1,1] * A[:,1,0]) * W[:,0,1] +
+        (U[:,0,1] * A[:,0,1] + U[:,1,1] * A[:,1,1]) * W[:,1,1])
+    VT = np.reshape(np.stack([
+        W[:,0,0] * D00, W[:,1,0] * D00,
+        W[:,0,1] * D11, W[:,1,1] * D11], -1), [-1, 2, 2])
+  
+    return U, s, VT
+
+def inv2(A: np.ndarray) -> np.ndarray:
+    """
+    Invert a batch of 2x2 matrices.
+    A: array of shape (N,2,2)
+    Returns an array of same shape containing the inverses.
+    """
+    if len(A.shape) == 2:
+        A = np.reshape(A, [1, 2, 2])
+    
+    # Extract entries
+    a = A[:, 0, 0]
+    b = A[:, 0, 1]
+    c = A[:, 1, 0]
+    d = A[:, 1, 1]
+
+    # Compute determinant
+    det = a * d - b * c
+
+    # Allocate output
+    A_inv = np.empty_like(A)
+
+    # Fill with adjugate entries
+    A_inv[:, 0, 0] =  d
+    A_inv[:, 0, 1] = -b
+    A_inv[:, 1, 0] = -c
+    A_inv[:, 1, 1] =  a
+
+    # Divide each 2×2 block by its scalar determinant
+    A_inv /= det[:, None, None]
+    return A_inv
