@@ -4,6 +4,7 @@
 import ase.db
 import os
 import sys
+import numpy as np
 from ase.io import read, write
 from gensec.structure import Structure, Fixed_frame
 from gensec.modules import all_right, merge_together, measure_quaternion
@@ -55,6 +56,15 @@ class Protocol:
                 os.remove("db_generated.lock")
 
             db_generated = ase.db.connect("db_generated.db")
+            
+            if not os.path.exists("db_generated_frames.db") and parameters["fixed_frame"]["is_unit_cell"]:
+                db_generated_frames = open("db_generated_frames.db", "w")
+            if os.path.exists("db_generated_frames.db-journal"):
+                os.remove("db_generated_frames.db-journal")
+            if os.path.exists("db_generated_frames.lock"):
+                os.remove("db_generated_frames.lock")
+            
+            db_generated_frames = ase.db.connect("db_generated_frames.db")
 
             if not os.path.exists("db_relaxed.db"):
                 db_relaxed = open("db_relaxed.db", "w")
@@ -112,14 +122,15 @@ class Protocol:
                 fixed_frame = Fixed_frame(parameters)
                 
                 # Check if we have a base sheet we want to work with or if we need to create one from a unit cell. Only supposed to be used to chcek for clashes with the configured structure.
-                if parameters["fixed_frame"]["activate"] is True:
-                    if parameters["fixed_frame"]["is_unit_cell"] is True:
+                if parameters["fixed_frame"]["activate"]:
+                    if parameters["fixed_frame"]["is_unit_cell"]:
                         fixed_frame_sheet = Fixed_frame(parameters)
                     else:                        
                         base_sheet = gen_base_sheet(structure.atoms, fixed_frame.fixed_frame, num_mol = parameters["number_of_replicas"])
                         fixed_frame_sheet = Fixed_frame(parameters, base_sheet)
             dirs = Directories(parameters)
-
+            if parameters["check_forces"]["activate"]:
+                calculator = Calculator(parameters)
             while self.trials < parameters["trials"]:
                 while self.success < parameters["success"]:
                     print(self.trials, self.success)
@@ -130,79 +141,91 @@ class Protocol:
                     structure.apply_conf(conf)
                     if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "detect":
                         oriented_mol = structure.atoms_object()
-                        
                     # Check if that structure is sensible
+                    is_good = True
                     if all_right(structure, fixed_frame_sheet):
                         # Check if it is in database
+                        in_db = False
                         if parameters["configuration"]["torsions"]["activate"]:
+                            in_db = True
+                            if not structure.find_in_database(conf, db_generated, parameters):
+                                if not structure.find_in_database(conf, db_relaxed, parameters ):
+                                    if not structure.find_in_database(conf, db_trajectories, parameters):
+                                        in_db = False
 
-                            if not structure.find_in_database(
-                                conf, db_generated, parameters
-                            ):
-                                if not structure.find_in_database(
-                                    conf, db_relaxed, parameters
-                                ):
-                                    if not structure.find_in_database(
-                                        conf, db_trajectories, parameters
-                                    ):
-                                        
-                                        # TODO: Add option adjust position of each molecule on latice? Makes things very nested and do we even want this?
-                                        if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "detect":
-                                            oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol) # No need to pass cell length as will be set by supercell finder
-                                            supercell_finder.set_unit_cell('detect', oriented_mol_with_cell)
-                                            supercell_finder.run()
-                                            db_generated.write(supercell_finder.F_atoms, **conf)
-                                            db_generated_visual.write(supercell_finder.joined_atoms, **conf)
-                                            write("good_luck.xyz",supercell_finder.joined_atoms,format="xyz")
-                                            
-                                        else:
-                                            db_generated.write(structure.atoms_object(), **conf)
-                                            #if hasattr(self, "fixed_frame"):
-                                            db_generated_visual.write(structure.atoms_object_visual(fixed_frame),**conf)
-                                            write("good_luck.xyz",merge_together(structure, fixed_frame),format="xyz",)
-                                        
-                                        self.trials = 0
-                                        self.success = db_generated.count()
-
-                                        print("Good", conf)
-                                        print("Generated structures", self.success)
-
-                        else:
-                            # TODO: See above
+                        if not in_db:
                             if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "detect":
                                 oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol) # No need to pass cell length as will be set by supercell finder
-                                supercell_finder.set_unit_cell('detect', oriented_mol_with_cell)
+                                supercell_finder.set_unit_cell('detect', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input
                                 supercell_finder.run()
-                                db_generated.write(supercell_finder.F_atoms, **conf)
-                                db_generated_visual.write(supercell_finder.joined_atoms, **conf)
-                                write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
+                                conf = structure.get_configuration(supercell_finder.F_atoms)
+                                fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)
+                                structure_temp = Structure(parameters, supercell_finder)
+                                if all_right(structure_temp, fixed_frame_temp):
+                                    if parameters["check_forces"]["activate"]:
+                                        supercell_finder.joined_atoms.calc = calculator.calculator
+                                        if not np.any(np.abs(supercell_finder.joined_atoms.get_forces()) > parameters["check_forces"]["max_force"]):
+                                            db_generated.write(supercell_finder.F_atoms, **conf)
+                                            db_generated_frames.write(supercell_finder.S_atoms, **conf)
+                                            db_generated_visual.write(supercell_finder.joined_atoms, **conf)
+                                            write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
                                             
+                                        else:
+                                            print("Forces too high")
+                                            is_good = False
+                                            
+                                    else:
+                                        db_generated.write(supercell_finder.F_atoms, **conf)
+                                        db_generated_frames.write(supercell_finder.S_atoms, **conf)
+                                        db_generated_visual.write(supercell_finder.joined_atoms, **conf)
+                                        write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
                                         
+                                else:
+                                    is_good = False
+                                    
                             else:
-                                db_generated.write(structure.atoms_object(), **conf)
-                                #if hasattr(self, "fixed_frame"):
-                                db_generated_visual.write(structure.atoms_object_visual(fixed_frame),**conf)
-                                write("good_luck.xyz",merge_together(structure, fixed_frame),format="xyz",)
-                                            
+                                merged = merge_together(structure, fixed_frame)
+                                if parameters["check_forces"]["activate"]:
+                                    merged.calc = calculator.calculator
+                                    if not np.any(np.abs(merged.get_forces()) > parameters["check_forces"]["max_force"]):
+                                        db_generated.write(structure.atoms_object(), **conf)
+                                        db_generated_visual.write(merged,**conf)
+                                        write("good_luck.xyz",merged,format="extxyz")
+                                        
+                                    else:
+                                        print("Forces too high")
+                                        is_good = False
+                                        
+                                else:
+                                    db_generated.write(structure.atoms_object(), **conf)
+                                    db_generated_visual.write(merged,**conf)
+                                    write("good_luck.xyz",merged,format="extxyz")
+                                    
+                        else:
+                            is_good = False
+                                
+                    else:
+                        is_good = False                        
 
-                            self.trials = 0
-                            self.success = db_generated.count()
-
-                            print("Good", conf)
-                            print("Generated structures", self.success)
+                    if is_good:
+                        self.trials = 0
+                        self.success = db_generated.count()
+                        print("Good", conf)
+                        print("Generated structures:", self.success)        
                     else:
                         print("BAD", conf)
-                        write(
-                            "bad_luck.xyz",
-                            merge_together(structure, fixed_frame_sheet),
-                            format="xyz",
-                        )
+                        if parameters["supercell_finder"]["activate"] and hasattr(supercell_finder, "joined_atoms"):
+                            write("bad_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
+                        else:
+                            write("bad_luck.xyz",merge_together(structure, fixed_frame_sheet),format="extxyz")
                         print("Trials made", self.trials)
                         self.trials += 1
                 else:
                     sys.exit(0)
+                    #pass
             else:
                 sys.exit(0)
+                #pass
 
         if parameters["protocol"]["search"]["activate"] is True:
             # connect to the database and start creating structures there
@@ -269,6 +292,7 @@ class Protocol:
             while self.success < parameters["success"]:
                 self.success = db_relaxed.count()
                 # Take structure from database of generated structures
+                # TODO: The generation part is not needed here. Should be deleted. If there is no structure just throw an error.
                 if db_generated.count() == 0:
                     self.trials = 0
                     while self.trials < parameters["trials"]:
@@ -317,14 +341,14 @@ class Protocol:
                             self.trials = 0
                             self.success = db_generated.count()
                 else:
-                    for row in db_generated.select():
+                    for row in db_generated_visual.select():
                         traj_id = row.unique_id
                         # Extract the configuration from the row
-                        conf = {key: row[key] for key in conf_keys}
+                        #conf = {key: row[key] for key in conf_keys}
                         print("added line")
-                        print(conf)
+                        print(row.key_value_pairs)
                         print("added line")
-                        structure.apply_conf(conf)
+                        #structure.apply_conf(conf)
                         dirs.dir_num = row.id
                         del db_generated[row.id]
                         if parameters["configuration"]["torsions"]["activate"]:
@@ -391,35 +415,32 @@ class Protocol:
                                 "This is row ID that is taken for calculation",
                                 row.id,
                             )
+                            row_atoms = row.toatoms().copy()
                             dirs.create_directory(parameters)
                             dirs.save_to_directory(
-                                merge_together(structure, fixed_frame),
-                                parameters,
+                                row_atoms,
+                                parameters
                             )
-                            calculator.relax(
-                                structure,
-                                fixed_frame,
-                                parameters,
-                                dirs.current_dir(parameters),
-                            )
+                            calculator.simple_relax(row_atoms, parameters, dirs.current_dir(parameters))           #legacy: calculator.relax(structure, fixed_frame,parameters,dirs.current_dir(parameters))
+                            
                             calculator.finished(dirs.current_dir(parameters))
                             # Find the final trajectory
                             traj = Trajectory(
                                 os.path.join(
                                     dirs.current_dir(parameters),
-                                    "trajectory_{}.traj".format(name),
+                                    "trajectory_{}.traj".format(name)
                                 )
                             )
                             print("Structure relaxed")
                             for step in traj:
-                                full_conf = structure.read_configuration(step)
+                                full_conf = structure.get_configuration(step)
                                 db_trajectories.write(
                                     step, **full_conf, trajectory=traj_id
                                 )
-                            full_conf = structure.read_configuration(traj[-1])
+                            full_conf = structure.get_configuration(traj[-1])
                             db_relaxed.write(
                                 traj[-1], **full_conf, trajectory=traj_id
                             )
                             self.success = db_relaxed.count()
-                            calculator.close()
-                            break
+                            #calculator.close()
+                            #break

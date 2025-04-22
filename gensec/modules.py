@@ -549,6 +549,7 @@ def produce_quaternion(angle, vector):
 
 
 def measure_quaternion(atoms, atom_1_indx, atom_2_indx):
+    # TODO: This assumes a configuration of the molecule at generation. Needs comparison to initial orientation
     """Summary
 
     Args:
@@ -565,7 +566,11 @@ def measure_quaternion(atoms, atom_1_indx, atom_2_indx):
     x_axis = np.array([1, 0, 0])
     z_axis = np.array([0, 0, 1])
     center = atoms.get_center_of_mass()
-    inertia_tensor = atoms.get_moments_of_inertia(vectors=True)
+    try:
+        inertia_tensor = atoms.get_moments_of_inertia(vectors=True)
+    except:
+        print(coords)
+        inertia_tensor = atoms.get_moments_of_inertia(vectors=True)
     eigvals = inertia_tensor[0]
     eigvecs = inertia_tensor[1]
     z_index = np.argmax(eigvals)

@@ -11,6 +11,7 @@ import os
 #import imp
 import numpy as np
 from ase.io import read
+from ase.optimize import BFGS, GPMin, BFGSLineSearch, MDMin, FIRE
 from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
 import gensec.precon as precon
 import shutil
@@ -173,6 +174,34 @@ class Calculator:
             except:
                 print("Something is wrong!")
         return mu
+
+    def simple_relax(self, init_atoms, parameters, directory):
+        
+        atoms = init_atoms.copy()
+        
+        name = parameters["name"]
+        folder = parameters["calculator"]["supporting_files_folder"]
+        ase_file_name = parameters["calculator"]["ase_parameters_file"]
+        full_path = os.path.join(self.parent, folder, ase_file_name)
+        self.calculator = load_source(ase_file_name, full_path).calculator
+        atoms.calc = self.calculator
+        opt = FIRE(atoms, 
+                logfile=os.path.join(directory, "logfile.log"),
+                restart=os.path.join(directory, "qn.pckl"), 
+                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name))
+                )
+        
+        
+        opt.run(fmax=parameters["calculator"]["fmax"], steps=100)  # TODO:Change steps to parameters import
+        write(
+            os.path.join(directory, "final_configuration_{}.in".format(name)),
+            atoms,
+            format="aims",
+        )
+        try:
+            self.calculator.close()
+        except:
+            pass
 
     def relax(self, structure, fixed_frame, parameters, directory):
         """Perform geometry optimization with specified ASE
@@ -337,7 +366,7 @@ class Calculator:
         )
 
         try:
-            calculator.close()
+            self.calculator.close()
         except:
             pass
 

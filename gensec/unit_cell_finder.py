@@ -216,7 +216,7 @@ def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(15), max_an
 def Unit_cell_finder(mol,
                      z_cell_length=100,
                      adaptive=False,
-                     min_angle=np.radians(25),
+                     min_angle=np.radians(15),
                      max_angle=np.pi/2,
                      # Parameters for grid method:
                      n_steps=100,
@@ -224,6 +224,7 @@ def Unit_cell_finder(mol,
                      n_points=5,
                      tolerance=1e-4,
                      max_iterations=10,
+                     seperation_factor=1.0,
                      vdw_array=vdw_radii):
     """
     Constructs a periodic arrangement from a molecule using two translation steps,
@@ -256,6 +257,7 @@ def Unit_cell_finder(mol,
       T2 (np.ndarray): The second translation vector.
     """
     # Step 1: Create dimer along the x-axis.
+    vdw_array = vdw_radii * seperation_factor
     dimer, s1 = create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_array)
     T1 = s1 * np.array([1, 0, 0])
     

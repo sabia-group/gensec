@@ -2,7 +2,7 @@
 {
 	"name" : "MePTCDI_graphene",
 	"trials": 100,
-	"success": 10,
+	"success": 5,
 	"number_of_replicas" : 1,
 	"geometry" : {
 				"filename" : "F_geometry.in",
@@ -11,11 +11,12 @@
 	"fixed_frame" : {
 					"activate" : true,
 					"filename" : "S_geometry.in",
-					"format" : "aims"
+					"format" : "aims",
+					"is_unit_cell" : false
 				},
 	"supercell_finder" : {
 					"activate" : true,
-					"unit_cell_method" : "inputfile",
+					"unit_cell_method" : "detect",
 					"max_range_s" : [15, 15],
 					"max_range_f" : [3, 3],
 					"max_area_diff" : 0.1, 
@@ -38,7 +39,7 @@
 					"activate" : true,
 					"same" : true, 
 					"values": "random",
-					"angle" : 1,
+					"angle" : 5,
 					"vector":{
 						"Type":"exclusion",
 						"x" : [0],
@@ -48,12 +49,18 @@
 		},
 		"coms" : {
 					"activate" : true,
-					"values" : "given",
 					"z_values" : "identical",
-					"z_axis" : [3.0, 7.0, 21]
+					"values": "restricted",
+					"x_axis" : [0, 0, 1],
+					"y_axis" : [0, 0, 1],
+					"z_axis" : [4, 7, 20]
 		},
 		"clashes" : {"intramolecular" : 2.0,
 					"with_fixed_frame" : 1.5
+		},
+		"check_forces" : {
+					"activate" : true,
+					"max_force" : 0.02
 		},
 		"adsorption" : {"activate": false
 		}
@@ -75,13 +82,6 @@
 		"ase_parameters_file" : "ase_command.py",  
 		"optimize" : "generate",
 		"fmax" : 0.005,
-		"preconditioner" : {
-			"mol" : {"initial": true, "update": false, "precon" : "ID"},
-			"fixed_frame" : {"initial": false, "update": false, "precon" : "ID"}, 
-			"mol-mol" : {"initial": false, "update": false, "precon" : "ID"},
-			"mol-fixed_frame" : {"initial": false, "update": false, "precon" : "ID"},
-			"rmsd_update" : {"activate":false, "value":0.05}
-		},
 		"constraints" : {
 			"fix_atoms" : [-10, -9]
 		}

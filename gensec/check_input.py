@@ -33,7 +33,7 @@ def Check_input(parameters):
             "orientations" : {"activate" : True},
             "torsions" : {"activate" : False},
         }
-        print("No configuration in input file. Clashes set to default values .")
+        print("No configuration in input file. Clashes set to default values.")
     else:
         if "adsorption" not in parameters["configuration"]:
             parameters["configuration"]["adsorption"] = {"activate": False}
@@ -65,6 +65,13 @@ def Check_input(parameters):
             # TODO: Discuss defaults
         
     # TODO: Work on calculator and implement chekck after if search is activated.
+    
+    if "check_forces" not in parameters:
+        parameters["check_forces"] = {"activate" : False}
+    elif parameters["check_forces"] is True:
+        if "max_force" not in parameters["check_forces"]:
+            parameters["check_forces"]["max_force"] = 0.02
+            print("No max force given. Set to default value 0.02 eV/A.")
     
     if "fixed_frame" not in parameters:
         parameters["fixed_frame"] = {"activate" : False}

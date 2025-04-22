@@ -200,7 +200,7 @@ class Supercell_finder:
                 F_geo_bunch = F_geo.copy()
                 F_geo_bunch.positions[:, :2] += self.F_sc_points[i, :]
                 F_geo_bunch.cell = self.cell
-                F_geo_bunch.pbc = [True, True, False]
+                F_geo_bunch.pbc = True
             else:
                 F_geo_temp = F_geo.copy()
                 F_geo_temp.positions[:, :2] += self.F_sc_points[i, :]
@@ -211,15 +211,16 @@ class Supercell_finder:
                 S_geo_bunch = S_geo.copy()
                 S_geo_bunch.positions[:, :2] += self.S_sc_points[i, :]
                 S_geo_bunch.cell = self.cell
-                S_geo_bunch.pbc = [True, True, False]
+                S_geo_bunch.pbc = True
             else:
                 S_geo_temp = S_geo.copy()
                 S_geo_temp.positions[:, :2] += self.S_sc_points[i, :]
                 S_geo_bunch += S_geo_temp
         
         self.F_atoms = F_geo_bunch
-        self.S_atoms = S_geo_bunch
-        self.joined_atoms = F_geo_bunch + S_geo_bunch
+        self.S_atoms = S_geo_bunch.copy()
+        self.joined_atoms = F_geo_bunch
+        self.joined_atoms += S_geo_bunch.copy()
         
         
         

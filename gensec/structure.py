@@ -48,11 +48,14 @@ class Structure:
             self.atoms.set_cell(self.pbc)
             self.atoms.set_pbc(True)
             self.mu = None  # Parameter mu for exponential preconditioner
-            
-            self.molecules = [
-                self.atoms.copy() for i in range(self.supercell_finder.F_sc_points_number)
-            ]
-            
+            # TODO: Change to account for multiple molecules in F_geo. If there are multiple molecules it is added as one to self.molecules right now.
+            self.molecules = []
+            for i in range(self.supercell_finder.F_sc_points_number):
+                self.molecules.append(self.atoms.copy())
+                old_com=self.molecules[i].get_center_of_mass()
+                self.molecules[i].set_center_of_mass(np.array([self.supercell_finder.F_sc_points[i, 0], self.supercell_finder.F_sc_points[i, 1], old_com[2]]))
+                
+            # self.num_molecules = self.supercell_finder.F_sc_points_number * self.parameters["number_of_replicas"]
             
         else:
             self.atoms = read(
@@ -60,9 +63,8 @@ class Structure:
             )
             self.atoms.set_constraint()
             
-            self.molecules = [
-                self.atoms.copy() for i in range(self.parameters["number_of_replicas"])
-            ]
+            self.molecules = [self.atoms.copy() for i in range(self.parameters["number_of_replicas"])]
+            # self.num_molecules = self.parameters["number_of_replicas"]
             
             if parameters["mic"]["activate"] == True:
                 self.pbc = parameters["mic"]["pbc"]
@@ -406,18 +408,17 @@ class Structure:
         q = [0, 0, 0, 1]
         c = [0, 0, 0]
         for i in range(0, len(self.molecules)):
-            if self.parameters["configuration"]["torsions"]["activate"]:
-                t_temp = {"m{}t{}".format(i, k): t for k in range(len(t))}
             q_temp = {"m{}q{}".format(i, k): q for k in range(len(q))}
             c_temp = {"m{}c{}".format(i, k): c for k in range(len(c))}
             if self.parameters["configuration"]["torsions"]["activate"]:
+                t_temp = {"m{}t{}".format(i, k): t for k in range(len(t))}
                 full_conf.update(**t_temp, **q_temp, **c_temp)
             else:
                 full_conf.update(**q_temp, **c_temp)
 
         return list(full_conf.keys())
 
-    def read_configuration(self, atoms_positions):
+    def read_configuration(self, atoms_positions, replicas_from_scf = 1):
         """
         Reads the configuration from atoms positions.
 
@@ -431,38 +432,76 @@ class Structure:
         """
 
         full_conf = {}
-        for ii in range(len(self.molecules)):
+        for ii in range(len(self.molecules) * replicas_from_scf):
             atoms = self.molecules[0].get_positions()
             torsions = []
             positions = atoms_positions.get_positions()[
                 ii * len(atoms) : (ii + 1) * len(atoms)
             ]
             self.molecules[ii].set_positions(positions)
-            for torsion in self.list_of_torsions:
-                torsions.append(
-                    self.molecules[ii].get_dihedral(
-                        a0=torsion[0],
-                        a1=torsion[1],
-                        a2=torsion[2],
-                        a3=torsion[3],
-                    )
-                )
+                
             orientations = measure_quaternion(
                 self.molecules[ii], 0, len(atoms) - 1
             )
             com = self.molecules[ii].get_center_of_mass()
-            t_temp = {
-                "m{}t{}".format(ii, k): torsions[k]
-                for k in range(len(torsions))
-            }
+            
             q_temp = {
                 "m{}q{}".format(ii, k): orientations[k]
                 for k in range(len(orientations))
             }
             c_temp = {"m{}c{}".format(ii, k): com[k] for k in range(len(com))}
-            full_conf.update(**t_temp, **q_temp, **c_temp)
+            if self.parameters["configuration"]["torsions"]["activate"]:
+                for torsion in self.list_of_torsions:
+                    torsions.append(self.molecules[ii].get_dihedral(a0=torsion[0],a1=torsion[1],a2=torsion[2],a3=torsion[3]))
+                t_temp = {"m{}t{}".format(ii, k): torsions[k] for k in range(len(torsions))}
+                full_conf.update(**t_temp, **q_temp, **c_temp)
+            
+            else:
+                full_conf.update(**q_temp, **c_temp)
 
         return full_conf
+    
+    def get_configuration(self, atoms_input):
+        """
+        Function to get the configuration of a given atoms object where structure is the initial structure from parameters.
+        """
+        full_conf = {}
+        ii = 0
+        def safe_floor_fraction(a, b, tol=1e-10):
+            result = a / b
+            if np.isclose(result, np.round(result), atol=tol):
+                return int(np.round(result))
+            return int(np.floor(result))
+        
+        max_molecules = safe_floor_fraction(len(atoms_input), len(self.atoms))
+        atoms_symbol =self.atoms.get_chemical_symbols()
+        while (ii < max_molecules) and atoms_symbol == atoms_input.get_chemical_symbols()[ii * len(self.atoms) : (ii + 1) * len(self.atoms)]:
+            temp_positions = atoms_input.get_positions()[ii * len(self.atoms) : (ii + 1) * len(self.atoms)]
+            temp_mol = self.atoms.copy()
+            temp_mol.set_positions(temp_positions)
+                
+            orientations = measure_quaternion(temp_mol, 0, len(self.atoms) - 1)
+            com = temp_mol.get_center_of_mass()
+            
+            q_temp = {"m{}q{}".format(ii, k): orientations[k] for k in range(len(orientations))}
+            c_temp = {"m{}c{}".format(ii, k): com[k] for k in range(len(com))}
+            
+            if self.parameters["configuration"]["torsions"]["activate"]:
+                torsions = []
+                for torsion in self.list_of_torsions:
+                    torsions.append(self.molecules[ii].get_dihedral(a0=torsion[0],a1=torsion[1],a2=torsion[2],a3=torsion[3]))
+                t_temp = {"m{}t{}".format(ii, k): torsions[k] for k in range(len(torsions))}
+                full_conf.update(**t_temp, **q_temp, **c_temp)
+            
+            else:
+                full_conf.update(**q_temp, **c_temp)
+                
+            ii += 1
+
+        return full_conf
+        
+        
+        
 
     # TODO: delete, keep out of master version. Instead use legacy branch or leave in old versions
     def apply_configuration(self, configuration):
