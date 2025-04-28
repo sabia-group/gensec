@@ -158,13 +158,16 @@ class Structure:
                 tuple: A tuple containing a numpy array of torsion angles and a dictionary mapping each torsion to its angle.
             """
             if parameters["configuration"]["torsions"]["values"] == "random":
-                torsions = np.array(
-                    [randint(0, 360) for i in self.list_of_torsions]
-                )
+                torsions = np.array([randint(0, 360) for i in self.list_of_torsions])
+            elif parameters["configuration"]["torsions"]["values"] == "restricted":
+                max_angle = parameters["configuration"]["torsions"]["max_angle"]
+                torsions = np.array([randint(-max_angle, max_angle) for i in self.list_of_torsions])
+            
             t = {
                 "m{}t{}".format(label, i): torsions[i]
                 for i in range(len(torsions))
             }
+            
             return torsions, t
 
         def make_orientation(self, parameters, label):
@@ -489,7 +492,7 @@ class Structure:
             if self.parameters["configuration"]["torsions"]["activate"]:
                 torsions = []
                 for torsion in self.list_of_torsions:
-                    torsions.append(self.molecules[ii].get_dihedral(a0=torsion[0],a1=torsion[1],a2=torsion[2],a3=torsion[3]))
+                    torsions.append(temp_mol.get_dihedral(a0=torsion[0],a1=torsion[1],a2=torsion[2],a3=torsion[3]))
                 t_temp = {"m{}t{}".format(ii, k): torsions[k] for k in range(len(torsions))}
                 full_conf.update(**t_temp, **q_temp, **c_temp)
             

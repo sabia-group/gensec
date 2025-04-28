@@ -20,6 +20,8 @@ def Check_input(parameters):
     else:
         if parameters["protocol"]["generate"] is False and parameters["protocol"]["search"] is False:
             raise ValueError("Both generate and search are set to False. Please set one to True.")
+    if "check_db" not in parameters["protocol"]:
+        parameters["protocol"]["check_db"] = False
     
     if "geometry" not in parameters or "filename" not in parameters["geometry"]:
         raise ValueError("No geometry file given in input. Please add file and format.")

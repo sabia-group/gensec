@@ -146,7 +146,7 @@ class Protocol:
                     if all_right(structure, fixed_frame_sheet):
                         # Check if it is in database
                         in_db = False
-                        if parameters["configuration"]["torsions"]["activate"]:
+                        if parameters["protocol"]["check_db"]:
                             in_db = True
                             if not structure.find_in_database(conf, db_generated, parameters):
                                 if not structure.find_in_database(conf, db_relaxed, parameters ):
@@ -228,6 +228,9 @@ class Protocol:
                 #pass
 
         if parameters["protocol"]["search"]["activate"] is True:
+            
+            #TODO: Raise error here if db is empty
+            
             # connect to the database and start creating structures there
             print("Start relaxing structures")
             # Create database file or connect to existing one,
@@ -294,52 +297,54 @@ class Protocol:
                 # Take structure from database of generated structures
                 # TODO: The generation part is not needed here. Should be deleted. If there is no structure just throw an error.
                 if db_generated.count() == 0:
-                    self.trials = 0
-                    while self.trials < parameters["trials"]:
-                        configuration, conf = structure.create_configuration(
-                            parameters
-                        )
-                        # Apply the configuration to structure
-                        structure.apply_conf(conf)
-                        # Check if that structure is sensible
-                        if parameters["configuration"]["torsions"]["activate"]:
-                            if all_right(structure, fixed_frame):
-                                # Check if it is in database
-                                if not structure.find_in_database(
-                                    conf, db_relaxed, parameters
-                                ):
-                                    if not structure.find_in_database(
-                                        conf, db_trajectories, parameters
-                                    ):
-                                        #if hasattr(self, "fixed_frame"):
-                                        db_generated_visual.write(
-                                            structure.atoms_object_visual(
-                                                fixed_frame
-                                            ),
-                                            **conf
-                                        )
-                                        print("Structure added to generated")
-                                        break
-                                    else:
-                                        self.trials += 1
-                                        print("Found in database")
-
-                                else:
-                                    self.trials += 1
-                                    print("Found in database")
-                            else:
-                                self.trials += 1
-                                print("Trials made", self.trials)
-                        else:
-                            db_generated.write(structure.atoms_object(), **conf)
-
-                            #if hasattr(self, "fixed_frame"):
-                            db_generated_visual.write(
-                                structure.atoms_object_visual(fixed_frame),
-                                **conf
-                            )
-                            self.trials = 0
-                            self.success = db_generated.count()
+                    raise ValueError("No structures in the database. Please generate some first.")
+                    
+                    #self.trials = 0
+                    #while self.trials < parameters["trials"]:
+                    #    configuration, conf = structure.create_configuration(
+                    #        parameters
+                    #    )
+                    #    # Apply the configuration to structure
+                    #    structure.apply_conf(conf)
+                    #    # Check if that structure is sensible
+                    #    if parameters["protocol"]["check_db"]:
+                    #        if all_right(structure, fixed_frame):
+                    #            # Check if it is in database
+                    #            if not structure.find_in_database(
+                    #                conf, db_relaxed, parameters
+                    #            ):
+                    #                if not structure.find_in_database(
+                    #                    conf, db_trajectories, parameters
+                    #                ):
+                    #                    #if hasattr(self, "fixed_frame"):
+                    #                    db_generated_visual.write(
+                    #                        structure.atoms_object_visual(
+                    #                            fixed_frame
+                    #                        ),
+                    #                        **conf
+                    #                    )
+                    #                    print("Structure added to generated")
+                    #                    break
+                    #                else:
+                    #                    self.trials += 1
+                    #                    print("Found in database")
+#
+                    #            else:
+                    #                self.trials += 1
+                    #                print("Found in database")
+                    #        else:
+                    #            self.trials += 1
+                    #            print("Trials made", self.trials)
+                    #    else:
+                    #        db_generated.write(structure.atoms_object(), **conf)
+#
+                    #        #if hasattr(self, "fixed_frame"):
+                    #        db_generated_visual.write(
+                    #            structure.atoms_object_visual(fixed_frame),
+                    #            **conf
+                    #        )
+                    #        self.trials = 0
+                    #        self.success = db_generated.count()
                 else:
                     for row in db_generated_visual.select():
                         traj_id = row.unique_id
@@ -351,96 +356,35 @@ class Protocol:
                         #structure.apply_conf(conf)
                         dirs.dir_num = row.id
                         del db_generated[row.id]
-                        if parameters["configuration"]["torsions"]["activate"]:
-                            if not structure.find_in_database(
-                                conf, db_relaxed, parameters
-                            ):
-                                if not structure.find_in_database(
-                                    conf, db_trajectories, parameters
-                                ):
-                                    print("I'm here")
-                                    print(
-                                        "This is row ID that is taken for calculation",
-                                        row.id,
-                                    )
-                                    dirs.create_directory(parameters)
-                                    dirs.save_to_directory(
-                                        merge_together(structure, fixed_frame),
-                                        parameters,
-                                    )
-                                    calculator.relax(
-                                        structure,
-                                        fixed_frame,
-                                        parameters,
-                                        dirs.current_dir(parameters),
-                                    )
-                                    calculator.finished(
-                                        dirs.current_dir(parameters)
-                                    )
-                                    # Find the final trajectory
-                                    traj = Trajectory(
-                                        os.path.join(
-                                            dirs.current_dir(parameters),
-                                            "trajectory_{}.traj".format(name),
-                                        )
-                                    )
-                                    print("Structure relaxed")
-                                    for step in traj:
-                                        full_conf = (
-                                            structure.read_configuration(step)
-                                        )
-                                        db_trajectories.write(
-                                            step,
-                                            **full_conf,
-                                            trajectory=traj_id
-                                        )
-                                    full_conf = structure.read_configuration(
-                                        traj[-1]
-                                    )
-                                    db_relaxed.write(
-                                        traj[-1],
-                                        **full_conf,
-                                        trajectory=traj_id
-                                    )
-                                    self.success = db_relaxed.count()
-                                    break
-                                else:
-                                    print("Found in database")
-                                    break
-                            else:
+                        if parameters["protocol"]["check_db"]:
+                            if structure.find_in_database(conf, db_relaxed, parameters) or structure.find_in_database(conf, db_trajectories, parameters):
                                 print("Found in database")
-                                break
-                        else:
-                            print(
-                                "This is row ID that is taken for calculation",
-                                row.id,
+                                continue
+                    
+                        print("This is row ID that is taken for calculation",row.id,)
+                        row_atoms = row.toatoms().copy()
+                        dirs.create_directory(parameters)
+                        dirs.save_to_directory(row_atoms,parameters)
+                        calculator.simple_relax(row_atoms, parameters, dirs.current_dir(parameters))           #legacy: calculator.relax(structure, fixed_frame,parameters,dirs.current_dir(parameters))
+                        
+                        calculator.finished(dirs.current_dir(parameters))
+                        # Find the final trajectory
+                        traj = Trajectory(
+                            os.path.join(
+                                dirs.current_dir(parameters),
+                                "trajectory_{}.traj".format(name)
                             )
-                            row_atoms = row.toatoms().copy()
-                            dirs.create_directory(parameters)
-                            dirs.save_to_directory(
-                                row_atoms,
-                                parameters
+                        )
+                        print("Structure relaxed")
+                        for step in traj:
+                            full_conf = structure.get_configuration(step)
+                            db_trajectories.write(
+                                step, **full_conf, trajectory=traj_id
                             )
-                            calculator.simple_relax(row_atoms, parameters, dirs.current_dir(parameters))           #legacy: calculator.relax(structure, fixed_frame,parameters,dirs.current_dir(parameters))
-                            
-                            calculator.finished(dirs.current_dir(parameters))
-                            # Find the final trajectory
-                            traj = Trajectory(
-                                os.path.join(
-                                    dirs.current_dir(parameters),
-                                    "trajectory_{}.traj".format(name)
-                                )
-                            )
-                            print("Structure relaxed")
-                            for step in traj:
-                                full_conf = structure.get_configuration(step)
-                                db_trajectories.write(
-                                    step, **full_conf, trajectory=traj_id
-                                )
-                            full_conf = structure.get_configuration(traj[-1])
-                            db_relaxed.write(
-                                traj[-1], **full_conf, trajectory=traj_id
-                            )
-                            self.success = db_relaxed.count()
-                            #calculator.close()
-                            #break
+                        full_conf = structure.get_configuration(traj[-1])
+                        db_relaxed.write(
+                            traj[-1], **full_conf, trajectory=traj_id
+                        )
+                        self.success = db_relaxed.count()
+                        #calculator.close()
+                        #break
