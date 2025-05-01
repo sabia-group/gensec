@@ -7,7 +7,7 @@ import sys
 import numpy as np
 from ase.io import read, write
 from gensec.structure import Structure, Fixed_frame
-from gensec.modules import all_right, merge_together, measure_quaternion
+from gensec.modules import all_right, merge_together, measure_quaternion, run_with_timeout_decorator, return_1000
 from gensec.outputs import Directories
 from gensec.relaxation import Calculator
 from gensec.check_input import Check_input
@@ -156,7 +156,7 @@ class Protocol:
                         if not in_db:
                             if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "detect":
                                 oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol) # No need to pass cell length as will be set by supercell finder
-                                supercell_finder.set_unit_cell('detect', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input
+                                supercell_finder.set_unit_cell('detect', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input 
                                 supercell_finder.run()
                                 conf = structure.get_configuration(supercell_finder.F_atoms)
                                 fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)
@@ -164,7 +164,7 @@ class Protocol:
                                 if all_right(structure_temp, fixed_frame_temp):
                                     if parameters["check_forces"]["activate"]:
                                         supercell_finder.joined_atoms.calc = calculator.calculator
-                                        if not np.any(np.abs(supercell_finder.joined_atoms.get_forces()) > parameters["check_forces"]["max_force"]):
+                                        if not np.any(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces(), return_1000, timeout = parameters["check_forces"]["max_time"])) > parameters["check_forces"]["max_force"]):
                                             db_generated.write(supercell_finder.F_atoms, **conf)
                                             db_generated_frames.write(supercell_finder.S_atoms, **conf)
                                             db_generated_visual.write(supercell_finder.joined_atoms, **conf)
@@ -187,7 +187,7 @@ class Protocol:
                                 merged = merge_together(structure, fixed_frame)
                                 if parameters["check_forces"]["activate"]:
                                     merged.calc = calculator.calculator
-                                    if not np.any(np.abs(merged.get_forces()) > parameters["check_forces"]["max_force"]):
+                                    if not np.any(np.abs(run_with_timeout_decorator(merged.get_forces(), return_1000, timeout = parameters["check_forces"]["max_time"])) > parameters["check_forces"]["max_force"]):
                                         db_generated.write(structure.atoms_object(), **conf)
                                         db_generated_visual.write(merged,**conf)
                                         write("good_luck.xyz",merged,format="extxyz")
@@ -213,12 +213,12 @@ class Protocol:
                         print("Good", conf)
                         print("Generated structures:", self.success)        
                     else:
-                        print("BAD", conf)
+                        #print("BAD", conf)
                         if parameters["supercell_finder"]["activate"] and hasattr(supercell_finder, "joined_atoms"):
                             write("bad_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
                         else:
                             write("bad_luck.xyz",merge_together(structure, fixed_frame_sheet),format="extxyz")
-                        print("Trials made", self.trials)
+                        # print("Trials made", self.trials)
                         self.trials += 1
                 else:
                     sys.exit(0)

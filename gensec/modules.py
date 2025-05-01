@@ -4,6 +4,8 @@ from ase import neighborlist
 import numpy as np
 import operator
 
+import timeout_decorator
+
 
 def create_connectivity_matrix(atoms, bothways):
     """
@@ -964,3 +966,25 @@ def merge_together(structure, fixed_frame):
     if hasattr(fixed_frame, "fixed_frame"):
         ensemble += fixed_frame.fixed_frame
     return ensemble
+
+def run_with_timeout_decorator(func1, func2, timeout=10, *args, **kwargs):
+    """
+    Runs func1 with a timeout using timeout-decorator. If func1 times out,
+    calls func2.
+    
+    :param func1: The long-running function.
+    :param func2: The backup function.
+    :param timeout: Time limit for func1.
+    :param args: Positional arguments for func1.
+    :param kwargs: Keyword arguments for func1.
+    """
+    # Wrap func1 with a timeout-decorator.
+    timed_func1 = timeout_decorator.timeout(timeout, use_signals=True)(func1)
+    try:
+        result = timed_func1(*args, **kwargs)
+        return result
+    except timeout_decorator.TimeoutError:
+        return func2(*args, **kwargs)
+
+def return_1000():
+    return 1000

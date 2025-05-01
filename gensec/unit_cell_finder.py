@@ -134,7 +134,7 @@ def create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_radii):
     dimer = mol + mol_copy
     return dimer, s1
 
-def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(15), max_angle=np.pi/2, n_steps=100, safety_stepsize = np.radians(0.5), vdw_array=vdw_radii):
+def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(20), max_angle=np.pi/2, n_steps=36, safety_stepsize = np.radians(1), vdw_array=vdw_radii):
     """
     Uses a fixed grid search to find the optimal second translation vector.
     
@@ -188,7 +188,7 @@ def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(15), max_an
             best_s2 = s2_candidate
             best_vector = best_s2 * v_candidate
     
-    while best_area is None and theta < np.pi:
+    while best_area is None and theta < np.pi + min_angle:
         theta += safety_stepsize
         v_candidate = np.array([np.cos(theta), np.sin(theta), 0])
         s2_candidate = find_miminum_displacement(mol, dimer1, v_candidate, vdw_array)
@@ -214,18 +214,23 @@ def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(15), max_an
 
 
 def Unit_cell_finder(mol,
-                     z_cell_length=100,
-                     adaptive=False,
-                     min_angle=np.radians(15),
-                     max_angle=np.pi/2,
-                     # Parameters for grid method:
-                     n_steps=100,
-                     # Parameters for adaptive method:
-                     n_points=5,
-                     tolerance=1e-4,
-                     max_iterations=10,
-                     seperation_factor=1.0,
-                     vdw_array=vdw_radii):
+                    z_cell_length=100,
+                    scan_first=False,
+                    adaptive=False,
+                    min_angle=np.radians(20),
+                    max_angle=np.pi/2,
+                    # Parameters for grid method:
+                    n_steps=36,
+                    # Parameters for scanning first vector:
+                    first_min_angle= 0,
+                    first_max_angle= np.pi/2,
+                    first_n_steps= 10,
+                    # Parameters for adaptive method:
+                    n_points=5,
+                    tolerance=1e-4,
+                    max_iterations=10,
+                    seperation_factor=1.0,
+                    vdw_array=vdw_radii):
     """
     Constructs a periodic arrangement from a molecule using two translation steps,
     with flexible choice between a grid search or adaptive sampling for the second
@@ -256,15 +261,55 @@ def Unit_cell_finder(mol,
       T1 (np.ndarray): The first translation vector (along the x‑axis).
       T2 (np.ndarray): The second translation vector.
     """
-    # Step 1: Create dimer along the x-axis.
     vdw_array = vdw_radii * seperation_factor
-    dimer, s1 = create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_array)
-    T1 = s1 * np.array([1, 0, 0])
     
-    # Step 2: Determine the optimal translation vector for the dimer copy.
-    # Adaptive not updated
-    if adaptive:
-        T2, _, _, _ = find_optimal_second_vector_adaptive(
+    def evaluate_first(phi1):
+        v1 = np.array([np.cos(phi1), np.sin(phi1), 0])
+        dimer, s1 = create_dimer(mol, vector=v1, vdw_array=vdw_array)
+        T1 = s1 * v1
+        # offset second-vector range by phi1
+        sec_min = min_angle + phi1
+        sec_max = max_angle + phi1
+        if adaptive:
+            T2, _, _, _ = find_optimal_second_vector_adaptive(
+                dimer, s1,
+                min_angle=sec_min, max_angle=sec_max,
+                n_points=n_points, tolerance=tolerance,
+                max_iterations=max_iterations,
+                vdw_array=vdw_array)
+        else:
+            T2, _, _, _ = find_optimal_second_vector(
+                mol, dimer, s1,
+                min_angle=sec_min, max_angle=sec_max,
+                n_steps=n_steps, vdw_array=vdw_array)
+        
+        # compute actual area of parallelogram
+        area = np.linalg.norm(np.cross(T1, T2))
+        return area, T1, T2
+
+    if scan_first:
+        best = None
+        for phi1 in np.linspace(first_min_angle, first_max_angle, first_n_steps):
+            
+            try:
+                area, T1_candidate, T2_candidate = evaluate_first(phi1)
+            except ValueError:
+                continue
+            
+            if best is None or area < best[0]:
+                best = (area, T1_candidate, T2_candidate)
+                
+        if best is None:
+            raise ValueError("No valid unit cell found when scanning first vector.")
+        
+        _, T1, T2 = best
+        
+    else:
+        dimer, s1 = create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_array)
+        T1 = s1 * np.array([1, 0, 0])
+        
+        if adaptive:
+            T2, _, _, _ = find_optimal_second_vector_adaptive(
             dimer, s1,
             min_angle=min_angle,
             max_angle=max_angle,
@@ -272,17 +317,14 @@ def Unit_cell_finder(mol,
             tolerance=tolerance,
             max_iterations=max_iterations,
             vdw_array=vdw_array)
-    else:
-        T2, _, _, _ = find_optimal_second_vector(
+            
+        else:
+            T2, _, _, _ = find_optimal_second_vector(
             mol, dimer, s1,
             min_angle=min_angle,
             max_angle=max_angle,
             n_steps=n_steps,
             vdw_array=vdw_array)
-    
-    # Translate a copy of the dimer by T2.
-    dimer_copy = dimer.copy()
-    dimer_copy.translate(T2)
     
     # Combine the original dimer and its translated copy.
     mol_with_unit_cell = mol.copy()

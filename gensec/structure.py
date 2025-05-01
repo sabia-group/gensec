@@ -95,8 +95,8 @@ class Structure:
         self.clashes_with_fixed_frame = parameters["configuration"]["clashes"][
             "with_fixed_frame"
         ]
-        
-        if parameters["configuration"]["torsions"]["activate"]:
+        # TODO: For some reason this fails sometimes if the atoms are imported from supercell_finder. This might be due to the fact that torions were already applied but 
+        if parameters["configuration"]["torsions"]["activate"] and (supercell_finder is None or parameters["supercell_finder"]["unit_cell_method"] == "inputfile"):
             if (
                 parameters["configuration"]["torsions"]["list_of_tosrions"]
                 == "auto"
@@ -213,7 +213,7 @@ class Structure:
                 angles = np.linspace(0, 360, num=turns + 1)
                 if (
                     parameters["configuration"]["orientations"]["vector"][
-                        "Type"
+                        "type"
                     ]
                     == "exclusion"
                 ):

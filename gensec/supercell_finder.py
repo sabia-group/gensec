@@ -3,6 +3,8 @@ from itertools import product
 import ase
 from ase.io import read, write
 from typing import Optional
+from gensec.structure import Structure, Fixed_frame
+from gensec.modules import all_right
 
 
 
@@ -37,7 +39,7 @@ class Supercell_finder:
         
         matches = np.zeros((Area_S_sorted.size, Area_F_sorted.size), dtype=bool)    # TODO: replace matches determination with algo described in thesis including functionality to read and compute the table
         for i in range(Area_F_sorted.size):
-            if Area_F_sorted[i] < 0.1:
+            if Area_F_sorted[i] < 1:
                 continue
             area_temp = np.abs(1 - Area_S_sorted/Area_F_sorted[i])
             matches[:, i] = area_temp < self.max_area_diff
@@ -62,8 +64,8 @@ class Supercell_finder:
         # TODO: Think about what to safe (add to self) and what not. Also consider adding another way to determine the optimal supercell, maybe leaving out Sigmas (therefore Ts) with eigenvalues smaller than 1
         # As desribed in the thesis, this would leave out supercells which have any squeezing induced by the transformation
         
-        V_1, _, W_1 = svd2(T_1)
-        V_2, _, W_2 = svd2(T_2)
+        V_1, Sigma_1, W_1 = svd2(T_1)
+        V_2, Sigma_2, W_2 = svd2(T_2)
 
         U_1 = V_1 @ W_1
         U_2 = V_2 @ W_2
@@ -74,57 +76,76 @@ class Supercell_finder:
         lambda_1 = np.sqrt(np.linalg.norm(F_match_rot_1[:, :, 0] - S_match_mat[:, :, 0], axis=-1)**2 + np.linalg.norm(F_match_rot_1[:, :, 1] - S_match_mat[:, :, 1], axis=-1)**2)
         lambda_2 = np.sqrt(np.linalg.norm(F_match_rot_2[:, :, 0] - S_match_mat[:, :, 0], axis=-1)**2 + np.linalg.norm(F_match_rot_2[:, :, 1] - S_match_mat[:, :, 1], axis=-1)**2)
 
-        min_1 = np.min(lambda_1)
-        argmin_1 = np.argmin(lambda_1)
-        min_2 = np.min(lambda_2)
-        argmin_2 = np.argmin(lambda_2)
-
-        # TODO: In the following, consider if the saved quantities have a good naming scheme or if it should be changed (_pretty and _final)
+        sorted_ind_lambda_1 = np.argsort(lambda_1)
+        sorted_ind_lambda_2 = np.argsort(lambda_2)
+        self.works = False
+        self.attempts = 0
         
-        if min_1 <= min_2:
-            self.lambda_min = min_1
-            minimum_index = argmin_1
-            T_min = T_1[minimum_index, :, :]
-            self.R_pretty = rotate_vectors_to_align(S_match_mat[minimum_index, :, 0], S_match_mat[minimum_index, :, 1])
-            self.T_final = self.R_pretty @ T_min
-            self.F_final_ind = ind_original_F[minimum_index]
-            self.F_final_ind[0] += 1
-            self.F_final_ind[1] -= self.max_range_F_2
-            self.F_final_ind[3] -= self.max_range_F_2
-            self.F_sc_points = (self.T_final @ self.F.T @ generate_supercell_points(self.F_final_ind[0:2], self.F_final_ind[2:4]).T).T
+        while not self.works and (self.attempts < self.parameters['supercell_finder']['max_attempts'] and self.attempts < lambda_1.size):
             
-        else:
-            self.lambda_min = min_2
-            minimum_index = argmin_2
-            T_min = T_2[minimum_index, :, :]
-            self.R_pretty = rotate_vectors_to_align(S_match_mat[minimum_index, :, 0], S_match_mat[minimum_index, :, 1])
-            self.T_final = self.R_pretty @ T_min
-            self.F_final_ind = ind_original_F[minimum_index]
-            self.F_final_ind[0] += 1
-            self.F_final_ind[1] -= self.max_range_F_2
-            self.F_final_ind[3] -= self.max_range_F_2
-            self.F_sc_points = (self.T_final @ self.F.T @ generate_supercell_points(self.F_final_ind[0:2], self.F_final_ind[2:4]).T).T
+            argmin_1 = sorted_ind_lambda_1[self.attempts]
+            min_1 = lambda_1[argmin_1]
+            argmin_2 = sorted_ind_lambda_2[self.attempts]
+            min_2 = lambda_2[argmin_2]
+            
+            # TODO: Not working yet:
+            # # The following makes sure that the supercell returned only contains stretches,
+            # if (self.attempts == self.parameters['supercell_finder']['max_attempts'] - 1) and (self.parameters['supercell_finder']['max_attempts'] > 1):
+            #     lambda_1 = lambda_1 * (1 + (~(Sigma_1 >= 1).all(axis = 1)) * 1e5)
+            #     lambda_2 = lambda_2 * (1 + (~(Sigma_2 >= 1).all(axis = 1)) * 1e5)
+            #     
+            #     min_1 = np.min(lambda_1)
+            #     argmin_1 = np.argmin(lambda_1)
+            #     min_2 = np.min(lambda_2)
+            #     argmin_2 = np.argmin(lambda_2)
+            
+            if min_1 <= min_2:
+                self.lambda_min = min_1
+                minimum_index = argmin_1
+                T_min = T_1[minimum_index, :, :]
+                self.R_pretty = rotate_vectors_to_align(S_match_mat[minimum_index, :, 0], S_match_mat[minimum_index, :, 1])
+                self.T_final = self.R_pretty @ T_min
+                self.F_final_ind = ind_original_F[minimum_index]
+                self.F_final_ind[0] += 1
+                self.F_final_ind[1] -= self.max_range_F_2
+                self.F_final_ind[3] -= self.max_range_F_2
+                self.F_sc_points = (self.T_final @ self.F.T @ generate_supercell_points(self.F_final_ind[0:2], self.F_final_ind[2:4]).T).T
+                
+            else:
+                self.lambda_min = min_2
+                minimum_index = argmin_2
+                T_min = T_2[minimum_index, :, :]
+                self.R_pretty = rotate_vectors_to_align(S_match_mat[minimum_index, :, 0], S_match_mat[minimum_index, :, 1])
+                self.T_final = self.R_pretty @ T_min
+                self.F_final_ind = ind_original_F[minimum_index]
+                self.F_final_ind[0] += 1
+                self.F_final_ind[1] -= self.max_range_F_2
+                self.F_final_ind[3] -= self.max_range_F_2
+                self.F_sc_points = (self.T_final @ self.F.T @ generate_supercell_points(self.F_final_ind[0:2], self.F_final_ind[2:4]).T).T
 
-        self.S_final_ind = ind_original_S[minimum_index]
-        self.S_final_ind[0] += 1
-        self.S_final_ind[1] -= self.max_range_S_2
-        self.S_final_ind[3] -= self.max_range_S_2
+            self.S_final_ind = ind_original_S[minimum_index]
+            self.S_final_ind[0] += 1
+            self.S_final_ind[1] -= self.max_range_S_2
+            self.S_final_ind[3] -= self.max_range_S_2
 
-        self.S_sc_points = (self.R_pretty @ self.S.T @ generate_supercell_points(self.S_final_ind[0:2], self.S_final_ind[2:4]).T).T
-        
-        self.F_sc_points_number = self.F_sc_points.shape[0]
-        self.S_sc_points_number = self.S_sc_points.shape[0]
+            self.S_sc_points = (self.R_pretty @ self.S.T @ generate_supercell_points(self.S_final_ind[0:2], self.S_final_ind[2:4]).T).T
+            
+            self.F_sc_points_number = self.F_sc_points.shape[0]
+            self.S_sc_points_number = self.S_sc_points.shape[0]
 
-        self.V_final, self.Sigma_final, self.W_final = np.linalg.svd(self.T_final)
+            self.V_final, self.Sigma_final, self.W_final = np.linalg.svd(self.T_final)
 
-        self.U_final = self.V_final @ self.W_final
-        
-        self.cell = np.array([[*(self.R_pretty @ S_match_mat[minimum_index, :, 0]), 0],
-                              [*(self.R_pretty @ S_match_mat[minimum_index, :, 1]), 0],
-                              [0, 0, self.Z_cell_length]])
-        
-        self.create_atoms()
-        
+            self.U_final = self.V_final @ self.W_final
+            
+            self.cell = np.array([[*(self.R_pretty @ S_match_mat[minimum_index, :, 0]), 0],
+                                [*(self.R_pretty @ S_match_mat[minimum_index, :, 1]), 0],
+                                [0, 0, self.Z_cell_length]])
+            
+            self.create_atoms()
+            fixed_frame_temp = Fixed_frame(self.parameters, self.S_atoms.copy())
+            structure_temp = Structure(self.parameters, self)
+            self.works = all_right(structure_temp, fixed_frame_temp)
+            self.attempts += 1
         
         
     def set_unit_cell(self, unit_cell_method, provided_atoms: Optional[ase.Atoms] = None):
@@ -162,19 +183,49 @@ class Supercell_finder:
         self.F_geo = F_initial.copy()
         
         self.S_geo.positions[:, 2] = self.S_geo.positions[:, 2] - np.max(self.S_geo.positions[:, 2])
-        
-        
+        if self.parameters['supercell_finder']['m_range']['type'] == 'given_range':
+            self.max_range_S_1 = self.parameters['supercell_finder']['max_range_s'][0]
+            self.max_range_S_2 = self.parameters['supercell_finder']['max_range_s'][1]
+            self.max_range_F_1 = self.parameters['supercell_finder']['max_range_f'][0]
+            self.max_range_F_2 = self.parameters['supercell_finder']['max_range_f'][1]
+        elif self.parameters['supercell_finder']['m_range']['type'] == 'max':
+            
+            stacked = np.vstack((self.S, self.F))
+            vec_len = np.linalg.norm(stacked, axis=1)
+            min_arg = np.argmin(vec_len)
+            
+            if min_arg == 0:
+                self.max_range_S_1 = self.parameters['supercell_finder']['m_range']['max']
+                self.max_range_S_2 = max(int(np.round(self.max_range_S_1 * vec_len[0] / vec_len[1])), 1)
+                self.max_range_F_1 = max(int(np.round(self.max_range_S_1 * vec_len[0] / vec_len[2])), 1)
+                self.max_range_F_2 = max(int(np.round(self.max_range_S_1 * vec_len[0] / vec_len[3])), 1)
+            elif min_arg == 1:
+                self.max_range_S_2 = self.parameters['supercell_finder']['m_range']['max']
+                self.max_range_S_1 = max(int(np.round(self.max_range_S_2 * vec_len[1] / vec_len[0])), 1)
+                self.max_range_F_1 = max(int(np.round(self.max_range_S_2 * vec_len[1] / vec_len[2])), 1)
+                self.max_range_F_2 = max(int(np.round(self.max_range_S_2 * vec_len[1] / vec_len[3])), 1)
+            elif min_arg == 2:
+                self.max_range_F_1 = self.parameters['supercell_finder']['m_range']['max']
+                self.max_range_F_2 = max(int(np.round(self.max_range_F_1 * vec_len[2] / vec_len[3])), 1)
+                self.max_range_S_1 = max(int(np.round(self.max_range_F_1 * vec_len[2] / vec_len[0])), 1)
+                self.max_range_S_2 = max(int(np.round(self.max_range_F_1 * vec_len[2] / vec_len[1])), 1)
+            elif min_arg == 3:
+                self.max_range_F_2 = self.parameters['supercell_finder']['m_range']['max']
+                self.max_range_F_1 = max(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[2])), 1)
+                self.max_range_S_1 = max(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[0])), 1)
+                self.max_range_S_2 = max(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[1])), 1)
+        else:
+            raise NotImplementedError('m_range type not implemented')
+
+            
+            
+            
     def set_parameters(self, new_parameters = None):
         '''
         Sets the parameters for the supercell finder. Defaults are set and checked by Check_input.
         '''
         if new_parameters is not None:
             self.parameters = new_parameters
-
-        self.max_range_S_1 = self.parameters['supercell_finder']['max_range_s'][0]
-        self.max_range_S_2 = self.parameters['supercell_finder']['max_range_s'][1]
-        self.max_range_F_1 = self.parameters['supercell_finder']['max_range_f'][0]
-        self.max_range_F_2 = self.parameters['supercell_finder']['max_range_f'][1]
             
         self.max_area_diff = self.parameters['supercell_finder']['max_area_diff']
         self.Z_cell_length = self.parameters['supercell_finder']['z_cell_length']
@@ -217,9 +268,9 @@ class Supercell_finder:
                 S_geo_temp.positions[:, :2] += self.S_sc_points[i, :]
                 S_geo_bunch += S_geo_temp
         
-        self.F_atoms = F_geo_bunch
+        self.F_atoms = F_geo_bunch.copy()
         self.S_atoms = S_geo_bunch.copy()
-        self.joined_atoms = F_geo_bunch
+        self.joined_atoms = F_geo_bunch.copy()
         self.joined_atoms += S_geo_bunch.copy()
         
         

@@ -100,10 +100,20 @@ def Check_input(parameters):
         if "Z_cell_length" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["Z_cell_length"] = 100
         # TODO: Determine values for max range from the input file if method is inputfile.
-        if "max_range_s" not in parameters["supercell_finder"]:
-            parameters["supercell_finder"]["max_range_s"] = [10, 10]
-        if "max_range_f" not in parameters["supercell_finder"]:
-            parameters["supercell_finder"]["max_range_f"] = [10, 10]
+        if "m_range" not in parameters["supercell_finder"]:
+            parameters["supercell_finder"]["m_range"]["type"] = "max"
+            parameters["supercell_finder"]["m_range"]["max"] = 15    
+        else:
+            if parameters["supercell_finder"]["m_range"]["type"] == "max" and "max" not in parameters["supercell_finder"]["m_range"]:
+                parameters["supercell_finder"]["m_range"]["max"] = 15
+            if "max_range_f" not in parameters["supercell_finder"]["m_range"] and parameters["supercell_finder"]["m_range"]["type"] == "given_range":
+                parameters["supercell_finder"]["max_range_f"] = [3, 3]
+            if "max_range_s" not in parameters["supercell_finder"]["m_range"] and parameters["supercell_finder"]["m_range"]["type"] == "given_range":
+                parameters["supercell_finder"]["max_range_s"] = [10, 10]
+            if parameters["supercell_finder"]["m_range"]["type"] not in ["max", "given_range"]:
+                raise implementationError("type for m_range not implemented. Choose between max and given_range.")
+        if "max_attempts" not in parameters["supercell_finder"]:
+            parameters["supercell_finder"]["max_attempts"] = 1
             
         parameters["configuration"]["coms"]["activate"] = True
         parameters["configuration"]["coms"]["same"] = False
