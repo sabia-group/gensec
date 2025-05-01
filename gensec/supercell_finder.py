@@ -194,26 +194,28 @@ class Supercell_finder:
             vec_len = np.linalg.norm(stacked, axis=1)
             min_arg = np.argmin(vec_len)
             
+            max_s = self.parameters['supercell_finder']['m_range']['max_s']
+            max_f = self.parameters['supercell_finder']['m_range']['max_f']
             if min_arg == 0:
-                self.max_range_S_1 = self.parameters['supercell_finder']['m_range']['max']
-                self.max_range_S_2 = max(int(np.round(self.max_range_S_1 * vec_len[0] / vec_len[1])), 1)
-                self.max_range_F_1 = max(int(np.round(self.max_range_S_1 * vec_len[0] / vec_len[2])), 1)
-                self.max_range_F_2 = max(int(np.round(self.max_range_S_1 * vec_len[0] / vec_len[3])), 1)
+                self.max_range_S_1 = max_s
+                self.max_range_S_2 = max([int(np.round(self.max_range_S_1 * vec_len[0] / vec_len[1])), 1])
+                self.max_range_F_1 = max(min(int(np.round(self.max_range_S_1 * vec_len[0] / vec_len[2])), max_f), 1)
+                self.max_range_F_2 = max(min(int(np.round(self.max_range_S_1 * vec_len[0] / vec_len[3])), max_f), 1)
             elif min_arg == 1:
-                self.max_range_S_2 = self.parameters['supercell_finder']['m_range']['max']
+                self.max_range_S_2 = max_s
                 self.max_range_S_1 = max(int(np.round(self.max_range_S_2 * vec_len[1] / vec_len[0])), 1)
-                self.max_range_F_1 = max(int(np.round(self.max_range_S_2 * vec_len[1] / vec_len[2])), 1)
-                self.max_range_F_2 = max(int(np.round(self.max_range_S_2 * vec_len[1] / vec_len[3])), 1)
+                self.max_range_F_1 = max(min(int(np.round(self.max_range_S_2 * vec_len[1] / vec_len[2])), max_f), 1)
+                self.max_range_F_2 = max(min(int(np.round(self.max_range_S_2 * vec_len[1] / vec_len[3])), max_f), 1)
             elif min_arg == 2:
-                self.max_range_F_1 = self.parameters['supercell_finder']['m_range']['max']
+                self.max_range_F_1 = max_f
                 self.max_range_F_2 = max(int(np.round(self.max_range_F_1 * vec_len[2] / vec_len[3])), 1)
-                self.max_range_S_1 = max(int(np.round(self.max_range_F_1 * vec_len[2] / vec_len[0])), 1)
-                self.max_range_S_2 = max(int(np.round(self.max_range_F_1 * vec_len[2] / vec_len[1])), 1)
+                self.max_range_S_1 = max(min(int(np.round(self.max_range_F_1 * vec_len[2] / vec_len[0])), max_s), 1)
+                self.max_range_S_2 = max(min(int(np.round(self.max_range_F_1 * vec_len[2] / vec_len[1])), max_s), 1)
             elif min_arg == 3:
-                self.max_range_F_2 = self.parameters['supercell_finder']['m_range']['max']
+                self.max_range_F_2 = max_f
                 self.max_range_F_1 = max(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[2])), 1)
-                self.max_range_S_1 = max(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[0])), 1)
-                self.max_range_S_2 = max(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[1])), 1)
+                self.max_range_S_1 = max(min(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[0])), max_s), 1)
+                self.max_range_S_2 = max(min(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[1])), max_s), 1)
         else:
             raise NotImplementedError('m_range type not implemented')
 

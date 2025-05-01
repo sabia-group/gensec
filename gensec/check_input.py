@@ -104,8 +104,10 @@ def Check_input(parameters):
             parameters["supercell_finder"]["m_range"]["type"] = "max"
             parameters["supercell_finder"]["m_range"]["max"] = 15    
         else:
-            if parameters["supercell_finder"]["m_range"]["type"] == "max" and "max" not in parameters["supercell_finder"]["m_range"]:
-                parameters["supercell_finder"]["m_range"]["max"] = 15
+            if parameters["supercell_finder"]["m_range"]["type"] == "max" and "max_s" not in parameters["supercell_finder"]["m_range"]:
+                parameters["supercell_finder"]["m_range"]["max_s"] = 15
+            if parameters["supercell_finder"]["m_range"]["type"] == "max" and "max_f" not in parameters["supercell_finder"]["m_range"]:
+                parameters["supercell_finder"]["m_range"]["max_f"] = parameters["supercell_finder"]["m_range"]["max_s"]        
             if "max_range_f" not in parameters["supercell_finder"]["m_range"] and parameters["supercell_finder"]["m_range"]["type"] == "given_range":
                 parameters["supercell_finder"]["max_range_f"] = [3, 3]
             if "max_range_s" not in parameters["supercell_finder"]["m_range"] and parameters["supercell_finder"]["m_range"]["type"] == "given_range":
