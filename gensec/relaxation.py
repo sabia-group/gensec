@@ -11,7 +11,7 @@ import os
 #import imp
 import numpy as np
 from ase.io import read
-from ase.optimize import BFGS, GPMin, BFGSLineSearch, MDMin, FIRE
+from ase.optimize import BFGS, BFGSLineSearch, LBFGS, LBFGSLineSearch ,GPMin , MDMin, FIRE
 from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
 import gensec.precon as precon
 import shutil
@@ -185,14 +185,30 @@ class Calculator:
         full_path = os.path.join(self.parent, folder, ase_file_name)
         self.calculator = load_source(ase_file_name, full_path).calculator
         atoms.calc = self.calculator
-        opt = FIRE(atoms, 
-                logfile=os.path.join(directory, "logfile.log"),
-                restart=os.path.join(directory, "qn.pckl"), 
-                trajectory=os.path.join(directory, "trajectory_{}.traj".format(name))
-                )
+        
+        algo = parameters["calculator"]["algorithm"]
+        logfile=os.path.join(directory, "logfile.log")
+        restart=os.path.join(directory, "qn.pckl")
+        trajectory=os.path.join(directory, "trajectory_{}.traj".format(name))
+        
+        if algo == "BFGS":
+            opt = BFGS(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "BFGSLineSearch":
+            opt = BFGSLineSearch(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "LBFGS":
+            opt = LBFGS(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "LBFGSLineSearch":
+            opt = LBFGSLineSearch(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "GPMin":
+            opt = GPMin(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "MDMin":
+            opt = MDMin(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "FIRE":
+            opt = FIRE(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+                
         
         
-        opt.run(fmax=parameters["calculator"]["fmax"], steps=100)  # TODO:Change steps to parameters import
+        opt.run(fmax=parameters["calculator"]["fmax"], steps=parameters["calculator"]["steps"])
         write(
             os.path.join(directory, "final_configuration_{}.in".format(name)),
             atoms,

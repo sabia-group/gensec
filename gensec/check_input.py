@@ -13,7 +13,6 @@ def Check_input(parameters):
     4. Throw an error if necessary parameters are not set.  
     5. Safely save updated parameters to a new .json file. 
     
-     
     '''
     if "protocol" not in parameters:
         raise ValueError("No protocol in input file. Please define if you want to generate and/or search.")
@@ -190,6 +189,8 @@ def Check_input(parameters):
     if "name" not in parameters:
         parameters["name"] = "Unnamed"
         print("No name given. Set to default value 'Unnamed'.")
+    
+    # TODO: Implement check for calculator + give different options for calculator in generate and search.
         
     safe_parameters = open("checked_parameters.json", "w")
     json.dump(parameters, safe_parameters, indent = 4)

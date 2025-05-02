@@ -46,7 +46,7 @@
 			},
 	"configuration" : {
 		"torsions" : {
-					"activate" : false,
+					"activate" : true,
 					"known" : false, 
 					"same" : false, 
 					"list_of_tosrions" :  "auto", 
@@ -77,7 +77,7 @@
 		},
 		"check_forces" : {
 					"activate" : true,
-					"max_force" : 0.02,
+					"max_force" : 0.015,
 					"max_time" : 10
 		},
 		"adsorption" : {"activate": false
@@ -99,7 +99,9 @@
 	"calculator" : {
 		"supporting_files_folder": "supporting",
 		"ase_parameters_file" : "ase_command.py",  
+		"algorithm" : "bfgs_trm",
 		"optimize" : "generate",
+		"steps" : 20,
 		"fmax" : 0.005,
 		"constraints" : {
 			"fix_atoms" : [-10, -9]
