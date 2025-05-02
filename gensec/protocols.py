@@ -131,103 +131,102 @@ class Protocol:
             dirs = Directories(parameters)
             if parameters["configuration"]["check_forces"]["activate"]:
                 calculator = Calculator(parameters)
-            while self.success < parameters["success"]:
-                while self.trials < parameters["trials"]:
-                    print(self.trials, self.success)
-                    # Generate the vector in internal degrees of freedom
-                    _, conf = structure.create_configuration(parameters)
-                    # print(conf)
-                    # Apply the configuration to structure
-                    structure.apply_conf(conf)
-                    if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "find":
-                        oriented_mol = structure.atoms_object()
-                    # Check if that structure is sensible
-                    is_good = True
-                    if all_right(structure, fixed_frame_sheet):
-                        # Check if it is in database
-                        in_db = False
-                        if parameters["protocol"]["check_db"]:
-                            in_db = True
-                            if not structure.find_in_database(conf, db_generated, parameters):
-                                if not structure.find_in_database(conf, db_relaxed, parameters ):
-                                    if not structure.find_in_database(conf, db_trajectories, parameters):
-                                        in_db = False
+            while self.success < parameters["success"] and self.trials < parameters["trials"]:
+                print(self.trials, self.success)
+                # Generate the vector in internal degrees of freedom
+                _, conf = structure.create_configuration(parameters)
+                # print(conf)
+                # Apply the configuration to structure
+                structure.apply_conf(conf)
+                if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "find":
+                    oriented_mol = structure.atoms_object()
+                # Check if that structure is sensible
+                is_good = True
+                if all_right(structure, fixed_frame_sheet):
+                    # Check if it is in database
+                    in_db = False
+                    if parameters["protocol"]["check_db"]:
+                        in_db = True
+                        if not structure.find_in_database(conf, db_generated, parameters):
+                            if not structure.find_in_database(conf, db_relaxed, parameters ):
+                                if not structure.find_in_database(conf, db_trajectories, parameters):
+                                    in_db = False
 
-                        if not in_db:
-                            if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "find":
-                                oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol, parameters = parameters)
-                                supercell_finder.set_unit_cell('find', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input 
-                                supercell_finder.run()
-                                conf = structure.get_configuration(supercell_finder.F_atoms)
-                                fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)
-                                structure_temp = Structure(parameters, supercell_finder)
-                                if all_right(structure_temp, fixed_frame_temp):
-                                    if parameters["configuration"]["check_forces"]["activate"] == True:
-                                        supercell_finder.joined_atoms.calc = calculator.calculator
-                                        if not np.max(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces, return_1000, 
-                                                                                        timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
-                                            db_generated.write(supercell_finder.F_atoms, **conf)
-                                            db_generated_frames.write(supercell_finder.S_atoms, **conf)
-                                            db_generated_visual.write(supercell_finder.joined_atoms, **conf)
-                                            write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
-                                            
-                                        else:
-                                            print("Forces too large")
-                                            is_good = False
-                                            
-                                    else:
+                    if not in_db:
+                        if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "find":
+                            oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol, parameters = parameters)
+                            supercell_finder.set_unit_cell('find', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input 
+                            supercell_finder.run()
+                            conf = structure.get_configuration(supercell_finder.F_atoms)
+                            fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)
+                            structure_temp = Structure(parameters, supercell_finder)
+                            if all_right(structure_temp, fixed_frame_temp):
+                                if parameters["configuration"]["check_forces"]["activate"] == True:
+                                    supercell_finder.joined_atoms.calc = calculator.calculator
+                                    if not np.max(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces, return_1000, 
+                                                                                    timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
                                         db_generated.write(supercell_finder.F_atoms, **conf)
                                         db_generated_frames.write(supercell_finder.S_atoms, **conf)
                                         db_generated_visual.write(supercell_finder.joined_atoms, **conf)
                                         write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
-                                        
-                                else:
-                                    is_good = False
-                                    
-                            else:
-                                merged = merge_together(structure, fixed_frame)
-                                if parameters["configuration"]["check_forces"]["activate"]:
-                                    merged.calc = calculator.calculator
-                                    if not np.max(np.abs(run_with_timeout_decorator(merged.get_forces, return_1000,
-                                                                                    timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
-                                        db_generated.write(structure.atoms_object(), **conf)
-                                        db_generated_visual.write(merged,**conf)
-                                        write("good_luck.xyz",merged,format="extxyz")
                                         
                                     else:
                                         print("Forces too large")
                                         is_good = False
                                         
                                 else:
+                                    db_generated.write(supercell_finder.F_atoms, **conf)
+                                    db_generated_frames.write(supercell_finder.S_atoms, **conf)
+                                    db_generated_visual.write(supercell_finder.joined_atoms, **conf)
+                                    write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
+                                    
+                            else:
+                                is_good = False
+                                
+                        else:
+                            merged = merge_together(structure, fixed_frame)
+                            if parameters["configuration"]["check_forces"]["activate"]:
+                                merged.calc = calculator.calculator
+                                if not np.max(np.abs(run_with_timeout_decorator(merged.get_forces, return_1000,
+                                                                                timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
                                     db_generated.write(structure.atoms_object(), **conf)
                                     db_generated_visual.write(merged,**conf)
                                     write("good_luck.xyz",merged,format="extxyz")
                                     
-                        else:
-                            is_good = False
+                                else:
+                                    print("Forces too large")
+                                    is_good = False
+                                    
+                            else:
+                                db_generated.write(structure.atoms_object(), **conf)
+                                db_generated_visual.write(merged,**conf)
+                                write("good_luck.xyz",merged,format="extxyz")
                                 
                     else:
-                        is_good = False                        
-
-                    if is_good:
-                        self.trials = 0
-                        self.success = db_generated.count()
-                        print("Good", conf)
-                        print("Generated structures:", self.success)        
-                    else:
-                        #print("BAD", conf)
-                        if parameters["supercell_finder"]["activate"] and hasattr(supercell_finder, "joined_atoms"):
-                            write("bad_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
-                        else:
-                            write("bad_luck.xyz",merge_together(structure, fixed_frame_sheet),format="extxyz")
-                        # print("Trials made", self.trials)
-                        self.trials += 1
+                        is_good = False
+                            
                 else:
-                    sys.exit(0)
-                    #pass
+                    is_good = False                        
+
+                if is_good:
+                    self.trials = 0
+                    self.success = db_generated.count()
+                    print("Good", conf)
+                    print("Generated structures:", self.success)        
+                else:
+                    #print("BAD", conf)
+                    if parameters["supercell_finder"]["activate"] and hasattr(supercell_finder, "joined_atoms"):
+                        write("bad_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
+                    else:
+                        write("bad_luck.xyz",merge_together(structure, fixed_frame_sheet),format="extxyz")
+                    # print("Trials made", self.trials)
+                    self.trials += 1
             else:
                 sys.exit(0)
                 #pass
+        else:
+            sys.exit(0)
+            #pass
 
         if parameters["protocol"]["search"]["activate"] is True:
             
