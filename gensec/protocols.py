@@ -139,7 +139,7 @@ class Protocol:
                     # print(conf)
                     # Apply the configuration to structure
                     structure.apply_conf(conf)
-                    if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "detect":
+                    if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "find":
                         oriented_mol = structure.atoms_object()
                     # Check if that structure is sensible
                     is_good = True
@@ -154,9 +154,9 @@ class Protocol:
                                         in_db = False
 
                         if not in_db:
-                            if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "detect":
-                                oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol) # No need to pass cell length as will be set by supercell finder
-                                supercell_finder.set_unit_cell('detect', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input 
+                            if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "find":
+                                oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol, parameters = parameters)
+                                supercell_finder.set_unit_cell('find', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input 
                                 supercell_finder.run()
                                 conf = structure.get_configuration(supercell_finder.F_atoms)
                                 fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)

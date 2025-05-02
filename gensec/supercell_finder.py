@@ -169,7 +169,7 @@ class Supercell_finder:
             F_initial = read(self.F_in_file, format=self.format_F)
 
 
-        elif unit_cell_method == 'detect':    # Get the unit cell from the provided ase.Atoms object (unit cell is detected usning unit cell finder beforehand)
+        elif unit_cell_method == 'find':    # Get the unit cell from the provided ase.Atoms object (unit cell is detected usning unit cell finder beforehand)
             
             F_initial = provided_atoms
             
@@ -217,9 +217,7 @@ class Supercell_finder:
                 self.max_range_S_1 = max(min(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[0])), max_s), 1)
                 self.max_range_S_2 = max(min(int(np.round(self.max_range_F_2 * vec_len[3] / vec_len[1])), max_s), 1)
         else:
-            raise NotImplementedError('m_range type not implemented')
-
-            
+            raise NotImplementedError('m_range type not implemented')     
             
             
     def set_parameters(self, new_parameters = None):

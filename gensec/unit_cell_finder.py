@@ -230,6 +230,7 @@ def Unit_cell_finder(mol,
                     tolerance=1e-4,
                     max_iterations=10,
                     seperation_factor=1.0,
+                    parameters = None,
                     vdw_array=vdw_radii):
     """
     Constructs a periodic arrangement from a molecule using two translation steps,
@@ -261,6 +262,21 @@ def Unit_cell_finder(mol,
       T1 (np.ndarray): The first translation vector (along the x‑axis).
       T2 (np.ndarray): The second translation vector.
     """
+    if parameters is not None:
+        min_angle = np.radians(parameters["unit_cell_finder"]["min_angle"])
+        max_angle = np.radians(parameters["unit_cell_finder"]["max_angle"])
+        seperation_factor = parameters["unit_cell_finder"]["seperation_factor"]
+        scan_first = parameters["unit_cell_finder"]["scan_first"]["activate"]
+        adaptive = parameters["unit_cell_finder"]["adaptive"]["activate"]
+        if scan_first:
+            first_min_angle = np.radians(parameters["unit_cell_finder"]["scan_first"]["first_min_angle"])
+            first_max_angle = np.radians(parameters["unit_cell_finder"]["scan_first"]["first_max_angle"])
+            first_n_steps = parameters["unit_cell_finder"]["scan_first"]["first_n_steps"]
+        if adaptive:
+            n_points = parameters["unit_cell_finder"]["adaptive"]["n_points"]
+            tolerance = parameters["unit_cell_finder"]["adaptive"]["tolerance"]
+            max_iterations = parameters["unit_cell_finder"]["adaptive"]["max_iterations"]
+    
     vdw_array = vdw_radii * seperation_factor
     
     def evaluate_first(phi1):

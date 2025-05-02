@@ -94,12 +94,67 @@ def Check_input(parameters):
         parameters["supercell_finder"] = {"activate" : False}
     elif parameters["supercell_finder"]["activate"] is True:
         if "unit_cell_method" not in parameters["supercell_finder"]:
-            parameters["supercell_finder"]["unit_cell_method"] = "inputfile"
+            parameters["supercell_finder"]["unit_cell_method"] = "find"
+        if parameters["supercell_finder"]["unit_cell_method"] == "find" and "unit_cell_finder" not in parameters:
+            parameters["unit_cell_finder"] = {
+                "min_angle": 20,
+                "max_angle": 90,
+                "seperation_factor": 1.0,
+                "scan_first": {
+                    "activate": False,
+                    "first_min_angle": 0,
+                    "first_max_angle": 180,
+                    "first_n_steps": 10
+                },
+                "adaptive": {
+                    "activate": False,
+                    "n_points": 5,
+                    "tolerance": 1e-4,
+                    "max_iterations": 10
+                }
+            }
+        elif parameters["supercell_finder"]["unit_cell_method"] == "find":
+            if "min_angle" not in parameters["unit_cell_finder"]:
+                parameters["unit_cell_finder"]["min_angle"] = 20
+            if "max_angle" not in parameters["unit_cell_finder"]:
+                parameters["unit_cell_finder"]["max_angle"] = 90
+            if "seperation_factor" not in parameters["unit_cell_finder"]:
+                parameters["unit_cell_finder"]["seperation_factor"] = 1.0
+            
+            if "scan_first" not in parameters["unit_cell_finder"]:
+                parameters["unit_cell_finder"]["scan_first"] = {
+                    "activate": False,
+                    "first_min_angle": 0,
+                    "first_max_angle": 180,
+                    "first_n_steps": 10
+                }
+            elif parameters["unit_cell_finder"]["scan_first"]["activate"] is True:
+                if "first_min_angle" not in parameters["unit_cell_finder"]["scan_first"]:
+                    parameters["unit_cell_finder"]["scan_first"]["first_min_angle"] = 0
+                if "first_max_angle" not in parameters["unit_cell_finder"]["scan_first"]:
+                    parameters["unit_cell_finder"]["scan_first"]["first_max_angle"] = 180
+                if "first_n_steps" not in parameters["unit_cell_finder"]["scan_first"]:
+                    parameters["unit_cell_finder"]["scan_first"]["first_n_steps"] = 10
+            
+            if "adaptive" not in parameters["unit_cell_finder"]:
+                parameters["unit_cell_finder"]["adaptive"] = {
+                    "activate": False,
+                    "n_points": 5,
+                    "tolerance": 1e-4,
+                    "max_iterations": 10
+                }
+            elif parameters["unit_cell_finder"]["adaptive"]["activate"] is True:
+                if "n_points" not in parameters["unit_cell_finder"]["adaptive"]:
+                    parameters["unit_cell_finder"]["adaptive"]["n_points"] = 5
+                if "tolerance" not in parameters["unit_cell_finder"]["adaptive"]:
+                    parameters["unit_cell_finder"]["adaptive"]["tolerance"] = 1e-4
+                if "max_iterations" not in parameters["unit_cell_finder"]["adaptive"]:
+                    parameters["unit_cell_finder"]["adaptive"]["max_iterations"] = 10
+        
         if "max_area_diff" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["max_area_diff"] = 0.1
         if "Z_cell_length" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["Z_cell_length"] = 100
-        # TODO: Determine values for max range from the input file if method is inputfile.
         if "m_range" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["m_range"]["type"] = "max"
             parameters["supercell_finder"]["m_range"]["max"] = 15    
