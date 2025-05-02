@@ -987,4 +987,5 @@ def run_with_timeout_decorator(func1, func2, timeout=10, *args, **kwargs):
         return func2(*args, **kwargs)
 
 def return_1000():
+    print("Timeout occurred")
     return 1000

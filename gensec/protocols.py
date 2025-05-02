@@ -129,10 +129,10 @@ class Protocol:
                         base_sheet = gen_base_sheet(structure.atoms, fixed_frame.fixed_frame, num_mol = parameters["number_of_replicas"])
                         fixed_frame_sheet = Fixed_frame(parameters, base_sheet)
             dirs = Directories(parameters)
-            if parameters["check_forces"]["activate"]:
+            if parameters["configuration"]["check_forces"]["activate"]:
                 calculator = Calculator(parameters)
-            while self.trials < parameters["trials"]:
-                while self.success < parameters["success"]:
+            while self.success < parameters["success"]:
+                while self.trials < parameters["trials"]:
                     print(self.trials, self.success)
                     # Generate the vector in internal degrees of freedom
                     _, conf = structure.create_configuration(parameters)
@@ -162,9 +162,10 @@ class Protocol:
                                 fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)
                                 structure_temp = Structure(parameters, supercell_finder)
                                 if all_right(structure_temp, fixed_frame_temp):
-                                    if parameters["check_forces"]["activate"]:
+                                    if parameters["configuration"]["check_forces"]["activate"] == True:
                                         supercell_finder.joined_atoms.calc = calculator.calculator
-                                        if not np.any(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces(), return_1000, timeout = parameters["check_forces"]["max_time"])) > parameters["check_forces"]["max_force"]):
+                                        if not np.max(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces, return_1000, 
+                                                                                        timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
                                             db_generated.write(supercell_finder.F_atoms, **conf)
                                             db_generated_frames.write(supercell_finder.S_atoms, **conf)
                                             db_generated_visual.write(supercell_finder.joined_atoms, **conf)
@@ -185,9 +186,10 @@ class Protocol:
                                     
                             else:
                                 merged = merge_together(structure, fixed_frame)
-                                if parameters["check_forces"]["activate"]:
+                                if parameters["configuration"]["check_forces"]["activate"]:
                                     merged.calc = calculator.calculator
-                                    if not np.any(np.abs(run_with_timeout_decorator(merged.get_forces(), return_1000, timeout = parameters["check_forces"]["max_time"])) > parameters["check_forces"]["max_force"]):
+                                    if not np.max(np.abs(run_with_timeout_decorator(merged.get_forces, return_1000,
+                                                                                    timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
                                         db_generated.write(structure.atoms_object(), **conf)
                                         db_generated_visual.write(merged,**conf)
                                         write("good_luck.xyz",merged,format="extxyz")

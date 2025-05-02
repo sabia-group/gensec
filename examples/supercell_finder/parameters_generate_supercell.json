@@ -1,8 +1,8 @@
 
 {
 	"name" : "MePTCDI_graphene",
-	"trials": 100,
-	"success": 100,
+	"trials": 200,
+	"success": 120,
 	"number_of_replicas" : 1,
 	"geometry" : {
 				"filename" : "sexithiophene.in",
@@ -20,9 +20,9 @@
 					"max_attempts" : 10,
 					"m_range" : { "type" : "max",
 						"max_s" : 15,
-						"max_f" : 6,
+						"max_f" : 5,
 						"max_range_s" : [15, 15],
-						"max_range_f" : [3, 3]
+						"max_range_f" : [5, 5]
 					},
 					"max_area_diff" : 0.1, 
 					"z_cell_length" : 100
@@ -70,15 +70,15 @@
 					"values": "restricted",
 					"x_axis" : [0, 0, 1],
 					"y_axis" : [0, 0, 1],
-					"z_axis" : [4, 6, 9]
+					"z_axis" : [4, 7, 20]
 		},
 		"clashes" : {"intramolecular" : 2.0,
 					"with_fixed_frame" : 2.0
 		},
 		"check_forces" : {
 					"activate" : true,
-					"max_force" : 0.015,
-					"max_time" : 10
+					"max_force" : 10,
+					"max_time" : 20
 		},
 		"adsorption" : {"activate": false
 		}

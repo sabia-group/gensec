@@ -67,12 +67,18 @@ def Check_input(parameters):
         
     # TODO: Work on calculator and implement chekck after if search is activated.
     
-    if "check_forces" not in parameters:
-        parameters["check_forces"] = {"activate" : False}
-    elif parameters["check_forces"] is True:
-        if "max_force" not in parameters["check_forces"]:
-            parameters["check_forces"]["max_force"] = 0.02
+    if "check_forces" not in parameters["configuration"]:
+        parameters["configuration"]["check_forces"] = {"activate" : False}
+    elif "activate" not in parameters["configuration"]["check_forces"]:
+        parameters["configuration"]["check_forces"]["activate"] = False
+    elif parameters["configuration"]["check_forces"]["activate"] is True:
+        if "max_force" not in parameters["configuration"]["check_forces"]:
+            parameters["configuration"]["check_forces"]["max_force"] = 0.02
             print("No max force given. Set to default value 0.02 eV/A.")
+        if "max_time" not in parameters["configuration"]["check_forces"]:
+            parameters["configuration"]["check_forces"]["max_time"] = 10
+            print("No max time given. Set to default value 10 s.")
+        
     
     if "fixed_frame" not in parameters:
         parameters["fixed_frame"] = {"activate" : False}
