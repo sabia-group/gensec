@@ -205,15 +205,13 @@ class Calculator:
             opt = MDMin(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
         elif algo == "FIRE":
             opt = FIRE(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
-                
         
-        
+        else:
+            print("Did not set valid algorithm in parameters.json. Using FIRE.")
+            opt = FIRE(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+    
         opt.run(fmax=parameters["calculator"]["fmax"], steps=parameters["calculator"]["steps"])
-        write(
-            os.path.join(directory, "final_configuration_{}.in".format(name)),
-            atoms,
-            format="aims",
-        )
+        write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms, format="aims")
         try:
             self.calculator.close()
         except:
