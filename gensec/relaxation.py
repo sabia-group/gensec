@@ -608,8 +608,9 @@ class Calculator:
                 structure.set_structure_positions(atoms)
                 if hasattr(structure, "fixed_frame"):
                     fixed_frame.set_fixed_frame_positions(structure, atoms)
-
-                calculator.relax(structure, fixed_frame, parameters, d)
+                
+                calculator.simple_relax(atoms.copy(), parameters, d)
+                # calculator.relax(structure, fixed_frame, parameters, d)
                 concatenate_trajs(d, traj)
                 calculator.finished(d)
                 try:
@@ -631,7 +632,8 @@ class Calculator:
                 if hasattr(structure, "fixed_frame"):
                     fixed_frame.set_fixed_frame_positions(structure, atoms)
 
-                calculator.relax(structure, fixed_frame, parameters, d)
+                calculator.simple_relax(atoms.copy(), parameters, d)
+                #calculator.relax(structure, fixed_frame, parameters, d)
                 concatenate_trajs(d, traj)
                 calculator.finished(d)
                 try:

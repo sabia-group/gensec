@@ -295,7 +295,7 @@ class Protocol:
                 self.success = db_relaxed.count()
                 # Take structure from database of generated structures
                 # TODO: The generation part is not needed here. Should be deleted. If there is no structure just throw an error.
-                if db_generated.count() == 0:
+                if db_generated_visual.count() == 0:
                     raise ValueError("No structures in the database. Please generate some first.")
                     
                     #self.trials = 0
