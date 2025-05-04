@@ -224,9 +224,7 @@ class Protocol:
             else:
                 sys.exit(0)
                 #pass
-        else:
-            sys.exit(0)
-            #pass
+        
 
         if parameters["protocol"]["search"]["activate"] is True:
             
