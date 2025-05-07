@@ -16,6 +16,8 @@ from ase.io.trajectory import Trajectory
 
 from gensec.unit_cell_finder import Unit_cell_finder, gen_base_sheet
 
+import time
+
 # TODO: Add checks 'if '...' in self.parameters' to avoid errors, includes adding default values. Exceptions are for example input files but this also needs a clear error message.
 
 # TODO: Add default values to parameters if not present and safe at the end
@@ -123,7 +125,7 @@ class Protocol:
                 
                 # Check if we have a base sheet we want to work with or if we need to create one from a unit cell. Only supposed to be used to chcek for clashes with the configured structure.
                 if parameters["fixed_frame"]["activate"]:
-                    if parameters["fixed_frame"]["is_unit_cell"]:
+                    if not parameters["fixed_frame"]["is_unit_cell"]:
                         fixed_frame_sheet = Fixed_frame(parameters)
                     else:                        
                         base_sheet = gen_base_sheet(structure.atoms, fixed_frame.fixed_frame, num_mol = parameters["number_of_replicas"])
@@ -133,6 +135,7 @@ class Protocol:
                 calculator = Calculator(parameters)
             while self.success < parameters["success"] and self.trials < parameters["trials"]:
                 print(self.trials, self.success)
+                # init_time = time.time()
                 # Generate the vector in internal degrees of freedom
                 _, conf = structure.create_configuration(parameters)
                 # print(conf)
@@ -156,15 +159,22 @@ class Protocol:
                         if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "find":
                             oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol, parameters = parameters)
                             supercell_finder.set_unit_cell('find', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input 
+                            # print("Init took", time.time() - init_time, "seconds")
+                            # sf_time = time.time()
                             supercell_finder.run()
+                            # print("Supercell finder took", time.time() - sf_time, "seconds")
                             conf = structure.get_configuration(supercell_finder.F_atoms)
                             fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)
                             structure_temp = Structure(parameters, supercell_finder)
+                            # col_time = time.time()
                             if all_right(structure_temp, fixed_frame_temp):
+                                # print("Colision check took", time.time() - col_time, "seconds")
                                 if parameters["configuration"]["check_forces"]["activate"] == True:
                                     supercell_finder.joined_atoms.calc = calculator.calculator
+                                    # force_time = time.time()
                                     if not np.max(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces, return_1000, 
                                                                                     timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
+                                        # print("Force check took", time.time() - force_time, "seconds")
                                         db_generated.write(supercell_finder.F_atoms, **conf)
                                         db_generated_frames.write(supercell_finder.S_atoms, **conf)
                                         db_generated_visual.write(supercell_finder.joined_atoms, **conf)
@@ -354,7 +364,7 @@ class Protocol:
                         print("added line")
                         #structure.apply_conf(conf)
                         dirs.dir_num = row.id
-                        del db_generated[row.id]
+                        # del db_generated[row.id]  # Why would we delete the row? Keeping the database should be better
                         if parameters["protocol"]["check_db"]:
                             if structure.find_in_database(conf, db_relaxed, parameters) or structure.find_in_database(conf, db_trajectories, parameters):
                                 print("Found in database")

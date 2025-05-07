@@ -133,7 +133,7 @@ class Supercell_finder:
             self.F_sc_points_number = self.F_sc_points.shape[0]
             self.S_sc_points_number = self.S_sc_points.shape[0]
 
-            self.V_final, self.Sigma_final, self.W_final = np.linalg.svd(self.T_final)
+            self.V_final, self.Sigma_final, self.W_final = svd2(self.T_final)
 
             self.U_final = self.V_final @ self.W_final
             
@@ -480,8 +480,10 @@ def svd2(A):
     VT = np.reshape(np.stack([
         W[:,0,0] * D00, W[:,1,0] * D00,
         W[:,0,1] * D11, W[:,1,1] * D11], -1), [-1, 2, 2])
-  
-    return U, s, VT
+    
+    
+    
+    return np.squeeze(U), np.squeeze(s), np.squeeze(VT)
 
 def inv2(A: np.ndarray) -> np.ndarray:
     """
@@ -512,4 +514,4 @@ def inv2(A: np.ndarray) -> np.ndarray:
 
     # Divide each 2×2 block by its scalar determinant
     A_inv /= det[:, None, None]
-    return A_inv
+    return np.squeeze(A_inv)

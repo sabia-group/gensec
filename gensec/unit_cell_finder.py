@@ -404,6 +404,7 @@ def gen_base_sheet(mol, substrate, safety_factor=1.05, num_mol=1):
     m = int(np.ceil(2 * R / (L_a * sin_phi)))
     n = int(np.ceil(2 * R / (L_b * sin_phi)))
     
+    substrate.set_constraint()
     substrate_supercell = substrate.repeat((m, n, 1))
     
     # Could be changed to generate a square supercell, just a bit more involved.
