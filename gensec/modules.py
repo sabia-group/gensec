@@ -869,6 +869,7 @@ def clashes_with_fixed_frame(structure, fixed_frame):
         i >= structure.clashes_with_fixed_frame for i in distances.flatten()
     )
 
+# TODO: Check if this is still up to date with supercell finder. For example no check for intermolecular clashes/ clashes du to pbc
 
 def all_right(structure, fixed_frame):
     """

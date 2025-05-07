@@ -349,7 +349,7 @@ def generate_supercell_points(v1, v2):
     coeffs = np.dot(grid_points, inv_A.T)
 
     # Check if points are within the supercell
-    inside = np.all((coeffs >= 0) & (coeffs < 1), axis=1)
+    inside = np.all((coeffs >= 0) & (coeffs < 1 - 1e-7), axis=1)
 
     # Extract valid points
     valid_points = grid_points[inside]
