@@ -161,38 +161,45 @@ class Protocol:
                             supercell_finder.set_unit_cell('find', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input 
                             # print("Init took", time.time() - init_time, "seconds")
                             # sf_time = time.time()
-                            supercell_finder.run()
-                            # print("Supercell finder took", time.time() - sf_time, "seconds")
-                            conf = structure.get_configuration(supercell_finder.F_atoms)
-                            fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)
-                            structure_temp = Structure(parameters, supercell_finder)
-                            # col_time = time.time()
-                            if all_right(structure_temp, fixed_frame_temp):
-                                # print("Colision check took", time.time() - col_time, "seconds")
-                                if parameters["configuration"]["check_forces"]["activate"] == True:
-                                    supercell_finder.joined_atoms.calc = calculator.calculator
-                                    # force_time = time.time()
-                                    if not np.max(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces, return_1000, 
-                                                                                    timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
-                                        # print("Force check took", time.time() - force_time, "seconds")
+                            try:
+                                supercell_finder.run()
+                                # print("Supercell finder took", time.time() - sf_time, "seconds")
+                                conf = structure.get_configuration(supercell_finder.F_atoms)
+                                fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)
+                                structure_temp = Structure(parameters, supercell_finder)
+                                # col_time = time.time()
+                                if all_right(structure_temp, fixed_frame_temp):
+                                    # print("Colision check took", time.time() - col_time, "seconds")
+                                    if parameters["configuration"]["check_forces"]["activate"] == True:
+                                        supercell_finder.joined_atoms.calc = calculator.calculator
+                                        # force_time = time.time()
+                                        if "max_atoms" in parameters["supercell_finder"] and len(supercell_finder.joined_atoms) > parameters["supercell_finder"]["max_atoms"]:
+                                            print("Too many atoms in the supercell")
+                                            is_good = False
+                                        
+                                        elif not np.max(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces, return_1000, 
+                                                                                        timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
+                                            # print("Force check took", time.time() - force_time, "seconds")
+                                            db_generated.write(supercell_finder.F_atoms, **conf)
+                                            db_generated_frames.write(supercell_finder.S_atoms, **conf)
+                                            db_generated_visual.write(supercell_finder.joined_atoms, **conf)
+                                            write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
+                                            
+                                        else:
+                                            print("Forces too large")
+                                            is_good = False
+                                            
+                                    else:
                                         db_generated.write(supercell_finder.F_atoms, **conf)
                                         db_generated_frames.write(supercell_finder.S_atoms, **conf)
                                         db_generated_visual.write(supercell_finder.joined_atoms, **conf)
                                         write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
                                         
-                                    else:
-                                        print("Forces too large")
-                                        is_good = False
-                                        
                                 else:
-                                    db_generated.write(supercell_finder.F_atoms, **conf)
-                                    db_generated_frames.write(supercell_finder.S_atoms, **conf)
-                                    db_generated_visual.write(supercell_finder.joined_atoms, **conf)
-                                    write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
-                                    
-                            else:
-                                is_good = False
-                                
+                                    is_good = False
+                            except:
+                                print("Supercell finder failed")
+                                is_good = False    
                         else:
                             merged = merge_together(structure, fixed_frame)
                             if parameters["configuration"]["check_forces"]["activate"]:
@@ -289,7 +296,6 @@ class Protocol:
             fixed_frame = Fixed_frame(parameters)
             dirs = Directories(parameters)
             calculator = Calculator(parameters)
-            conf_keys = structure.extract_conf_keys_from_row()
             if not os.path.exists(parameters["protocol"]["search"]["folder"]):
                 os.mkdir(parameters["protocol"]["search"]["folder"])
             # Perform optimizations in the folder specified in parameters file
@@ -358,7 +364,8 @@ class Protocol:
                     for row in db_generated_visual.select():
                         traj_id = row.unique_id
                         # Extract the configuration from the row
-                        #conf = {key: row[key] for key in conf_keys}
+                        conf = row.key_value_pairs
+                        # conf = {key: row[key] for key in conf_keys}
                         print("added line")
                         print(row.key_value_pairs)
                         print("added line")

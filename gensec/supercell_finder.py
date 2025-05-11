@@ -88,6 +88,8 @@ class Supercell_finder:
             argmin_2 = sorted_ind_lambda_2[self.attempts]
             min_2 = lambda_2[argmin_2]
             
+            
+            
             # TODO: Not working yet:
             # # The following makes sure that the supercell returned only contains stretches,
             # if (self.attempts == self.parameters['supercell_finder']['max_attempts'] - 1) and (self.parameters['supercell_finder']['max_attempts'] > 1):
@@ -144,7 +146,11 @@ class Supercell_finder:
             self.create_atoms()
             fixed_frame_temp = Fixed_frame(self.parameters, self.S_atoms.copy())
             structure_temp = Structure(self.parameters, self)
-            self.works = all_right(structure_temp, fixed_frame_temp)
+            
+            if "max_atoms" in self.parameters["supercell_finder"] and (self.attempts < self.parameters['supercell_finder']['max_attempts'] - 1) and (self.parameters['supercell_finder']['max_attempts'] > 1):
+                self.works = all_right(structure_temp, fixed_frame_temp) and (len(self.joined_atoms) <= self.parameters["supercell_finder"]["max_atoms"])
+            else:
+                self.works = all_right(structure_temp, fixed_frame_temp)
             self.attempts += 1
         
         
@@ -184,10 +190,10 @@ class Supercell_finder:
         
         self.S_geo.positions[:, 2] = self.S_geo.positions[:, 2] - np.max(self.S_geo.positions[:, 2])
         if self.parameters['supercell_finder']['m_range']['type'] == 'given_range':
-            self.max_range_S_1 = self.parameters['supercell_finder']['max_range_s'][0]
-            self.max_range_S_2 = self.parameters['supercell_finder']['max_range_s'][1]
-            self.max_range_F_1 = self.parameters['supercell_finder']['max_range_f'][0]
-            self.max_range_F_2 = self.parameters['supercell_finder']['max_range_f'][1]
+            self.max_range_S_1 = self.parameters['supercell_finder']['m_range']['max_range_s'][0]
+            self.max_range_S_2 = self.parameters['supercell_finder']['m_range']['max_range_s'][1]
+            self.max_range_F_1 = self.parameters['supercell_finder']['m_range']['max_range_f'][0]
+            self.max_range_F_2 = self.parameters['supercell_finder']['m_range']['max_range_f'][1]
         elif self.parameters['supercell_finder']['m_range']['type'] == 'max':
             
             stacked = np.vstack((self.S, self.F))
