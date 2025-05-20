@@ -171,23 +171,24 @@ class Protocol:
                                 if all_right(structure_temp, fixed_frame_temp):
                                     # print("Colision check took", time.time() - col_time, "seconds")
                                     if parameters["configuration"]["check_forces"]["activate"] == True:
-                                        supercell_finder.joined_atoms.calc = calculator.calculator
                                         # force_time = time.time()
                                         if "max_atoms" in parameters["supercell_finder"] and len(supercell_finder.joined_atoms) > parameters["supercell_finder"]["max_atoms"]:
                                             print("Too many atoms in the supercell")
                                             is_good = False
                                         
-                                        elif not np.max(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces, return_1000, 
+                                        if is_good:
+                                            supercell_finder.joined_atoms.calc = calculator.calculator
+                                            if not np.max(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces, return_1000, 
                                                                                         timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
-                                            # print("Force check took", time.time() - force_time, "seconds")
-                                            db_generated.write(supercell_finder.F_atoms, **conf)
-                                            db_generated_frames.write(supercell_finder.S_atoms, **conf)
-                                            db_generated_visual.write(supercell_finder.joined_atoms, **conf)
-                                            write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
+                                                # print("Force check took", time.time() - force_time, "seconds")
+                                                db_generated.write(supercell_finder.F_atoms, **conf)
+                                                db_generated_frames.write(supercell_finder.S_atoms, **conf)
+                                                db_generated_visual.write(supercell_finder.joined_atoms, **conf)
+                                                write("good_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
                                             
-                                        else:
-                                            print("Forces too large")
-                                            is_good = False
+                                            else:
+                                                print("Forces too large")
+                                                is_good = False
                                             
                                     else:
                                         db_generated.write(supercell_finder.F_atoms, **conf)

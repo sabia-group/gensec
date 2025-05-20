@@ -121,7 +121,7 @@ def Check_input(parameters):
                 "seperation_factor": 1.0,
                 "scan_first": {
                     "activate": False,
-                    "first_min_angle": 0,
+                    "first_min_angle": 0,       # TODO: Change to array of 3 values
                     "first_max_angle": 180,
                     "first_n_steps": 10
                 },
