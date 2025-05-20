@@ -39,12 +39,26 @@ def Check_input(parameters):
         if "adsorption" not in parameters["configuration"]:
             parameters["configuration"]["adsorption"] = {"activate": False}
         elif parameters["configuration"]["adsorption"]["activate"] is True:
-            if "range" not in parameters["configuration"]["adsorption"]:
-                parameters["configuration"]["adsorption"]["range"] = [0.5, 3.0]
-                print("Range for adsorption not given. Set to default values [0.5, 3.0].")
-            if "point" not in parameters["configuration"]["adsorption"]:
-                parameters["configuration"]["adsorption"]["point"] = [0.0, 0.0, 0.0]
-                print("Point for adsorption not given. Set to default values [0.0, 0.0, 0.0].")
+            if "method" not in parameters["configuration"]["adsorption"]:
+                parameters["configuration"]["adsorption"]["method"] = "surface"
+                print("No method for adsorption given. Set to default value 'surface'.")
+            if parameters["configuration"]["adsorption"]["method"] == "surface":
+                if "range" not in parameters["configuration"]["adsorption"]:
+                    parameters["configuration"]["adsorption"]["range"] = [3, 4]
+                    print("Range for adsorption not given. Set to default values [3, 5].")
+                if "surface_z" not in parameters["configuration"]["adsorption"]:
+                    parameters["configuration"]["adsorption"]["surface_z"] = 0.0
+                    print("No surface z value given. Set to default value 0.0.")
+                if "molecules" not in parameters["configuration"]["adsorption"]:
+                    parameters["configuration"]["adsorption"]["molecules"] = "all"
+                    print("No number of molecules given. Set to default value 1.")
+            if parameters["configuration"]["adsorption"]["method"] == "point":
+                if "range" not in parameters["configuration"]["adsorption"]:
+                    parameters["configuration"]["adsorption"]["range"] = [0.5, 3.0]
+                    print("Range for adsorption not given. Set to default values [0.5, 3.0].")
+                if "point" not in parameters["configuration"]["adsorption"]:
+                    parameters["configuration"]["adsorption"]["point"] = [0.0, 0.0, 0.0]
+                    print("Point for adsorption not given. Set to default values [0.0, 0.0, 0.0].")
         
         if "clashes" not in parameters["configuration"]:
             parameters["configuration"]["clashes"] = {"intramolecular" : 2.0, "with_fixed_frame" : 1.5}

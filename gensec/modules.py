@@ -797,7 +797,7 @@ def adsorption_surface(structure, fixed_frame):
     """
 
     zz = structure.adsorption_surface_Z
-    rr = structure.adsorption_surface_range
+    rr = structure.adsorption_range
 
     if structure.adsorption_surface_mols == "all":
         ready = True
@@ -909,10 +909,16 @@ def all_right(structure, fixed_frame):
                 if not clashes_with_fixed_frame(structure, fixed_frame):
                     if (
                         hasattr(structure, "adsorption")
-                        and structure.adsorption
+                        and not structure.adsorption_surface
                     ):
                         if adsorption_point(structure, fixed_frame):
                             ready = True
+                    elif (
+                            hasattr(structure, "adsorption_surface")
+                            and structure.adsorption_surface
+                        ):
+                            if adsorption_surface(structure, fixed_frame):
+                                ready = True
                     else:
                         ready = True
             else:

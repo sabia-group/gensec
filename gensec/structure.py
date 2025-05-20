@@ -73,14 +73,19 @@ class Structure:
                 self.atoms.set_pbc(True)
                 self.mu = None  # Parameter mu for exponential preconditioner
             
-            if parameters["configuration"]["adsorption"]["activate"]:
-                self.adsorption = True
-                self.adsorption_range = parameters["configuration"]["adsorption"][
-                    "range"
-                ]
-                self.adsorption_point = parameters["configuration"]["adsorption"][
-                    "point"
-                ]
+        if parameters["configuration"]["adsorption"]["activate"]:
+            self.adsorption = True
+            self.adsorption_range = parameters["configuration"]["adsorption"]["range"]
+            
+            if parameters["configuration"]["adsorption"]["method"] == "surface":
+                self.adsorption_surface = True
+                self.adsorption_surface_Z = parameters["configuration"]["adsorption"]["surface"]
+                self.adsorption_surface_mols = parameters["configuration"]["adsorption"]["molecules"]
+            elif parameters["configuration"]["adsorption"]["method"] == "point":
+                self.adsorption_surface = False
+                self.adsorption_point = parameters["configuration"]["adsorption"]["point"]
+            
+            
         
         self.connectivity_matrix_full = create_connectivity_matrix(
             self.atoms, bothways=True
