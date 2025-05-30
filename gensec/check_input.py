@@ -118,6 +118,7 @@ def Check_input(parameters):
             parameters["unit_cell_finder"] = {
                 "min_angle": 20,
                 "max_angle": 90,
+                "n_steps" : 36,
                 "seperation_factor": 1.0,
                 "scan_first": {
                     "activate": False,
@@ -137,6 +138,8 @@ def Check_input(parameters):
                 parameters["unit_cell_finder"]["min_angle"] = 20
             if "max_angle" not in parameters["unit_cell_finder"]:
                 parameters["unit_cell_finder"]["max_angle"] = 90
+            if "n_steps" not in parameters["unit_cell_finder"]:
+                parameters["unit_cell_finder"]["n_steps"] = 36
             if "seperation_factor" not in parameters["unit_cell_finder"]:
                 parameters["unit_cell_finder"]["seperation_factor"] = 1.0
             
@@ -176,7 +179,8 @@ def Check_input(parameters):
             parameters["supercell_finder"]["Z_cell_length"] = 100
         if "m_range" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["m_range"]["type"] = "max"
-            parameters["supercell_finder"]["m_range"]["max"] = 15    
+            parameters["supercell_finder"]["m_range"]["max_s"] = 15
+            parameters["supercell_finder"]["m_range"]["max_f"] = 15    
         else:
             if parameters["supercell_finder"]["m_range"]["type"] == "max" and "max_s" not in parameters["supercell_finder"]["m_range"]:
                 parameters["supercell_finder"]["m_range"]["max_s"] = 15
@@ -187,7 +191,7 @@ def Check_input(parameters):
             if "max_range_s" not in parameters["supercell_finder"]["m_range"] and parameters["supercell_finder"]["m_range"]["type"] == "given_range":
                 parameters["supercell_finder"]["max_range_s"] = [10, 10]
             if parameters["supercell_finder"]["m_range"]["type"] not in ["max", "given_range"]:
-                raise implementationError("type for m_range not implemented. Choose between max and given_range.")
+                raise NotImplementedError("type for m_range not implemented. Choose between max and given_range.")
         if "max_attempts" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["max_attempts"] = 1
             

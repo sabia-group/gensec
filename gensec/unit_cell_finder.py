@@ -134,7 +134,7 @@ def create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_radii):
     dimer = mol + mol_copy
     return dimer, s1
 
-def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(20), max_angle=np.pi/2, n_steps=36, safety_stepsize = np.radians(1), vdw_array=vdw_radii):
+def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(20), max_angle=np.pi/2, n_steps=36, safety_stepsize = np.radians(5), vdw_array=vdw_radii):
     """
     Uses a fixed grid search to find the optimal second translation vector.
     
@@ -265,6 +265,7 @@ def Unit_cell_finder(mol,
     if parameters is not None:
         min_angle = np.radians(parameters["unit_cell_finder"]["min_angle"])
         max_angle = np.radians(parameters["unit_cell_finder"]["max_angle"])
+        n_steps = parameters["unit_cell_finder"]["n_steps"]
         seperation_factor = parameters["unit_cell_finder"]["seperation_factor"]
         scan_first = parameters["unit_cell_finder"]["scan_first"]["activate"]
         adaptive = parameters["unit_cell_finder"]["adaptive"]["activate"]
@@ -279,68 +280,80 @@ def Unit_cell_finder(mol,
     
     vdw_array = vdw_radii * seperation_factor
     
-    def evaluate_first(phi1):
-        v1 = np.array([np.cos(phi1), np.sin(phi1), 0])
-        dimer, s1 = create_dimer(mol, vector=v1, vdw_array=vdw_array)
-        T1 = s1 * v1
-        # offset second-vector range by phi1
-        sec_min = min_angle + phi1
-        sec_max = max_angle + phi1
-        if adaptive:
-            T2, _, _, _ = find_optimal_second_vector_adaptive(
-                dimer, s1,
-                min_angle=sec_min, max_angle=sec_max,
-                n_points=n_points, tolerance=tolerance,
-                max_iterations=max_iterations,
-                vdw_array=vdw_array)
-        else:
-            T2, _, _, _ = find_optimal_second_vector(
-                mol, dimer, s1,
-                min_angle=sec_min, max_angle=sec_max,
-                n_steps=n_steps, vdw_array=vdw_array)
+    # Computationally inefficient approach, currently not used.
+    # def evaluate_first(phi1):
+    #     v1 = np.array([np.cos(phi1), np.sin(phi1), 0])
+    #     dimer, s1 = create_dimer(mol, vector=v1, vdw_array=vdw_array)
+    #     T1 = s1 * v1
+    #     # offset second-vector range by phi1
+    #     sec_min = min_angle + phi1
+    #     sec_max = max_angle + phi1
+    #     if adaptive:
+    #         T2, _, _, _ = find_optimal_second_vector_adaptive(
+    #             dimer, s1,
+    #             min_angle=sec_min, max_angle=sec_max,
+    #             n_points=n_points, tolerance=tolerance,
+    #             max_iterations=max_iterations,
+    #             vdw_array=vdw_array)
+    #     else:
+    #         T2, _, _, _ = find_optimal_second_vector(
+    #             mol, dimer, s1,
+    #             min_angle=sec_min, max_angle=sec_max,
+    #             n_steps=n_steps, vdw_array=vdw_array)
+    #     
+    #     # compute actual area of parallelogram
+    #     area = np.linalg.norm(np.cross(T1, T2))
+    #     return area, T1, T2
+ 
+    # if scan_first:
+        # best = None
+        # for phi1 in np.linspace(first_min_angle, first_max_angle, first_n_steps):
+        #     try:
+        #         area, T1_candidate, T2_candidate = evaluate_first(phi1)
+        #     except ValueError:
+        #         continue
+        #     if best is None or area < best[0]:
+        #         best = (area, T1_candidate, T2_candidate)
+        # if best is None:
+        #     raise ValueError("No valid unit cell found when scanning first vector.")
+        # 
+        # _, T1, T2 = best
         
-        # compute actual area of parallelogram
-        area = np.linalg.norm(np.cross(T1, T2))
-        return area, T1, T2
-
     if scan_first:
-        best = None
-        for phi1 in np.linspace(first_min_angle, first_max_angle, first_n_steps):
-            
-            try:
-                area, T1_candidate, T2_candidate = evaluate_first(phi1)
-            except ValueError:
-                continue
-            
-            if best is None or area < best[0]:
-                best = (area, T1_candidate, T2_candidate)
-                
-        if best is None:
-            raise ValueError("No valid unit cell found when scanning first vector.")
-        
-        _, T1, T2 = best
+        phi_1 = np.linspace(first_min_angle, first_max_angle, first_n_steps)
+        s1_array = np.ones_like(phi_1) * 100
+        dimer_array = []
+        for i, phi in enumerate(phi_1):
+            v1 = np.array([np.cos(phi), np.sin(phi), 0])
+            dimer_temp, s1_array[i] = create_dimer(mol, vector=v1, vdw_array=vdw_array)
+            dimer_array.append(dimer_temp)
+        arg_min_s1 = np.argmin(s1_array)
+        dimer, s1, phi1 = dimer_array[arg_min_s1], s1_array[arg_min_s1], phi_1[arg_min_s1]
+        T1 = s1 * np.array([np.cos(phi1), np.sin(phi1), 0])
+        min_angle = min_angle + phi1
+        max_angle = max_angle + phi1
         
     else:
         dimer, s1 = create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_array)
         T1 = s1 * np.array([1, 0, 0])
         
-        if adaptive:
-            T2, _, _, _ = find_optimal_second_vector_adaptive(
-            dimer, s1,
-            min_angle=min_angle,
-            max_angle=max_angle,
-            n_points=n_points,
-            tolerance=tolerance,
-            max_iterations=max_iterations,
-            vdw_array=vdw_array)
+    if adaptive:
+        T2, _, _, _ = find_optimal_second_vector_adaptive(
+        dimer, s1,
+        min_angle=min_angle,
+        max_angle=max_angle,
+        n_points=n_points,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
+        vdw_array=vdw_array)
             
-        else:
-            T2, _, _, _ = find_optimal_second_vector(
-            mol, dimer, s1,
-            min_angle=min_angle,
-            max_angle=max_angle,
-            n_steps=n_steps,
-            vdw_array=vdw_array)
+    else:
+        T2, _, _, _ = find_optimal_second_vector(
+        mol, dimer, s1,
+        min_angle=min_angle,
+        max_angle=max_angle,
+        n_steps=n_steps,
+        vdw_array=vdw_array)
     
     # Combine the original dimer and its translated copy.
     mol_with_unit_cell = mol.copy()
