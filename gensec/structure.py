@@ -5,6 +5,7 @@ from ase.io import read, write
 from random import random, randint, uniform, choice, sample
 import itertools
 import sys
+import numpy as np
 
 # TODO: Change geometry to have same syntax as fixed frame (in the input and therefore how it is read by GenSec)
 
@@ -167,7 +168,10 @@ class Structure:
             elif parameters["configuration"]["torsions"]["values"] == "restricted":
                 max_angle = parameters["configuration"]["torsions"]["max_angle"]
                 torsions = np.array([randint(-max_angle, max_angle) for i in self.list_of_torsions])
-            
+            elif parameters["configuration"]["torsions"]["values"] == "discretized":
+                ang_ar = parameters["configuration"]["torsions"]["angles_linspace"]
+                angles = np.linspace(ang_ar[0], ang_ar[1], ang_ar[2])
+                torsions = np.array([choice(angles) for i in self.list_of_torsions])
             t = {
                 "m{}t{}".format(label, i): torsions[i]
                 for i in range(len(torsions))

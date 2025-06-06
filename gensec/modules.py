@@ -869,6 +869,24 @@ def clashes_with_fixed_frame(structure, fixed_frame):
         i >= structure.clashes_with_fixed_frame for i in distances.flatten()
     )
 
+def z_min_max_clashes(structure):
+    """_summary_
+    Checks if all atoms of the structure are within the specified range.
+    
+    """
+    
+    if "z_min_max" in structure.parameters["configuration"]:
+        z_min_max = structure.parameters["configuration"]["z_min_max"]
+        mols = structure.molecules[0].copy()
+        for molecule in structure.molecules[1:]:
+            mols.extend(molecule)
+        z_atoms = mols.get_positions()[:, 2]
+        
+        return np.any((z_atoms < z_min_max[0]) | (z_atoms > z_min_max[1]))
+        
+    else:
+        return False
+
 # TODO: Check if this is still up to date with supercell finder. For example no check for intermolecular clashes/ clashes du to pbc
 
 def all_right(structure, fixed_frame):
@@ -890,39 +908,40 @@ def all_right(structure, fixed_frame):
     ready = False
 
     if not internal_clashes(structure):
-        if len(structure.molecules) > 1:
-            if not intramolecular_clashes(structure):
-                if hasattr(fixed_frame, "fixed_frame"):
-                    if not clashes_with_fixed_frame(structure, fixed_frame):
-                        if (
-                            hasattr(structure, "adsorption_surface")
-                            and structure.adsorption_surface
-                        ):
-                            if adsorption_surface(structure, fixed_frame):
-                                ready = True
-                        else:
-                            ready = True
-                else:
-                    ready = True
-        else:
-            if hasattr(fixed_frame, "fixed_frame"):
-                if not clashes_with_fixed_frame(structure, fixed_frame):
-                    if (
-                        hasattr(structure, "adsorption")
-                        and not structure.adsorption_surface
-                    ):
-                        if adsorption_point(structure, fixed_frame):
-                            ready = True
-                    elif (
-                            hasattr(structure, "adsorption_surface")
-                            and structure.adsorption_surface
-                        ):
-                            if adsorption_surface(structure, fixed_frame):
+        if not z_min_max_clashes(structure):
+            if len(structure.molecules) > 1:
+                if not intramolecular_clashes(structure):
+                    if hasattr(fixed_frame, "fixed_frame"):
+                        if not clashes_with_fixed_frame(structure, fixed_frame):
+                            if (
+                                hasattr(structure, "adsorption_surface")
+                                and structure.adsorption_surface
+                            ):
+                                if adsorption_surface(structure, fixed_frame):
+                                    ready = True
+                            else:
                                 ready = True
                     else:
                         ready = True
             else:
-                ready = True
+                if hasattr(fixed_frame, "fixed_frame"):
+                    if not clashes_with_fixed_frame(structure, fixed_frame):
+                        if (
+                            hasattr(structure, "adsorption")
+                            and not structure.adsorption_surface
+                        ):
+                            if adsorption_point(structure, fixed_frame):
+                                ready = True
+                        elif (
+                                hasattr(structure, "adsorption_surface")
+                                and structure.adsorption_surface
+                            ):
+                                if adsorption_surface(structure, fixed_frame):
+                                    ready = True
+                        else:
+                            ready = True
+                else:
+                    ready = True
 
     return ready
 

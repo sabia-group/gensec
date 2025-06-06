@@ -239,9 +239,6 @@ class Protocol:
                         write("bad_luck.xyz",merge_together(structure, fixed_frame_sheet),format="extxyz")
                     # print("Trials made", self.trials)
                     self.trials += 1
-            else:
-                sys.exit(0)
-                #pass
         
 
         if parameters["protocol"]["search"]["activate"] is True:

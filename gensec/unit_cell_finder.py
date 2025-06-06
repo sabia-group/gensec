@@ -111,8 +111,6 @@ def find_miminum_displacement(mol1: ase.Atoms, mol2: Optional[ase.Atoms] = None,
     return s_req_total
 
 
-# Assume vdw_radii and find_miminum_displacement() are already defined.
-
 def create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_radii):
     """
     Creates a dimer by translating a copy of `mol` along `vector` 
@@ -363,17 +361,6 @@ def Unit_cell_finder(mol,
     mol_with_unit_cell.pbc = True
     
     return mol_with_unit_cell, T1, T2
-
-# Example usage:
-# Suppose `mol` is an ase.Atoms object representing your molecule.
-# To use the grid search method:
-#   combined_structure, T1, T2 = replicate_dimer_flexible(mol, adaptive=False, n_steps=100, vdw_array=vdw_radii)
-#
-# To use adaptive sampling:
-#   combined_structure, T1, T2 = replicate_dimer_flexible(mol, adaptive=True, n_points=5,
-#                                                          tolerance=1e-4, max_iterations=10, vdw_array=vdw_radii)
-
-
 
 
 def gen_base_sheet(mol, substrate, safety_factor=1.05, num_mol=1):

@@ -77,7 +77,7 @@ class Calculator:
         """
         z = parameters["calculator"]["constraints"]["fix_atoms"]
         c = FixAtoms(
-            indices=[atom.index for atom in atoms if atom.position[2] <= z[-1]]
+            indices=[atom.index for atom in atoms if (atom.position[2] <= z[-1]) and (atom.position[2] >= z[0])]
         )
         atoms.set_constraint(c)
 
@@ -178,6 +178,13 @@ class Calculator:
     def simple_relax(self, init_atoms, parameters, directory):
         
         atoms = init_atoms.copy()
+        
+        if "constraints" in parameters["calculator"]:
+            z = parameters["calculator"]["constraints"]["fix_atoms"]
+            c = FixAtoms(
+                indices=[atom.index for atom in atoms if (atom.position[2] <= z[-1]) and (atom.position[2] >= z[0])]
+            )
+            atoms.set_constraint(c)
         
         name = parameters["name"]
         folder = parameters["calculator"]["supporting_files_folder"]
