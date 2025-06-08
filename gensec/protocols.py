@@ -308,7 +308,7 @@ class Protocol:
             while self.success < parameters["success"]:
                 self.success = db_relaxed.count()
                 # Take structure from database of generated structures
-                # TODO: The generation part is not needed here. Should be deleted. If there is no structure just throw an error.
+                # TODO: If you want to generate on the fly, chagnge so that it doesnt delete the database in the meantime
                 if db_generated_visual.count() == 0:
                     raise ValueError("No structures in the database. Please generate some first.")
                     
@@ -359,7 +359,9 @@ class Protocol:
                     #        self.trials = 0
                     #        self.success = db_generated.count()
                 else:
-                    for row in db_generated_visual.select():
+                    for num, row in enumerate(db_generated_visual.select()):
+                        if num < self.success:
+                            continue
                         traj_id = row.unique_id
                         # Extract the configuration from the row
                         conf = row.key_value_pairs
