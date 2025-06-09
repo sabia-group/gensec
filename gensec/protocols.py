@@ -362,6 +362,8 @@ class Protocol:
                     for num, row in enumerate(db_generated_visual.select()):
                         if num < self.success:
                             continue
+                        if self.success >= parameters["success"]:
+                            break
                         traj_id = row.unique_id
                         # Extract the configuration from the row
                         conf = row.key_value_pairs
