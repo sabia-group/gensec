@@ -18,9 +18,9 @@ from gensec.unit_cell_finder import Unit_cell_finder, gen_base_sheet
 
 import time
 
-# TODO: Add checks 'if '...' in self.parameters' to avoid errors, includes adding default values. Exceptions are for example input files but this also needs a clear error message.
+# TODO: Add a permanent log containing at least all print outputs
 
-# TODO: Add default values to parameters if not present and safe at the end
+
 
 class Protocol:
 

@@ -63,6 +63,7 @@ class Structure:
             parameters["geometry"]["filename"], format=parameters["geometry"]["format"]
             )
             self.atoms.set_constraint()
+            self.atoms.pbc = False
             
             self.molecules = [self.atoms.copy() for i in range(self.parameters["number_of_replicas"])]
             # self.num_molecules = self.parameters["number_of_replicas"]
@@ -214,12 +215,24 @@ class Structure:
             ):
                 # Discretizes the values for the main vector of the molecuele
                 # for the angle part the number of allowed rotations
-                turns = int(
-                    360.0
-                    // parameters["configuration"]["orientations"]["angle"]
-                )
+                
+                #TODO: Rethink if linspace should include endpoint. Should be identical accross codebase. Maybe add option in parameters. 
+                # Thought being: If I want evenly spaced angles, between 0 and 360 deg, standard setting includes 360 which would mean double counting
+                
+                if "angles_linspace" in parameters["configuration"]["orientations"]:
+                    ang_ar = parameters["configuration"]["orientations"][
+                        "angles_linspace"
+                    ]
+                    angles = np.linspace(ang_ar[0], ang_ar[1], ang_ar[2])
+                #TODO: Remove in future version and make above standard
+                else:
+                    turns = int(
+                        360.0
+                        // parameters["configuration"]["orientations"]["angle"]
+                    )
 
-                angles = np.linspace(0, 360, num=turns + 1)
+                    angles = np.linspace(0, 360, num=turns + 1)
+                # TODO: Include tyoe in check_input
                 if (
                     parameters["configuration"]["orientations"]["vector"][
                         "type"

@@ -6,6 +6,7 @@ from typing import Optional
 from gensec.structure import Structure, Fixed_frame
 from gensec.modules import all_right
 
+# TODO: Allow for single cell (look at shapes of S and F if only one cel)
 
 
 class Supercell_finder:
