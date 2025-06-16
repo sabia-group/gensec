@@ -717,21 +717,28 @@ def intramolecular_clashes(structure):
         distances = all_atoms.get_all_distances().reshape(
             len(all_atoms), len(all_atoms)
         )
+    distances_no_pbc = all_atoms.get_all_distances().reshape(len(all_atoms), len(all_atoms))
 
-    # Excluding check within each molecule
+    # Excluding check within each molecule ONLY IF THEY ARE CLOSE TO EACH OTHER WITHOUT PBC
     for i in range(len(structure.molecules)):
-        values = (
-            np.ones(len(structure.molecules[i]) ** 2).reshape(
-                len(structure.molecules[i]), len(structure.molecules[i])
-            )
-            * 100
-        )
+        # values = (
+        #     np.ones(len(structure.molecules[i]) ** 2).reshape(
+        #         len(structure.molecules[i]), len(structure.molecules[i])
+        #     )
+        #     * 100
+        # )
+        values = np.where(distances_no_pbc[len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
+            + len(structure.molecules[i]),
+            len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
+            + len(structure.molecules[i]),
+        ] < structure.clashes_intramolecular + 1e-7, 100, 0)
+        
         distances[
             len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
             + len(structure.molecules[i]),
             len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
             + len(structure.molecules[i]),
-        ] = values
+        ] += values
 
     return not all(
         i >= structure.clashes_intramolecular for i in distances.flatten()

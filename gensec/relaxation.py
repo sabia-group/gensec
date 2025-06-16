@@ -219,6 +219,7 @@ class Calculator:
     
         opt.run(fmax=parameters["calculator"]["fmax"], steps=parameters["calculator"]["steps"])
         write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms, format="aims")
+        # TODO: There should be a tag which makes it easy to filter which calculations finished and which reached the step limit
         try:
             self.calculator.close()
         except:

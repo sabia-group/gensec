@@ -132,7 +132,7 @@ def create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_radii):
     dimer = mol + mol_copy
     return dimer, s1
 
-def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(20), max_angle=np.pi/2, n_steps=36, safety_stepsize = np.radians(5), vdw_array=vdw_radii):
+def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(20), max_angle=np.pi/2, n_steps=36, safety_stepsize = np.radians(1), vdw_array=vdw_radii):
     """
     Uses a fixed grid search to find the optimal second translation vector.
     
@@ -278,7 +278,7 @@ def Unit_cell_finder(mol,
     
     vdw_array = vdw_radii * seperation_factor
     
-    # Computationally inefficient approach, currently not used.
+    # Computationally inefficient approach, currently not used. Still needed if you want the very best unit cell.
     # def evaluate_first(phi1):
     #     v1 = np.array([np.cos(phi1), np.sin(phi1), 0])
     #     dimer, s1 = create_dimer(mol, vector=v1, vdw_array=vdw_array)

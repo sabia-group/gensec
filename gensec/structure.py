@@ -138,7 +138,7 @@ class Structure:
         # for i in range(len(self.cycles)):
         # self.cycles[i] = make_canonical_pyranosering(self.atoms, self.cycles[i])
 
-    def create_configuration(self, parameters):
+    def create_configuration(self, parameters, success=None):
         """
         Creates a configuration for the structure.
 
@@ -254,11 +254,15 @@ class Structure:
                         ),
                     )
                 else:
+                    if success is not None:
+                        ang = angles[success]
+                    else:
+                        ang = choice(angles)
                     x = parameters["configuration"]["orientations"]["vector"]["x"]
                     y = parameters["configuration"]["orientations"]["vector"]["y"]
                     z = parameters["configuration"]["orientations"]["vector"]["z"]
                     quaternion = produce_quaternion(
-                        choice(angles),
+                        ang,
                         np.array([choice(x), choice(y), choice(z)]),
                     )
 
@@ -786,6 +790,7 @@ class Structure:
             self.molecules[mol].set_positions(mol_atoms)
 
     def find_in_database(self, conf, database, parameters):
+        #TODO: Update this function
         """Check if the configuration is stored in database
 
         [description]

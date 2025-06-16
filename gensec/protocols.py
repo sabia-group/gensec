@@ -133,11 +133,18 @@ class Protocol:
             dirs = Directories(parameters)
             if parameters["configuration"]["check_forces"]["activate"]:
                 calculator = Calculator(parameters)
+            if "definite" in parameters["configuration"]:
+                definite = parameters["configuration"]["definite"]["activate"]
+            else:
+                definite = False
             while self.success < parameters["success"] and self.trials < parameters["trials"]:
                 print(self.trials, self.success)
                 # init_time = time.time()
                 # Generate the vector in internal degrees of freedom
-                _, conf = structure.create_configuration(parameters)
+                if definite:
+                    _, conf = structure.create_configuration(parameters, self.success)
+                else:
+                    _, conf = structure.create_configuration(parameters)
                 # print(conf)
                 # Apply the configuration to structure
                 structure.apply_conf(conf)
@@ -174,6 +181,7 @@ class Protocol:
                                         # force_time = time.time()
                                         if "max_atoms" in parameters["supercell_finder"] and len(supercell_finder.joined_atoms) > parameters["supercell_finder"]["max_atoms"]:
                                             print("Too many atoms in the supercell")
+                                            print(len(supercell_finder.joined_atoms))
                                             is_good = False
                                         
                                         if is_good:
