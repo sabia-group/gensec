@@ -727,6 +727,7 @@ def intramolecular_clashes(structure):
         #     )
         #     * 100
         # )
+        # TODO: Think about how we can efficiently include vdw radii here maybe.
         values = np.where(distances_no_pbc[len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
             + len(structure.molecules[i]),
             len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
@@ -914,6 +915,11 @@ def all_right(structure, fixed_frame):
 
     ready = False
 
+    # TODO: Add a check for fixed frame which makes sure all atoms have the same number of neighbors
+    # Numerical instability can lead to atoms missing/ too many being added. This will cause holes or overlaping
+    # atoms. If the neighbours of equivalent atoms differ, it indicates one of the above (assuming mic)
+    # 'inside' in function generate_supercell_points is causing to this problem
+    
     if not internal_clashes(structure):
         if not z_min_max_clashes(structure):
             if len(structure.molecules) > 1:
@@ -1019,6 +1025,6 @@ def run_with_timeout_decorator(func1, func2, timeout=10, *args, **kwargs):
     except timeout_decorator.TimeoutError:
         return func2(*args, **kwargs)
 
-def return_1000():
+def return_inf():
     print("Timeout occurred")
-    return 1000
+    return np.inf

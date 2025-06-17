@@ -7,7 +7,7 @@ import sys
 import numpy as np
 from ase.io import read, write
 from gensec.structure import Structure, Fixed_frame
-from gensec.modules import all_right, merge_together, measure_quaternion, run_with_timeout_decorator, return_1000
+from gensec.modules import all_right, merge_together, measure_quaternion, run_with_timeout_decorator, return_inf
 from gensec.outputs import Directories
 from gensec.relaxation import Calculator
 from gensec.check_input import Check_input
@@ -186,8 +186,8 @@ class Protocol:
                                         
                                         if is_good:
                                             supercell_finder.joined_atoms.calc = calculator.calculator
-                                            if not np.max(np.abs(run_with_timeout_decorator(supercell_finder.joined_atoms.get_forces, return_1000, 
-                                                                                        timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
+                                            if not run_with_timeout_decorator((supercell_finder.joined_atoms.get_forces ** 2).sum(axis=1).max(), return_inf, 
+                                                                                        timeout = parameters["configuration"]["check_forces"]["max_time"]) > parameters["configuration"]["check_forces"]["max_force"] ** 2:
                                                 # print("Force check took", time.time() - force_time, "seconds")
                                                 db_generated.write(supercell_finder.F_atoms, **conf)
                                                 db_generated_frames.write(supercell_finder.S_atoms, **conf)
@@ -213,8 +213,8 @@ class Protocol:
                             merged = merge_together(structure, fixed_frame)
                             if parameters["configuration"]["check_forces"]["activate"]:
                                 merged.calc = calculator.calculator
-                                if not np.max(np.abs(run_with_timeout_decorator(merged.get_forces, return_1000,
-                                                                                timeout = parameters["configuration"]["check_forces"]["max_time"]))) > parameters["configuration"]["check_forces"]["max_force"]:
+                                if not run_with_timeout_decorator((merged.get_forces ** 2).sum(axis=1).max(), return_inf,
+                                                                                timeout = parameters["configuration"]["check_forces"]["max_time"]) > parameters["configuration"]["check_forces"]["max_force"] ** 2:
                                     db_generated.write(structure.atoms_object(), **conf)
                                     db_generated_visual.write(merged,**conf)
                                     write("good_luck.xyz",merged,format="extxyz")
@@ -402,14 +402,20 @@ class Protocol:
                             )
                         )
                         print("Structure relaxed")
-                        for step in traj:
+                        f_max = 100000
+                        for i, step in enumerate(traj):
                             full_conf = structure.get_configuration(step)
                             db_trajectories.write(
                                 step, **full_conf, trajectory=traj_id
                             )
-                        full_conf = structure.get_configuration(traj[-1])
+                            f_max_temp = (step._calc.results['forces'] ** 2).sum(axis=1).max()
+                            if f_max_temp < f_max:
+                                f_max = f_max_temp
+                                arg_fmax = i
+                        
+                        full_conf = structure.get_configuration(traj[arg_fmax])
                         db_relaxed.write(
-                            traj[-1], **full_conf, trajectory=traj_id
+                            traj[arg_fmax], **full_conf, trajectory=traj_id, step=arg_fmax
                         )
                         self.success = db_relaxed.count()
                         #calculator.close()
