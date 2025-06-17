@@ -402,21 +402,30 @@ class Protocol:
                             )
                         )
                         print("Structure relaxed")
-                        f_max = 100000
+                        # f_max = 10000
+                        e_min = 100000
                         for i, step in enumerate(traj):
                             full_conf = structure.get_configuration(step)
                             db_trajectories.write(
                                 step, **full_conf, trajectory=traj_id
                             )
-                            f_max_temp = (step._calc.results['forces'] ** 2).sum(axis=1).max()
-                            if f_max_temp < f_max:
-                                f_max = f_max_temp
-                                arg_fmax = i
+                            # f_max_temp = (step._calc.results['forces'] ** 2).sum(axis=1).max()
+                            # if f_max_temp < f_max:
+                            #     f_max = f_max_temp
+                            #     arg_fmax = i
+                            e_min_temp = step._calc.results['energy']
+                            if e_min_temp < e_min:
+                                e_min = e_min_temp
+                                arg_emin = i
                         
-                        full_conf = structure.get_configuration(traj[arg_fmax])
+                        full_conf = structure.get_configuration(traj[arg_emin])
                         db_relaxed.write(
-                            traj[arg_fmax], **full_conf, trajectory=traj_id, step=arg_fmax
+                            traj[arg_emin], **full_conf, trajectory=traj_id, step=arg_emin
                         )
+                        # full_conf = structure.get_configuration(traj[arg_fmax])
+                        # db_relaxed.write(
+                        #     traj[arg_fmax], **full_conf, trajectory=traj_id, step=arg_fmax
+                        # )
                         self.success = db_relaxed.count()
                         #calculator.close()
                         #break
