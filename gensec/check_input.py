@@ -131,7 +131,8 @@ def Check_input(parameters):
                     "n_points": 5,
                     "tolerance": 1e-4,
                     "max_iterations": 10
-                }
+                },
+                'displacement_version' : "full"
             }
         elif parameters["supercell_finder"]["unit_cell_method"] == "find":
             if "min_angle" not in parameters["unit_cell_finder"]:
@@ -142,13 +143,15 @@ def Check_input(parameters):
                 parameters["unit_cell_finder"]["n_steps"] = 36
             if "seperation_factor" not in parameters["unit_cell_finder"]:
                 parameters["unit_cell_finder"]["seperation_factor"] = 1.0
-            
+            if "displacement_version" not in parameters["unit_cell_finder"]:
+                parameters["unit_cell_finder"]["displacement_version"] = "full"
             if "scan_first" not in parameters["unit_cell_finder"]:
                 parameters["unit_cell_finder"]["scan_first"] = {
                     "activate": False,
                     "first_min_angle": 0,
                     "first_max_angle": 180,
-                    "first_n_steps": 10
+                    "first_n_steps": 10,
+                    "first_select_method" : "area"
                 }
             elif parameters["unit_cell_finder"]["scan_first"]["activate"] is True:
                 if "first_min_angle" not in parameters["unit_cell_finder"]["scan_first"]:
@@ -157,6 +160,8 @@ def Check_input(parameters):
                     parameters["unit_cell_finder"]["scan_first"]["first_max_angle"] = 180
                 if "first_n_steps" not in parameters["unit_cell_finder"]["scan_first"]:
                     parameters["unit_cell_finder"]["scan_first"]["first_n_steps"] = 10
+                if "first_select_method" not in parameters["unit_cell_finder"]["scan_first"]:
+                    parameters["unit_cell_finder"]["scan_first"]["first_select_method"] = "area"
             
             if "adaptive" not in parameters["unit_cell_finder"]:
                 parameters["unit_cell_finder"]["adaptive"] = {

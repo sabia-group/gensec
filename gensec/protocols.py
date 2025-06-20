@@ -401,6 +401,8 @@ class Protocol:
                                 "trajectory_{}.traj".format(name)
                             )
                         )
+                        # TODO: The saving of entire trajectories this way is VERY SLOW.
+                        # Rethink if we need every step in the database
                         print("Structure relaxed")
                         # f_max = 10000
                         e_min = 100000

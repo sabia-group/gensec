@@ -9,7 +9,7 @@ Purpose:
 Tool used to find unit cells for a given molecule. 
 '''
 
-def find_miminum_displacement(mol1: ase.Atoms, mol2: Optional[ase.Atoms] = None, vector: Optional[np.ndarray] = np.array([1, 0, 0]), vdw_array: Optional[np.ndarray] = vdw_radii):
+def find_miminum_displacement(mol1: ase.Atoms, mol2: Optional[ase.Atoms] = None, vector: Optional[np.ndarray] = np.array([1, 0, 0]), vdw_array: Optional[np.ndarray] = vdw_radii, displacement_version: Optional[str] = "full") -> float:
     
     
     """
@@ -37,7 +37,7 @@ def find_miminum_displacement(mol1: ase.Atoms, mol2: Optional[ase.Atoms] = None,
 
     if mol2 is None:
         mol2 = mol1.copy()
-        
+    
     pos1 = mol1.get_positions()  # shape (N, 3)
     pos2 = mol2.get_positions()  # shape (N, 3)
     
@@ -52,66 +52,135 @@ def find_miminum_displacement(mol1: ase.Atoms, mol2: Optional[ase.Atoms] = None,
     
     s_req_total = 0.0
     
-    for i in range(n1):
-        for j in range(n2):
-            # Sum of vdW radii for the two atoms
-            R_ij = radii1[i] + radii2[j]
-            # Difference vector between atom j in mol2 and atom i in mol1.
-            d_vec = pos2[j] - pos1[i]
-            D = np.dot(d_vec, d_vec)  # squared distance
-            B = np.dot(d_vec, u)
-            
-            # For this pair, the inequality is: s^2 + 2 B s + (D - R_ij^2) >= 0.
-            # Let f(s) = s^2 + 2B s + (D - R_ij**2)
-            #
-            # Because f(s) is quadratic (convex), its “allowed” s are in:
-            #    (-∞, s_lower] ∪ [s_upper, ∞)
-            # where s_lower = -B - sqrt(B^2 - (D - R_ij**2))
-            #       s_upper = -B + sqrt(B^2 - (D - R_ij**2))
-            #
-            # However, we only care about final s >= 0.
-            #
-            # Furthermore, if the final configuration for a given pair is already safe at s=0,
-            # we must check that if we force a displacement (due to another pair), we avoid
-            # an unsafe gap.
-            #
-            # For each pair we determine a candidate s as follows:
-            #
-            #   1. If f(0) >= 0 (i.e. D >= R_ij^2), then the pair is safe at zero displacement.
-            #      However, if the minimum of the distance function f_disp(s) = ||d_vec + s*u||
-            #      (which occurs at s_min = max(0, -B)) is below R_ij, then any displacement s > 0
-            #      must be at least s_upper.
-            #
-            #   2. If f(0) < 0, then we must at least move to s_upper.
-            
-            if D >= R_ij**2:
-                # s=0 is safe in the initial configuration.
-                s_min = max(0.0, -B)   # location of the minimum distance along s>=0
-                # Compute the distance at that point:
-                fmin = np.sqrt(s_min**2 + 2 * B * s_min + D)
-                if fmin >= R_ij:
-                    # The pair stays safe if we do not move at all.
-                    candidate = 0.0
-                else:
-                    # Even though s=0 is safe, if we were forced to translate,
-                    # to avoid falling into the danger zone the minimum safe s is:
-                    disc = B**2 - (D - R_ij**2)
-                    candidate = -B + np.sqrt(disc)
-            else:
-                # The pair is overlapping at s=0.
-                disc = B**2 - (D - R_ij**2)
-                # Physically disc should be >= 0 (if not, something is off).
-                candidate = -B + np.sqrt(disc)
-                if candidate < 0:
-                    candidate = 0.0  # safeguard
-            
-            s_req_total = max(s_req_total, candidate) # Maximum working for all candidates.
-            
+    R_ij = np.add.outer(radii1, radii2)
+    d_ij = pos1[:, np.newaxis, :] - pos2[np.newaxis, :, :]
+    D_ij = np.einsum('ijk,ijk->ij', d_ij, d_ij)
+    B_ij = np.einsum('ijk,k->ij', d_ij, u)
+    root_term = B_ij**2 - (D_ij - R_ij**2)
+
+    valid_mask = root_term > 0
+    s_ij_p = np.zeros_like(B_ij)
+    s_ij_p[valid_mask] = -B_ij[valid_mask] + np.sqrt(root_term[valid_mask])
+    s_ij_m = np.zeros_like(B_ij)
+    s_ij_m[valid_mask] = -B_ij[valid_mask] - np.sqrt(root_term[valid_mask])
     
-    return s_req_total
+    if displacement_version == "full":
+        s_req_total = np.max(s_ij_p)  # Ensure positive displacement
+        
+        return np.maximum(s_req_total, 0.0)
+        
+    elif displacement_version == "minimum":
+        # Only use if you tackle optimal packing. Not really usefull for GenSec
+        s_pairs = np.stack([s_ij_m, s_ij_p], axis=-1)
+        valid_s_pairs = s_pairs[valid_mask]
+        sorted_pairs = valid_s_pairs[np.argsort(valid_s_pairs[:, 0])]
+        merged = []
+        for start, end in sorted_pairs:
+            if not merged:
+                merged.append([start, end])
+            else:
+                _, prev_end = merged[-1]
+                if start <= prev_end:
+                    merged[-1][1] = max(prev_end, end)
+                else:
+                    merged.append([start, end])
+        for start, end in merged:
+            if s_req_total < start:
+                return s_req_total
+            s_req_total = max(s_req_total, end)
+        return s_req_total  # Ensure positive displacement
+    else:
+        raise ValueError(f"Unknown version: {displacement_version}. Use 'full' or 'minimum'.")
+    
+    
+    # for i in range(n1):
+    #     for j in range(n2):
+    #         # Sum of vdW radii for the two atoms
+    #         R = radii1[i] + radii2[j]
+    #         # Difference vector between atom j in mol2 and atom i in mol1.
+    #         d_vec = pos2[j] - pos1[i]
+    #         D = np.dot(d_vec, d_vec)  # squared distance
+    #         B = np.dot(d_vec, u)
+    #         
+    #         # For this pair, the inequality is: s^2 + 2 B s + (D - R_ij^2) >= 0.
+    #         # Let f(s) = s^2 + 2B s + (D - R_ij**2)
+    #         #
+    #         # Because f(s) is quadratic (convex), its “allowed” s are in:
+    #         #    (-∞, s_lower] ∪ [s_upper, ∞)
+    #         # where s_lower = -B - sqrt(B^2 - (D - R_ij**2))
+    #         #       s_upper = -B + sqrt(B^2 - (D - R_ij**2))
+    #         #
+    #         # However, we only care about final s >= 0.
+    #         #
+    #         # Furthermore, if the final configuration for a given pair is already safe at s=0,
+    #         # we must check that if we force a displacement (due to another pair), we avoid
+    #         # an unsafe gap.
+    #         #
+    #         # For each pair we determine a candidate s as follows:
+    #         #
+    #         #   1. If f(0) >= 0 (i.e. D >= R_ij^2), then the pair is safe at zero displacement.
+    #         #      However, if the minimum of the distance function f_disp(s) = ||d_vec + s*u||
+    #         #      (which occurs at s_min = max(0, -B)) is below R_ij, then any displacement s > 0
+    #         #      must be at least s_upper.
+    #         #
+    #         #   2. If f(0) < 0, then we must at least move to s_upper.
+    #         if displacement_version == "full":
+    #             if D >= R**2:
+    #                 # s=0 is safe in the initial configuration.
+    #                 s_min = max(0.0, -B)   # location of the minimum distance along s>=0
+    #                 # Compute the distance at that point:
+    #                 fmin = np.sqrt(s_min**2 + 2 * B * s_min + D)
+    #                 if fmin >= R:
+    #                     # The pair stays safe if we do not move at all.
+    #                     candidate = 0.0
+    #                 else:
+    #                     # Even though s=0 is safe, if we were forced to translate,
+    #                     # to avoid falling into the danger zone the minimum safe s is:
+    #                     disc = B**2 - (D - R**2)
+    #                     candidate = -B + np.sqrt(disc)
+    #             else:
+    #                 # The pair is overlapping at s=0.
+    #                 disc = B**2 - (D - R**2)
+    #                 # Physically disc should be >= 0 (if not, something is off).
+    #                 candidate = -B + np.sqrt(disc)
+    #                 if candidate < 0:
+    #                     candidate = 0.0  # safeguard
+    #             
+    #             s_req_total = max(s_req_total, candidate) # Maximum working for all candidates.
+    #         
+    #         # Will probably lead to errors. Would need mic clash check with full cell =>  clashes introduce new complexity
+    #         
+    #         elif displacement_version == "minimum":
+    #             if - B**2 + D >= R**2:
+    #                 continue
+    #             else:
+    #                 intervals.append((-B - np.sqrt(B**2 - (D - R**2)), -B + np.sqrt(B**2 - (D - R**2))))
+    #         else:
+    #             raise ValueError(f"Unknown version: {displacement_version}. Use 'full' or 'minimum'.")
+    #         
+    # 
+    # if displacement_version == "minimum":    
+    #     intervals_sorted = sorted(intervals, key=lambda x: x[0])
+    #     merged = []
+    #     for start, end in intervals_sorted:
+    #         if not merged:
+    #             merged.append((start, end))
+    #         else:
+    #             _, prev_end = merged[-1]
+    #             if start <= prev_end:
+    #                 merged[-1][1] = max(prev_end, end)
+    #             else:
+    #                 merged.append((start, end))
+    #                 
+    #     for start, end in merged:
+    #         if s_req_total < start:
+    #             return s_req_total
+    #         s_req_total = max(s_req_total, end)    
+    # 
+    # return s_req_total + 1e-10
 
 
-def create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_radii):
+def create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_radii, displacement_version="full"):
     """
     Creates a dimer by translating a copy of `mol` along `vector` 
     by the minimal safe displacement.
@@ -125,14 +194,14 @@ def create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_radii):
       dimer (ase.Atoms): Combined atom object with the original and translated molecule.
       s1 (float): The displacement magnitude along `vector`.
     """
-    s1 = find_miminum_displacement(mol, mol, vector, vdw_array)
+    s1 = find_miminum_displacement(mol, mol, vector, vdw_array, displacement_version)
     mol_copy = mol.copy()
     unit_vector = vector / np.linalg.norm(vector)
     mol_copy.translate(s1 * unit_vector)
     dimer = mol + mol_copy
     return dimer, s1
 
-def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(20), max_angle=np.pi/2, n_steps=36, safety_stepsize = np.radians(1), vdw_array=vdw_radii):
+def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(20), max_angle=np.pi/2, n_steps=36, safety_stepsize = np.radians(1), vdw_array=vdw_radii, displacement_version="full"):
     """
     Uses a fixed grid search to find the optimal second translation vector.
     
@@ -170,7 +239,7 @@ def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(20), max_an
     
     for theta in thetas:
         v_candidate = np.array([np.cos(theta), np.sin(theta), 0])
-        s2_candidate = find_miminum_displacement(mol, dimer1, v_candidate, vdw_array)
+        s2_candidate = find_miminum_displacement(mol, dimer1, v_candidate, vdw_array, displacement_version)
         area_candidate = s1 * s2_candidate * np.sin(theta)
         
         dimer2_temp = dimer1.copy()
@@ -189,7 +258,7 @@ def find_optimal_second_vector(mol, dimer1, s1, min_angle=np.radians(20), max_an
     while best_area is None and theta < np.pi + min_angle:
         theta += safety_stepsize
         v_candidate = np.array([np.cos(theta), np.sin(theta), 0])
-        s2_candidate = find_miminum_displacement(mol, dimer1, v_candidate, vdw_array)
+        s2_candidate = find_miminum_displacement(mol, dimer1, v_candidate, vdw_array, displacement_version)
         area_candidate = s1 * s2_candidate * np.sin(theta)
         
         dimer2_temp = dimer1.copy()
@@ -223,13 +292,15 @@ def Unit_cell_finder(mol,
                     first_min_angle= 0,
                     first_max_angle= np.pi/2,
                     first_n_steps= 10,
+                    first_select_method="area",
                     # Parameters for adaptive method:
                     n_points=5,
                     tolerance=1e-4,
                     max_iterations=10,
                     seperation_factor=1.0,
                     parameters = None,
-                    vdw_array=vdw_radii):
+                    vdw_array=vdw_radii,
+                    displacement_version="full"):
     """
     Constructs a periodic arrangement from a molecule using two translation steps,
     with flexible choice between a grid search or adaptive sampling for the second
@@ -267,63 +338,81 @@ def Unit_cell_finder(mol,
         seperation_factor = parameters["unit_cell_finder"]["seperation_factor"]
         scan_first = parameters["unit_cell_finder"]["scan_first"]["activate"]
         adaptive = parameters["unit_cell_finder"]["adaptive"]["activate"]
+        displacement_version = parameters["unit_cell_finder"]["displacement_version"]
         if scan_first:
             first_min_angle = np.radians(parameters["unit_cell_finder"]["scan_first"]["first_min_angle"])
             first_max_angle = np.radians(parameters["unit_cell_finder"]["scan_first"]["first_max_angle"])
             first_n_steps = parameters["unit_cell_finder"]["scan_first"]["first_n_steps"]
+            first_select_method = parameters["unit_cell_finder"]["scan_first"]["first_select_method"]
         if adaptive:
             n_points = parameters["unit_cell_finder"]["adaptive"]["n_points"]
             tolerance = parameters["unit_cell_finder"]["adaptive"]["tolerance"]
             max_iterations = parameters["unit_cell_finder"]["adaptive"]["max_iterations"]
+        
     
     vdw_array = vdw_radii * seperation_factor
     
-    # Computationally inefficient approach, currently not used. Still needed if you want the very best unit cell.
-    # def evaluate_first(phi1):
-    #     v1 = np.array([np.cos(phi1), np.sin(phi1), 0])
-    #     dimer, s1 = create_dimer(mol, vector=v1, vdw_array=vdw_array)
-    #     T1 = s1 * v1
-    #     # offset second-vector range by phi1
-    #     sec_min = min_angle + phi1
-    #     sec_max = max_angle + phi1
-    #     if adaptive:
-    #         T2, _, _, _ = find_optimal_second_vector_adaptive(
-    #             dimer, s1,
-    #             min_angle=sec_min, max_angle=sec_max,
-    #             n_points=n_points, tolerance=tolerance,
-    #             max_iterations=max_iterations,
-    #             vdw_array=vdw_array)
-    #     else:
-    #         T2, _, _, _ = find_optimal_second_vector(
-    #             mol, dimer, s1,
-    #             min_angle=sec_min, max_angle=sec_max,
-    #             n_steps=n_steps, vdw_array=vdw_array)
-    #     
-    #     # compute actual area of parallelogram
-    #     area = np.linalg.norm(np.cross(T1, T2))
-    #     return area, T1, T2
- 
-    # if scan_first:
-        # best = None
-        # for phi1 in np.linspace(first_min_angle, first_max_angle, first_n_steps):
-        #     try:
-        #         area, T1_candidate, T2_candidate = evaluate_first(phi1)
-        #     except ValueError:
-        #         continue
-        #     if best is None or area < best[0]:
-        #         best = (area, T1_candidate, T2_candidate)
-        # if best is None:
-        #     raise ValueError("No valid unit cell found when scanning first vector.")
-        # 
-        # _, T1, T2 = best
+    # TODO: Investigate the performance of different methods. Currently we are only using basic grid search. 
+    # While thereis an adaptive implementation, it only really makes sense for a fixed first vector. 
+    # Alternatively one could again use random search. Sample the first vector uniformly in the range [0, pi]
+    # and the scond one in the range first angle + constant + [0, pi/2]. One could then follow up with
+    # an addaptive optimisation of the best candidate.
+    
+    
+    def evaluate_first(phi1):
+        v1 = np.array([np.cos(phi1), np.sin(phi1), 0])
+        dimer, s1 = create_dimer(mol, vector=v1, vdw_array=vdw_array)
+        T1 = s1 * v1
+        # offset second-vector range by phi1
+        sec_min = min_angle + phi1
+        sec_max = max_angle + phi1
+        if adaptive:
+            T2, _, _, _ = find_optimal_second_vector_adaptive(
+                dimer, s1,
+                min_angle=sec_min, max_angle=sec_max,
+                n_points=n_points, tolerance=tolerance,
+                max_iterations=max_iterations,
+                vdw_array=vdw_array)
+        else:
+            T2, _, _, _ = find_optimal_second_vector(
+                mol, dimer, s1,
+                min_angle=sec_min, max_angle=sec_max,
+                n_steps=n_steps, vdw_array=vdw_array)
         
-    if scan_first:
+        # compute actual area of parallelogram
+        area = np.linalg.norm(np.cross(T1, T2))
+        return area, T1, T2
+ 
+    if scan_first and first_select_method == "area":
+        best = None
+        for phi1 in np.linspace(first_min_angle, first_max_angle, first_n_steps):
+            try:
+                area, T1_candidate, T2_candidate = evaluate_first(phi1)
+            except ValueError:
+                continue
+            if best is None or area < best[0]:
+                best = (area, T1_candidate, T2_candidate)
+        if best is None:
+            raise ValueError("No valid unit cell found when scanning first vector.")
+        
+        _, T1, T2 = best
+        
+        # Combine the original dimer and its translated copy.
+        mol_with_unit_cell = mol.copy()
+        mol_with_unit_cell.cell[0] = T1
+        mol_with_unit_cell.cell[1] = T2
+        mol_with_unit_cell.cell[2] = np.array([0, 0, z_cell_length])
+        mol_with_unit_cell.pbc = True
+        
+        return mol_with_unit_cell, T1, T2
+        
+    elif scan_first: # Name "length"
         phi_1 = np.linspace(first_min_angle, first_max_angle, first_n_steps)
         s1_array = np.ones_like(phi_1) * 100
         dimer_array = []
         for i, phi in enumerate(phi_1):
             v1 = np.array([np.cos(phi), np.sin(phi), 0])
-            dimer_temp, s1_array[i] = create_dimer(mol, vector=v1, vdw_array=vdw_array)
+            dimer_temp, s1_array[i] = create_dimer(mol, vector=v1, vdw_array=vdw_array, displacement_version = displacement_version)
             dimer_array.append(dimer_temp)
         arg_min_s1 = np.argmin(s1_array)
         dimer, s1, phi1 = dimer_array[arg_min_s1], s1_array[arg_min_s1], phi_1[arg_min_s1]
@@ -332,7 +421,7 @@ def Unit_cell_finder(mol,
         max_angle = max_angle + phi1
         
     else:
-        dimer, s1 = create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_array)
+        dimer, s1 = create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_array, displacement_version=displacement_version)
         T1 = s1 * np.array([1, 0, 0])
         
     if adaptive:
@@ -343,7 +432,8 @@ def Unit_cell_finder(mol,
         n_points=n_points,
         tolerance=tolerance,
         max_iterations=max_iterations,
-        vdw_array=vdw_array)
+        vdw_array=vdw_array,
+        displacement_version=displacement_version)
             
     else:
         T2, _, _, _ = find_optimal_second_vector(
@@ -351,8 +441,9 @@ def Unit_cell_finder(mol,
         min_angle=min_angle,
         max_angle=max_angle,
         n_steps=n_steps,
-        vdw_array=vdw_array)
-    
+        vdw_array=vdw_array,
+        displacement_version=displacement_version)
+
     # Combine the original dimer and its translated copy.
     mol_with_unit_cell = mol.copy()
     mol_with_unit_cell.cell[0] = T1
@@ -413,7 +504,7 @@ def gen_base_sheet(mol, substrate, safety_factor=1.05, num_mol=1):
 
 # Old, needs update
 def find_optimal_second_vector_adaptive(dimer, s1, min_angle=np.radians(25), max_angle=np.pi/2,
-                                          n_points=5, tolerance=1e-3, max_iterations=10, vdw_array=vdw_radii):
+                                          n_points=5, tolerance=1e-3, max_iterations=10, vdw_array=vdw_radii, displacement_version="full"):
     """
     Adaptively searches for the optimal second translation vector.
     
@@ -455,7 +546,7 @@ def find_optimal_second_vector_adaptive(dimer, s1, min_angle=np.radians(25), max
         
         for theta in thetas:
             v_candidate = np.array([np.cos(theta), np.sin(theta), 0])
-            s2_candidate = find_miminum_displacement(dimer, None, v_candidate, vdw_array)
+            s2_candidate = find_miminum_displacement(dimer, None, v_candidate, vdw_array, displacement_version)
             area_candidate = s1 * s2_candidate * np.sin(theta)
             candidate_infos.append((theta, s2_candidate, area_candidate))
         
