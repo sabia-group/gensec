@@ -79,7 +79,7 @@ def Check_input(parameters):
             parameters["configuration"]["torsions"] = {"activate" : False}
             # TODO: Discuss defaults
         
-    # TODO: Work on calculator and implement chekck after if search is activated.
+    # TODO: Work on calculator and implement check after if search is activated.
     
     if "check_forces" not in parameters["configuration"]:
         parameters["configuration"]["check_forces"] = {"activate" : False}

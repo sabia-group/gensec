@@ -1,29 +1,30 @@
 
 {
-	"name" : "MePTCDI_graphene",
-	"trials": 200,
-	"success": 120,
+	"name" : "Example",
+	"trials": 2000,
+	"success": 500,
 	"number_of_replicas" : 1,
 	"geometry" : {
-				"filename" : "sexithiophene.in",
+				"filename" : "F_geometry.in",
 				"format" : "aims"
 		},
 	"fixed_frame" : {
 					"activate" : true,
-					"filename" : "hbn.in",
+					"filename" : "S_geometry.in",
 					"format" : "aims",
-					"is_unit_cell" : false
+					"is_unit_cell" : true
 				},
 	"supercell_finder" : {
 					"activate" : true,
 					"unit_cell_method" : "find",
-					"max_attempts" : 10,
-					"m_range" : { "type" : "max",
+					"max_attempts" : 20,
+					"m_range" : { "type" : "given_range",
 						"max_s" : 15,
 						"max_f" : 5,
-						"max_range_s" : [15, 15],
-						"max_range_f" : [5, 5]
+						"max_range_s" : [12, 12],
+						"max_range_f" : [1, 1]
 					},
+					"max_atoms" : 110,
 					"max_area_diff" : 0.1, 
 					"z_cell_length" : 100
 				},
@@ -36,17 +37,14 @@
 			"first_max_angle" : 180,
 			"first_n_steps" : 10
 		},
-		"adaptive" : { "activate" : false,
-			"n_points" : 5,
-			"tolerance" : 1e-4,
-			"max_iterations" : 10
+		"adaptive" : { "activate" : false
 		}
 	},
 	"mic" : {"activate" : false
 			},
 	"configuration" : {
 		"torsions" : {
-					"activate" : true,
+					"activate" : false,
 					"known" : false, 
 					"same" : false, 
 					"list_of_tosrions" :  "auto", 
@@ -55,14 +53,7 @@
 		"orientations" : {
 					"activate" : true,
 					"same" : true, 
-					"values": "random",
-					"angle" : 5,
-					"vector":{
-						"type":"exclusion",
-						"x" : [0],
-						"y" : [0],
-						"z" : [1]
-					}
+					"values": "random"
 		},
 		"coms" : {
 					"activate" : true,
@@ -70,17 +61,21 @@
 					"values": "restricted",
 					"x_axis" : [0, 0, 1],
 					"y_axis" : [0, 0, 1],
-					"z_axis" : [4, 7, 20]
+					"z_axis" : [3, 6, 19]
 		},
 		"clashes" : {"intramolecular" : 2.0,
 					"with_fixed_frame" : 2.0
 		},
 		"check_forces" : {
-					"activate" : true,
-					"max_force" : 10,
+					"activate" : false,
+					"max_force" : 20,
 					"max_time" : 20
 		},
-		"adsorption" : {"activate": false
+		"adsorption" : {"activate": false,
+					"method" : "surface",
+					"range" : [3.2, 4.0],
+					"surface" : 0.0,
+					"molecules" : "all"
 		}
 	},
 	
@@ -99,7 +94,7 @@
 	"calculator" : {
 		"supporting_files_folder": "supporting",
 		"ase_parameters_file" : "ase_command.py",  
-		"algorithm" : "bfgs_trm",
+		"algorithm" : "FIRE",
 		"optimize" : "generate",
 		"steps" : 20,
 		"fmax" : 0.005,
