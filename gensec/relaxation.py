@@ -211,10 +211,14 @@ class Calculator:
         elif algo == "MDMin":
             opt = MDMin(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
         elif algo == "FIRE":
-            opt = FIRE(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+            if "downhill_check" in parameters["calculator"]:
+                downhill_check = parameters["calculator"]["downhill_check"]
+            else:
+                downhill_check = False
+            opt = FIRE(atoms, logfile=logfile, restart=restart, trajectory=trajectory, downhill_check=downhill_check)
         
         else:
-            print("Did not set valid algorithm in parameters.json. Using FIRE.")
+            print("Did not set valid algorithm in parameters.json. Using FIRE with no downhill check.")
             opt = FIRE(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
     
         opt.run(fmax=parameters["calculator"]["fmax"], steps=parameters["calculator"]["steps"])

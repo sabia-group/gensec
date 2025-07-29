@@ -20,6 +20,8 @@ import time
 
 # TODO: Add a permanent log containing at least all print outputs
 
+# TODO: There might be a potential for speedups in the SC and UC finder by replacing loops with numpy operations and larger numpy arrays.
+
 
 
 class Protocol:
