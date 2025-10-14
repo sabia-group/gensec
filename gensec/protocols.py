@@ -253,15 +253,15 @@ class Protocol:
         
         if parameters["fps_selection"]["activate"] is True:
             print("Running FPS selection on generated structures...")
-                atoms_list = [row.toatoms() for row in db_generated_visual.select()]
-                n_select = parameters["fps_selection"]["n_select"]
-                #soap_params = parameters["fps_selection"].get("soap", {}) for now hard-coded
-                selected_indices = select_structures_fps(atoms_list, n_select) #, soap_params)
-                # Write selected structures to new db
-                db_generated_fps = ase.db.connect("db_generated_fps.db")
-                for i in selected_indices:
-                    db_generated_fps.write(atoms_list[i])
-                print(f"FPS selection complete: {len(selected_indices)} structures saved to db_generated_fps.db.")
+            atoms_list = [row.toatoms() for row in db_generated_visual.select()]
+            n_select = parameters["fps_selection"]["n_select"]
+            #soap_params = parameters["fps_selection"].get("soap", {}) for now hard-coded
+            selected_indices = select_structures_fps(atoms_list, n_select) #, soap_params)
+            # Write selected structures to new db
+            db_generated_fps = ase.db.connect("db_generated_fps.db")
+            for i in selected_indices:
+                db_generated_fps.write(atoms_list[i])
+            print(f"FPS selection complete: {len(selected_indices)} structures saved to db_generated_fps.db.")
         
 
         if parameters["protocol"]["search"]["activate"] is True:

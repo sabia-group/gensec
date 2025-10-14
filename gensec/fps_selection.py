@@ -5,17 +5,11 @@ from featomic import SoapPowerSpectrum
 import metatensor
 from skmatter import sample_selection
 
-def select_structures_fps(input_db, output_db, n_select):
-    db_in = ase.db.connect(input_db)
-    frames = [row.toatoms() for row in db_in.select()]
+def select_structures_fps(frames, n_select):
     X = compute_structural_features(frames)
     selected_idx = perform_fps(X, n_select)
-    if os.path.exists(output_db):
-        os.remove(output_db)
-    db_out = ase.db.connect(output_db)
-    for i in selected_idx:
-        row = db_in[int(i) + 1]
-        db_out.write(row)
+    print("FPS selected indices:", selected_idx)
+    return selected_idx
 
 def compute_structural_features(frames):
     
