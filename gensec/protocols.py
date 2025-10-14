@@ -189,7 +189,7 @@ class Protocol:
                                         
                                         if is_good:
                                             supercell_finder.joined_atoms.calc = calculator.calculator
-                                            if not run_with_timeout_decorator((supercell_finder.joined_atoms.get_forces ** 2).sum(axis=1).max(), return_inf, 
+                                            if not run_with_timeout_decorator(lambda: (supercell_finder.joined_atoms.get_forces() ** 2).sum(axis=1).max(), return_inf, 
                                                                                         timeout = parameters["configuration"]["check_forces"]["max_time"]) > parameters["configuration"]["check_forces"]["max_force"] ** 2:
                                                 # print("Force check took", time.time() - force_time, "seconds")
                                                 db_generated.write(supercell_finder.F_atoms, **conf)
@@ -216,7 +216,7 @@ class Protocol:
                             merged = merge_together(structure, fixed_frame)
                             if parameters["configuration"]["check_forces"]["activate"]:
                                 merged.calc = calculator.calculator
-                                if not run_with_timeout_decorator((merged.get_forces ** 2).sum(axis=1).max(), return_inf,
+                                if not run_with_timeout_decorator(lambda: (merged.get_forces() ** 2).sum(axis=1).max(), return_inf,
                                                                                 timeout = parameters["configuration"]["check_forces"]["max_time"]) > parameters["configuration"]["check_forces"]["max_force"] ** 2:
                                     db_generated.write(structure.atoms_object(), **conf)
                                     db_generated_visual.write(merged,**conf)
