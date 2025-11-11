@@ -123,63 +123,78 @@ def prepare_mace_extxyz(parameters, db_in_path, out_prefix="mace_dataset"):
 
     return paths
 
+
 def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None):
-    """Launch MACE training on the prepared dataset."""
+    """Launch MACE training on the prepared dataset (overrideable via fine_tuning.mace_args)."""
     ft = parameters["fine_tuning"]
-    foundation_model = ft["foundation_model"]
+    foundation_model = ft.get("foundation_model")
     name = ft.get("mace_name", parameters.get("name", "mace_finetune"))
-    mace_args = ft.get("mace_args", {}) or {}
-    
-    # Get absolute path to mace_run_train
+    user_args = ft.get("mace_args", {}) or {}
+
     mace_exe = shutil.which("mace_run_train")
     if not mace_exe:
         raise RuntimeError("mace_run_train not found in PATH")
-
     print(f"[fine_tune] Using mace_run_train from: {mace_exe}")
 
-    cmd = [
-        mace_exe,  # Use absolute path instead of just "mace_run_train"
-        f"--name={name}",
-        f"--train_file={train_xyz}",
-        f"--foundation_model={foundation_model}",
-        "--energy_key=energy",
-        "--forces_key=forces",
-        "--energy_weight=1.0",
-        "--forces_weight=100.0",
-        "--multiheads_finetuning=False",
-        "--E0s=average",
-        "--scaling=rms_forces_scaling",
-        "--swa",
-        "--start_swa=60",
-        "--swa_energy_weight=100.0",
-        "--swa_forces_weight=1.0",
-        "--batch_size=2",
-        "--valid_batch_size=6",
-        "--max_num_epochs=100",
-        "--ema",
-        "--ema_decay=0.9999",
-        "--lr=0.001",
-        "--amsgrad",
-        "--default_dtype=float64",
-        "--device=cuda",
-        "--save_cpu",
-        "--seed=0"
+    # Default args
+    base_args = [
+        ("name", name),
+        ("train_file", train_xyz),
+        ("foundation_model", foundation_model),
+        ("energy_key", "energy"),
+        ("forces_key", "forces"),
+        ("energy_weight", 1.0),
+        ("forces_weight", 100.0),
+        ("multiheads_finetuning", False),
+        ("E0s", "average"),
+        ("scaling", "rms_forces_scaling"),
+        ("swa", None),
+        ("start_swa", 60),
+        ("swa_energy_weight", 100.0),
+        ("swa_forces_weight", 1.0),
+        ("batch_size", 2),
+        ("valid_batch_size", 6),
+        ("max_num_epochs", 100),
+        ("ema", None),
+        ("ema_decay", 0.9999),
+        ("lr", 0.001),
+        ("amsgrad", None),
+        ("default_dtype", "float64"),
+        ("device", "cuda"),
+        ("save_cpu", None),
+        ("seed", 0),
     ]
     if valid_xyz:
-        cmd.append(f"--valid_file={valid_xyz}")
+        base_args.append(("valid_file", valid_xyz))
     if test_xyz:
-        cmd.append(f"--test_file={test_xyz}")
+        base_args.append(("test_file", test_xyz))
 
-    #Allow for overrding
-    #for k, v in mace_args.items():
-    #    if isinstance(v, bool):
-    #        if v:
-    #            cmd.append(f"--{k}")
-    #    else:
-    #        cmd.append(f"--{k}={v}")
+    # overwrite existing keys, append new ones
+    merged = {k: v for k, v in base_args}
+
+    for k, v in user_args.items():
+        #trying to handle all cases of value
+        if v is None:
+            merged[k] = None
+            continue
+        if isinstance(v, bool):
+            merged[k] = None if v else "False"
+            continue
+        if isinstance(v, (list, tuple)):
+            merged[k] = ",".join(str(x) for x in v)
+            continue
+        merged[k] = v
+ 
+    cmd = [mace_exe]
+    for k, v in merged.items():
+        if v is None:
+            cmd.append(f"--{k}")
+        else:
+            cmd.append(f"--{k}={v}")
 
     print("[fine_tune] running:", " ".join(cmd))
     subprocess.run(cmd, check=True)
+
 
 def run_full_pipeline(parameters, fps_db_path):
     """Run complete fine-tuning pipeline: labeling -> dataset prep -> optional training."""
