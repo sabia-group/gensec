@@ -13,6 +13,7 @@ from gensec.relaxation import Calculator
 from gensec.check_input import Check_input
 from gensec.supercell_finder import Supercell_finder
 from gensec.fps_selection import select_structures_fps
+from gensec.fine_tune import run_full_pipeline
 from ase.io.trajectory import Trajectory
 
 from gensec.unit_cell_finder import Unit_cell_finder, gen_base_sheet
@@ -262,7 +263,12 @@ class Protocol:
             for i in selected_indices:
                 db_generated_fps.write(atoms_list[i])
             print(f"FPS selection complete: {len(selected_indices)} structures saved to db_generated_fps.db.")
+            
         
+        if "fine_tuning" in parameters and parameters["fine_tuning"]["activate"]:
+            print("fine_tuning.activate True -> running fine-tune pipeline") 
+            run_full_pipeline(parameters, "db_generated_fps.db")
+
 
         if parameters["protocol"]["search"]["activate"] is True:
             
