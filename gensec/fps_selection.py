@@ -5,7 +5,23 @@ from featomic import SoapPowerSpectrum
 import metatensor
 from skmatter import sample_selection
 
-def select_structures_fps(frames, n_select):
+def select_structures_fps(frames, n_select="all"):
+    if len(frames) == 0:
+        return []
+
+    if isinstance(n_select, str):
+        if n_select.lower() == "all":
+            n_select = len(frames)
+        else:
+            raise ValueError(f"Unsupported n_select value: {n_select}")
+    elif n_select is None:
+        n_select = len(frames)
+
+    n_select = int(n_select)
+    if n_select <= 0:
+        raise ValueError("n_select must be positive")
+    n_select = min(n_select, len(frames))
+
     X = compute_structural_features(frames)
     selected_idx = perform_fps(X, n_select)
     print("FPS selected indices:", selected_idx)

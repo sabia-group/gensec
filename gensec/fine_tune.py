@@ -1,5 +1,7 @@
 import os
-import math
+import json
+import glob
+import re
 import ase.db
 from ase.io import write, read
 import numpy as np
@@ -81,8 +83,12 @@ def compute_labels_on_db(parameters, db_in_path, db_out_path="db_labeled.db"):
 def prepare_mace_extxyz(parameters, db_in_path, out_prefix="mace_dataset"):
     """Convert labeled DB into MACE extxyz files (train/val/test)."""
     ft = parameters["fine_tuning"]
-    split = ft.get("split_ratio", [0.8, 0.1, 0.1])
-    split_ratio = (float(split[0]), float(split[1]), float(split[2]))
+    split = ft.get("split_ratio", [0.9, 0.1])
+    if len(split) < 2:
+        raise ValueError("fine_tuning.split_ratio must have at least two entries (train, val)")
+    if len(split) > 2:
+        print("[fine_tune] Warning: split_ratio has more than two entries; only train/val are used in loop mode.")
+    split_ratio = (float(split[0]), float(split[1]))
 
     db = ase.db.connect(db_in_path)
     n_total = db.count()
@@ -91,11 +97,12 @@ def prepare_mace_extxyz(parameters, db_in_path, out_prefix="mace_dataset"):
 
     n_train = int(n_total * split_ratio[0])
     n_val = int(n_total * split_ratio[1])
+    n_train = min(n_train, n_total)
+    n_val = min(max(n_val, 0), n_total - n_train)
 
     paths = {
         "train": f"{out_prefix}_train.extxyz",
-        "val": f"{out_prefix}_val.extxyz", 
-        "test": f"{out_prefix}_test.extxyz"
+        "val": f"{out_prefix}_val.extxyz",
     }
     for p in paths.values():
         if os.path.exists(p):
@@ -116,19 +123,18 @@ def prepare_mace_extxyz(parameters, db_in_path, out_prefix="mace_dataset"):
         
         if i < n_train:
             write(paths["train"], atoms, format="extxyz", append=True)
-        elif i < n_train + n_val:
-            write(paths["val"], atoms, format="extxyz", append=True)
         else:
-            write(paths["test"], atoms, format="extxyz", append=True)
-
+            write(paths["val"], atoms, format="extxyz", append=True)
     return paths
 
-
-def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None):
+def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, workdir=None, foundation_override=None, run_name=None):
     """Launch MACE training on the prepared dataset (overrideable via fine_tuning.mace_args)."""
     ft = parameters["fine_tuning"]
-    foundation_model = ft.get("foundation_model")
-    name = ft.get("mace_name", parameters.get("name", "mace_finetune"))
+    foundation_model = foundation_override or ft.get("foundation_model")
+    if foundation_model is None:
+        raise ValueError("fine_tuning.foundation_model must be provided for MACE training")
+
+    name = run_name or ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
     user_args = ft.get("mace_args", {}) or {}
 
     mace_exe = shutil.which("mace_run_train")
@@ -193,7 +199,398 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None):
             cmd.append(f"--{k}={v}")
 
     print("[fine_tune] running:", " ".join(cmd))
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, cwd=workdir)
+
+    result = {
+        "run_name": name,
+        "workdir": workdir or os.getcwd(),
+        "log_dir": os.path.join(workdir or os.getcwd(), "log"),
+        "command": cmd,
+    }
+    #locating to model that mace save as stagetwo, after SWA, assuming it's always there... this could be fragile
+    stage_two_model = _locate_stage_two_model(result["workdir"])
+    if stage_two_model:
+        result["stage_two_model"] = stage_two_model
+    return result
+
+
+def _locate_stage_two_model(workdir):
+    """Locate the latest non-compiled stage-two model inside workdir. Copilot generated."""
+    if not os.path.isdir(workdir):
+        return None
+
+    candidates = [
+        path
+        for path in glob.glob(os.path.join(workdir, "**", "*_stagetwo.model"), recursive=True)
+        if not path.endswith("_stagetwo_compiled.model")
+    ]
+    if candidates:
+        candidates.sort(key=os.path.getmtime, reverse=True)
+        return candidates[0]
+
+    fallback = [
+        path
+        for path in glob.glob(os.path.join(workdir, "**", "*.model"), recursive=True)
+        if not path.endswith("_compiled.model")
+    ]
+    if fallback:
+        fallback.sort(key=os.path.getmtime, reverse=True)
+        return fallback[0]
+    return None
+
+
+def _parse_mace_test_rmse(log_dir):
+    """Parse the latest MACE log to extract TEST RMSE energy/force values. Copilot generated."""
+    if not os.path.isdir(log_dir):
+        raise FileNotFoundError(f"MACE log directory not found: {log_dir}")
+
+    log_candidates = [
+        os.path.join(log_dir, entry)
+        for entry in os.listdir(log_dir)
+        if os.path.isfile(os.path.join(log_dir, entry))
+    ]
+    if not log_candidates:
+        raise FileNotFoundError(f"No log files found in {log_dir}")
+
+    latest_log = max(log_candidates, key=os.path.getmtime)
+    with open(latest_log, "r", encoding="utf-8", errors="ignore") as handle:
+        content = handle.read()
+
+    blocks = content.split("Error-table on TEST:")
+    if len(blocks) < 2:
+        raise ValueError("Unable to locate 'Error-table on TEST' in MACE log output")
+
+    last_block = blocks[-1]
+    match = re.search(r"\|\s*Default_Default\s*\|\s*([0-9eE+\-.]+)\s*\|\s*([0-9eE+\-.]+)", last_block)
+    if not match:
+        raise ValueError("Failed to parse Default_Default row from MACE TEST table")
+
+    energy_rmse = float(match.group(1))
+    force_rmse = float(match.group(2))
+    return energy_rmse, force_rmse
+
+
+def _load_loop_state(state_path, foundation_model, initial_index=0):
+    if os.path.exists(state_path):
+        with open(state_path, "r", encoding="utf-8") as handle:
+            state = json.load(handle)
+        state.setdefault("history", [])
+        state.setdefault("reserved_fps", initial_index)
+        if state.get("next_fps_index", initial_index) < initial_index:
+            state["next_fps_index"] = initial_index
+        return state
+
+    if foundation_model is None:
+        raise ValueError("fine_tuning.foundation_model is required to initialise the loop state")
+
+    return {
+        "next_fps_index": initial_index,
+        "round_index": 1,
+        "last_model_path": foundation_model,
+        "history": [],
+        "status": "initialized",
+        "reserved_fps": initial_index,
+    }
+
+
+def _save_loop_state(state_path, state):
+    with open(state_path, "w", encoding="utf-8") as handle:
+        json.dump(state, handle, indent=2)
+
+
+def _extract_fps_batch(fps_db_path, start_index, batch_size, out_db_path, round_index=None, extra_metadata=None):
+    db_in = ase.db.connect(fps_db_path)
+    total = db_in.count()
+    if start_index >= total:
+        return 0, total
+
+    if os.path.exists(out_db_path):
+        os.remove(out_db_path)
+    db_out = ase.db.connect(out_db_path)
+
+    written = 0
+    for idx, row in enumerate(db_in.select()):
+        if idx < start_index:
+            continue
+        if written >= batch_size:
+            break
+        atoms = row.toatoms()
+        data = dict(row.data) if row.data else {}
+        data.setdefault("fps_row_id", row.id)
+        if round_index is not None:
+            data["loop_round"] = round_index
+        if extra_metadata:
+            data.update(extra_metadata)
+        db_out.write(atoms, data=data)
+        written += 1
+
+    return written, total
+
+
+def _append_labeled_round(round_db_path, global_db_path):
+    src = ase.db.connect(round_db_path)
+    dest = ase.db.connect(global_db_path)
+    for row in src.select():
+        atoms = row.toatoms()
+        data = dict(row.data) if row.data else {}
+        dest.write(atoms, data=data)
+
+
+def _copy_labeled_subset_db(source_db_path, dest_db_path, start_index=0, limit=None, subset_label=None, extra_metadata=None):
+    src = ase.db.connect(source_db_path)
+    if os.path.exists(dest_db_path):
+        os.remove(dest_db_path)
+    dest = ase.db.connect(dest_db_path)
+
+    copied = 0
+    for idx, row in enumerate(src.select()):
+        if idx < start_index:
+            continue
+        if limit is not None and copied >= limit:
+            break
+        atoms = row.toatoms()
+        data = dict(row.data) if row.data else {}
+        if subset_label:
+            data["subset"] = subset_label
+        if extra_metadata:
+            data.update(extra_metadata)
+        dest.write(atoms, data=data)
+        copied += 1
+    return copied
+
+
+def _write_extxyz_from_db(db_path, out_path):
+    db = ase.db.connect(db_path)
+    if os.path.exists(out_path):
+        os.remove(out_path)
+
+    for row in db.select():
+        atoms = row.toatoms()
+        atoms.calc = None
+        if hasattr(row, "data") and row.data:
+            if "REF_energy" in row.data:
+                atoms.info["energy"] = float(row.data["REF_energy"])
+            if "REF_forces" in row.data:
+                forces_flat = np.array(row.data["REF_forces"])
+                atoms.arrays["forces"] = forces_flat.reshape(len(atoms), 3)
+        write(out_path, atoms, format="extxyz", append=True)
+
+
+def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labeled_db, labeled_source_db=None):
+    if test_size <= 0:
+        return None
+
+    test_subset_db = ft.get("test_subset_db", "db_test_subset.db")
+    test_labeled_db = ft.get("test_set_db", "db_labeled_test.db")
+    test_extxyz = ft.get("test_set_extxyz", "mace_dataset_test.extxyz")
+
+    if os.path.exists(test_extxyz) and os.path.exists(test_labeled_db):
+        existing = ase.db.connect(test_labeled_db).count()
+        return {"extxyz": test_extxyz, "reserved_count": existing}
+
+    if labeled_source_db:
+        print(f"[fine_tune] Preparing fixed test set using first {test_size} entries from external labeled DB: {labeled_source_db}.")
+        total_available = ase.db.connect(labeled_source_db).count()
+        if total_available < test_size:
+            raise ValueError(
+                f"Requested test_set_size={test_size} but external labeled DB has only {total_available} entries."
+            )
+        written = _copy_labeled_subset_db(
+            labeled_source_db,
+            test_labeled_db,
+            start_index=0,
+            limit=test_size,
+            subset_label="test",
+        )
+        _write_extxyz_from_db(test_labeled_db, test_extxyz)
+        if os.path.abspath(labeled_source_db) != os.path.abspath(global_labeled_db):
+            _append_labeled_round(test_labeled_db, global_labeled_db)
+    else:
+        print(f"[fine_tune] Preparing fixed test set with first {test_size} FPS structures.")
+        written, total = _extract_fps_batch(
+            fps_db_path,
+            start_index=0,
+            batch_size=test_size,
+            out_db_path=test_subset_db,
+            round_index=None,
+            extra_metadata={"subset": "test"},
+        )
+        if written < test_size:
+            raise ValueError(
+                f"Requested test_set_size={test_size} but FPS database has only {total} entries."
+            )
+
+        compute_labels_on_db(parameters, test_subset_db, db_out_path=test_labeled_db)
+        _write_extxyz_from_db(test_labeled_db, test_extxyz)
+        _append_labeled_round(test_labeled_db, global_labeled_db)
+
+    return {"extxyz": test_extxyz, "reserved_count": written}
+
+
+def run_finetune_loop(parameters, fps_db_path):
+    ft = parameters["fine_tuning"]
+    energy_target = float(ft["rmse_energy_target"])
+    force_target = float(ft["rmse_force_target"])
+    batch_size = int(ft.get("fps_batch_size", 10))
+    if batch_size <= 0:
+        raise ValueError("fine_tuning.fps_batch_size must be positive")
+
+    state_path = ft.get("state_file", "fine_tune_state.json")
+    global_labeled_db = ft.get("global_labeled_db", "db_labeled_global.db")
+    foundation_model = ft.get("foundation_model")
+    test_size = int(ft.get("test_set_size", 0))
+    loop_use_external = bool(ft.get("loop_use_external_labeled_db", False))
+    external_labeled_db = None
+    fixed_test_info = None
+    reserved_count = 0
+
+    if loop_use_external:
+        if test_size <= 0:
+            raise ValueError("loop_use_external_labeled_db requires fine_tuning.test_set_size > 0")
+        external_labeled_db = ft.get("external_labeled_db") or global_labeled_db
+        if not external_labeled_db:
+            raise ValueError("loop_use_external_labeled_db is True but external_labeled_db path is not set")
+        if not os.path.exists(external_labeled_db):
+            raise FileNotFoundError(f"External labeled DB not found: {external_labeled_db}")
+        if ft.get("fixed_test_extxyz"):
+            print("[fine_tune] Warning: fixed_test_extxyz is ignored when loop_use_external_labeled_db=True; rebuilding from the external DB.")
+
+        fixed_test_info = _ensure_fixed_test_set(
+            parameters,
+            fps_db_path,
+            test_size,
+            ft,
+            global_labeled_db,
+            labeled_source_db=external_labeled_db,
+        )
+        reserved_count = fixed_test_info["reserved_count"]
+    else:
+        if test_size > 0:
+            fixed_test_info = _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labeled_db)
+            reserved_count = fixed_test_info["reserved_count"]
+        elif ft.get("fixed_test_extxyz"):
+            fixed_test_info = {"extxyz": ft["fixed_test_extxyz"], "reserved_count": 0}
+
+    fixed_test_extxyz = fixed_test_info["extxyz"] if fixed_test_info else None
+
+    state = _load_loop_state(state_path, foundation_model, initial_index=reserved_count)
+    state_reserved = state.get("reserved_fps", reserved_count)
+    if state_reserved < reserved_count:
+        state_reserved = reserved_count
+    state["reserved_fps"] = state_reserved
+    reserved = state_reserved
+
+    next_index = max(state.get("next_fps_index", reserved), reserved)
+    round_index = state.get("round_index", 1)
+    current_model = state.get("last_model_path", foundation_model)
+
+    if loop_use_external:
+        pool_conn = ase.db.connect(external_labeled_db)
+        total_pool = pool_conn.count()
+        if total_pool == 0:
+            raise ValueError(f"External labeled DB is empty: {external_labeled_db}")
+        if total_pool <= reserved_count:
+            raise ValueError("No external labeled structures left for training after reserving the fixed test set")
+    else:
+        fps_db = ase.db.connect(fps_db_path)
+        total_pool = fps_db.count()
+        if total_pool == 0:
+            raise ValueError(f"FPS database is empty: {fps_db_path}")
+        if total_pool <= reserved_count:
+            raise ValueError("No FPS structures left for training after reserving the fixed test set")
+
+    while next_index < total_pool:
+        round_dir = os.path.join(os.getcwd(), f"fine_tune_round_{round_index:03d}")
+        os.makedirs(round_dir, exist_ok=True)
+        round_labeled_db = os.path.join(round_dir, f"db_labeled_round_{round_index:03d}.db")
+
+        if loop_use_external:
+            batch_written = _copy_labeled_subset_db(
+                external_labeled_db,
+                round_labeled_db,
+                start_index=next_index,
+                limit=batch_size,
+                subset_label="train",
+                extra_metadata={"loop_round": round_index},
+            )
+            if batch_written == 0:
+                print("[fine_tune] External labeled DB exhausted before reaching RMSE targets.")
+                break
+            print(f"[fine_tune] Round {round_index}: reusing {batch_written} pre-labeled structures starting at index {next_index}.")
+        else:
+            batch_db_path = os.path.join(round_dir, f"fps_batch_round_{round_index:03d}.db")
+            batch_written, _ = _extract_fps_batch(
+                fps_db_path,
+                next_index,
+                batch_size,
+                batch_db_path,
+                round_index=round_index,
+            )
+
+            if batch_written == 0:
+                print("[fine_tune] FPS database exhausted before reaching RMSE targets.")
+                break
+
+            print(f"[fine_tune] Round {round_index}: labeling {batch_written} FPS structures starting at index {next_index}.")
+            compute_labels_on_db(parameters, batch_db_path, db_out_path=round_labeled_db)
+            _append_labeled_round(round_labeled_db, global_labeled_db)
+
+        dataset_prefix = os.path.join(round_dir, "mace_dataset")
+        datasets = prepare_mace_extxyz(parameters, round_labeled_db, out_prefix=dataset_prefix)
+
+        default_name = ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
+        run_name = f"{default_name}_round{round_index:03d}"
+        test_xyz = fixed_test_extxyz or datasets.get("test")
+
+        result = run_mace_training(
+            parameters,
+            datasets["train"],
+            datasets.get("val"),
+            test_xyz,
+            workdir=round_dir,
+            foundation_override=current_model,
+            run_name=run_name,
+        )
+
+        energy_rmse, force_rmse = _parse_mace_test_rmse(result["log_dir"])
+        print(f"[fine_tune] Round {round_index} TEST RMSE: energy={energy_rmse:.3f} meV/atom, force={force_rmse:.3f} meV/Å")
+
+        stage_model = result.get("stage_two_model", current_model)
+        history_entry = {
+            "round": round_index,
+            "fps_start_index": next_index,
+            "fps_count": batch_written,
+            "energy_rmse_mev_per_atom": energy_rmse,
+            "force_rmse_mev_per_a": force_rmse,
+            "round_dir": round_dir,
+            "model_path": stage_model,
+        }
+        state.setdefault("history", []).append(history_entry)
+        state.update({
+            "last_model_path": stage_model,
+            "next_fps_index": next_index + batch_written,
+            "round_index": round_index + 1,
+            "status": "running",
+            "reserved_fps": reserved,
+        })
+        _save_loop_state(state_path, state)
+
+        if energy_rmse <= energy_target and force_rmse <= force_target:
+            print(f"[fine_tune] RMSE targets reached in round {round_index}.")
+            state["status"] = "converged"
+            state["reserved_fps"] = reserved
+            _save_loop_state(state_path, state)
+            return
+
+        next_index += batch_written
+        round_index += 1
+        current_model = stage_model
+
+    pool_name = "external labeled" if loop_use_external else "FPS"
+    print(f"[fine_tune] Loop stopped because the {pool_name} pool was exhausted before convergence.")
+    state["status"] = "exhausted"
+    state["reserved_fps"] = reserved
+    _save_loop_state(state_path, state)
 
 
 def run_full_pipeline(parameters, fps_db_path):
@@ -202,22 +599,72 @@ def run_full_pipeline(parameters, fps_db_path):
         raise ValueError("No fine_tuning block in parameters")
 
     ft = parameters["fine_tuning"]
+    if ft.get("loop_activate"):
+        print("[fine_tune] Starting iterative fine-tuning loop...")
+        run_finetune_loop(parameters, fps_db_path)
+        return # if loop is activated, we do not proceed with single-shot fine-tuning
+
+    global_labeled_db = ft.get("global_labeled_db", "db_labeled_global.db")
+    test_size = int(ft.get("test_set_size", 0))
+    fixed_test_info = None
+    reserved_count = 0
+
+    if test_size > 0:
+        fixed_test_info = _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labeled_db)
+        reserved_count = fixed_test_info["reserved_count"]
+    elif ft.get("fixed_test_extxyz"):
+        extxyz_path = ft["fixed_test_extxyz"]
+        if not os.path.exists(extxyz_path):
+            raise FileNotFoundError(f"Configured fixed_test_extxyz not found: {extxyz_path}")
+        fixed_test_info = {"extxyz": extxyz_path, "reserved_count": 0}
+
+    fixed_test_extxyz = fixed_test_info["extxyz"] if fixed_test_info else None
+
     do_labeling = ft.get("do_labeling", True)
     do_training = ft.get("do_training", True)
 
     if do_labeling:
         print("[fine_tune] Starting labeling...")
-        db_labeled = compute_labels_on_db(parameters, fps_db_path, db_out_path=ft.get("out_db_labeled", "db_labeled.db"))
+        source_fps_db = fps_db_path
+        if reserved_count > 0:
+            fps_conn = ase.db.connect(fps_db_path)
+            total_entries = fps_conn.count()
+            remaining = total_entries - reserved_count
+            if remaining <= 0:
+                raise ValueError("No FPS structures left for training after reserving the fixed test set")
+            train_subset_db = ft.get("train_subset_db", "db_train_subset.db")
+            _extract_fps_batch(
+                fps_db_path,
+                start_index=reserved_count,
+                batch_size=remaining,
+                out_db_path=train_subset_db,
+                round_index=None,
+                extra_metadata={"subset": "train"},
+            )
+            source_fps_db = train_subset_db
+
+        db_labeled = compute_labels_on_db(
+            parameters,
+            source_fps_db,
+            db_out_path=ft.get("out_db_labeled", "db_labeled.db"),
+        )
+        if os.path.abspath(db_labeled) != os.path.abspath(global_labeled_db):
+            _append_labeled_round(db_labeled, global_labeled_db)
     else:
         db_labeled = ft.get("out_db_labeled", "db_labeled.db")
         if not os.path.exists(db_labeled):
             raise ValueError(f"Labeling disabled but labeled DB not found: {db_labeled}")
+        if reserved_count > 0:
+            print("[fine_tune] Warning: fixed test set reserved but labeling was skipped; ensure the labeled DB excludes those structures.")
 
     print("[fine_tune] Preparing MACE extxyz dataset...")
     datasets = prepare_mace_extxyz(parameters, db_labeled, out_prefix=ft.get("out_prefix", "mace_dataset"))
 
     if do_training:
         print("[fine_tune] Launching MACE training...")
-        run_mace_training(parameters, datasets["train"], datasets.get("val"), datasets.get("test"))
+        test_xyz = fixed_test_extxyz or datasets.get("test")
+        if not test_xyz:
+            print("[fine_tune] Warning: no test set provided to MACE; TEST metrics will be unavailable.")
+        run_mace_training(parameters, datasets["train"], datasets.get("val"), test_xyz)
     else:
         print("[fine_tune] Training disabled; dataset ready:", datasets)
