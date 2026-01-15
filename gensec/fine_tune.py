@@ -357,6 +357,7 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
 
     if os.path.exists(test_extxyz) and os.path.exists(test_labeled_db):
         existing = ase.db.connect(test_labeled_db).count()
+        print(f"[fine_tune] Warining: Using existing fixed test set: {test_labeled_db} ({existing} structures). Test set creation skipped.")
         return {"extxyz": test_extxyz, "reserved_count": existing}
 
     if labeled_source_db:
