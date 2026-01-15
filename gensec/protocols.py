@@ -254,6 +254,8 @@ class Protocol:
         
         if parameters["fps_selection"]["activate"] is True:
             print("Running FPS selection on generated structures...")
+            if not parameters["protocol"]["generate"]["activate"]:
+                db_generated_visual = ase.db.connect("db_generated_visual.db")
             atoms_list = [row.toatoms() for row in db_generated_visual.select()]
             n_select = parameters["fps_selection"].get("n_select", "all")
             #soap_params = parameters["fps_selection"].get("soap", {}) for now hard-coded
