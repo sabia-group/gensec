@@ -1,7 +1,5 @@
 import os
 import json
-import glob
-import re
 import ase.db
 from ase.io import write, read
 import numpy as np
@@ -27,6 +25,7 @@ def _k_grid_from_cell(atoms, reference_atoms, k_density):
     kz = 1  # Surface system
     
     return (kx, ky, kz)
+
 
 def compute_labels_on_db(parameters, db_in_path, db_out_path="db_labeled.db"):
     """Compute single-point energies+forces for structures in db_in_path."""
@@ -80,8 +79,9 @@ def compute_labels_on_db(parameters, db_in_path, db_out_path="db_labeled.db"):
     print(f"[fine_tune] Labeling finished: wrote {written} structures, skipped {skipped} structures.")
     return db_out_path
 
+
 def prepare_mace_extxyz(parameters, db_in_path, out_prefix="mace_dataset"):
-    """Convert labeled DB into MACE extxyz files (train/val/test)."""
+    """Convert labeled DB into MACE extxyz files (train/val)."""
     ft = parameters["fine_tuning"]
     split = ft.get("split_ratio", [0.9, 0.1])
     if len(split) < 2:
@@ -126,6 +126,7 @@ def prepare_mace_extxyz(parameters, db_in_path, out_prefix="mace_dataset"):
         else:
             write(paths["val"], atoms, format="extxyz", append=True)
     return paths
+
 
 def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, workdir=None, foundation_override=None, run_name=None):
     """Launch MACE training on the prepared dataset (overrideable via fine_tuning.mace_args)."""
@@ -207,66 +208,36 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         "log_dir": os.path.join(workdir or os.getcwd(), "log"),
         "command": cmd,
     }
-    #locating to model that mace save as stagetwo, after SWA, assuming it's always there... this could be fragile
-    stage_two_model = _locate_stage_two_model(result["workdir"])
-    if stage_two_model:
-        result["stage_two_model"] = stage_two_model
+    #Locating stagetwo model if it exists after SWA, just by filname convention... this could be fragile...
+    stage_two_candidate = os.path.join(result["workdir"], f"{name}_stagetwo.model")
+    if os.path.exists(stage_two_candidate):
+        result["stage_two_model"] = stage_two_candidate
     return result
 
 
-def _locate_stage_two_model(workdir):
-    """Locate the latest non-compiled stage-two model inside workdir. Copilot generated."""
-    if not os.path.isdir(workdir):
-        return None
-
-    candidates = [
-        path
-        for path in glob.glob(os.path.join(workdir, "**", "*_stagetwo.model"), recursive=True)
-        if not path.endswith("_stagetwo_compiled.model")
-    ]
-    if candidates:
-        candidates.sort(key=os.path.getmtime, reverse=True)
-        return candidates[0]
-
-    fallback = [
-        path
-        for path in glob.glob(os.path.join(workdir, "**", "*.model"), recursive=True)
-        if not path.endswith("_compiled.model")
-    ]
-    if fallback:
-        fallback.sort(key=os.path.getmtime, reverse=True)
-        return fallback[0]
-    return None
-
-
 def _parse_mace_test_rmse(log_dir):
-    """Parse the latest MACE log to extract TEST RMSE energy/force values. Copilot generated."""
-    if not os.path.isdir(log_dir):
-        raise FileNotFoundError(f"MACE log directory not found: {log_dir}")
+    """Grab TEST RMSE numbers from the newest log file in log_dir."""
+    log_files = sorted(
+        (os.path.join(log_dir, name) for name in os.listdir(log_dir)),
+        key=os.path.getmtime,
+    )
+    if not log_files:
+        raise FileNotFoundError(f"No log files in {log_dir}")
 
-    log_candidates = [
-        os.path.join(log_dir, entry)
-        for entry in os.listdir(log_dir)
-        if os.path.isfile(os.path.join(log_dir, entry))
-    ]
-    if not log_candidates:
-        raise FileNotFoundError(f"No log files found in {log_dir}")
-
-    latest_log = max(log_candidates, key=os.path.getmtime)
+    latest_log = log_files[-1]
+    energy_rmse = force_rmse = None
     with open(latest_log, "r", encoding="utf-8", errors="ignore") as handle:
-        content = handle.read()
+        for line in handle:
+            if "Default_Default" not in line:
+                continue
+            parts = [segment.strip() for segment in line.split("|") if segment.strip()]
+            if len(parts) >= 3:
+                energy_rmse = float(parts[1])
+                force_rmse = float(parts[2])
+                break
 
-    blocks = content.split("Error-table on TEST:")
-    if len(blocks) < 2:
-        raise ValueError("Unable to locate 'Error-table on TEST' in MACE log output")
-
-    last_block = blocks[-1]
-    match = re.search(r"\|\s*Default_Default\s*\|\s*([0-9eE+\-.]+)\s*\|\s*([0-9eE+\-.]+)", last_block)
-    if not match:
-        raise ValueError("Failed to parse Default_Default row from MACE TEST table")
-
-    energy_rmse = float(match.group(1))
-    force_rmse = float(match.group(2))
+    if energy_rmse is None or force_rmse is None:
+        raise ValueError("Could not parse TEST RMSE from MACE log")
     return energy_rmse, force_rmse
 
 
@@ -423,6 +394,8 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
         compute_labels_on_db(parameters, test_subset_db, db_out_path=test_labeled_db)
         _write_extxyz_from_db(test_labeled_db, test_extxyz)
         _append_labeled_round(test_labeled_db, global_labeled_db)
+        if os.path.exists(test_subset_db):
+            os.remove(test_subset_db)
 
     return {"extxyz": test_extxyz, "reserved_count": written}
 
