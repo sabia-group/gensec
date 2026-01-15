@@ -4,6 +4,8 @@ from ase import neighborlist
 import numpy as np
 import operator
 
+import timeout_decorator
+
 
 def create_connectivity_matrix(atoms, bothways):
     """
@@ -549,6 +551,7 @@ def produce_quaternion(angle, vector):
 
 
 def measure_quaternion(atoms, atom_1_indx, atom_2_indx):
+    # TODO: This assumes a configuration of the molecule at generation. Needs comparison to initial orientation
     """Summary
 
     Args:
@@ -565,7 +568,11 @@ def measure_quaternion(atoms, atom_1_indx, atom_2_indx):
     x_axis = np.array([1, 0, 0])
     z_axis = np.array([0, 0, 1])
     center = atoms.get_center_of_mass()
-    inertia_tensor = atoms.get_moments_of_inertia(vectors=True)
+    try:
+        inertia_tensor = atoms.get_moments_of_inertia(vectors=True)
+    except:
+        print(coords)
+        inertia_tensor = atoms.get_moments_of_inertia(vectors=True)
     eigvals = inertia_tensor[0]
     eigvecs = inertia_tensor[1]
     z_index = np.argmax(eigvals)
@@ -710,21 +717,29 @@ def intramolecular_clashes(structure):
         distances = all_atoms.get_all_distances().reshape(
             len(all_atoms), len(all_atoms)
         )
+    distances_no_pbc = all_atoms.get_all_distances().reshape(len(all_atoms), len(all_atoms))
 
-    # Excluding check within each molecule
+    # Excluding check within each molecule ONLY IF THEY ARE CLOSE TO EACH OTHER WITHOUT PBC
     for i in range(len(structure.molecules)):
-        values = (
-            np.ones(len(structure.molecules[i]) ** 2).reshape(
-                len(structure.molecules[i]), len(structure.molecules[i])
-            )
-            * 100
-        )
+        # values = (
+        #     np.ones(len(structure.molecules[i]) ** 2).reshape(
+        #         len(structure.molecules[i]), len(structure.molecules[i])
+        #     )
+        #     * 100
+        # )
+        # TODO: Think about how we can efficiently include vdw radii here maybe.
+        values = np.where(distances_no_pbc[len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
+            + len(structure.molecules[i]),
+            len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
+            + len(structure.molecules[i]),
+        ] < structure.clashes_intramolecular + 1e-7, 100, 0)
+        
         distances[
             len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
             + len(structure.molecules[i]),
             len(structure.molecules[i]) * i : len(structure.molecules[i]) * i
             + len(structure.molecules[i]),
-        ] = values
+        ] += values
 
     return not all(
         i >= structure.clashes_intramolecular for i in distances.flatten()
@@ -790,7 +805,7 @@ def adsorption_surface(structure, fixed_frame):
     """
 
     zz = structure.adsorption_surface_Z
-    rr = structure.adsorption_surface_range
+    rr = structure.adsorption_range
 
     if structure.adsorption_surface_mols == "all":
         ready = True
@@ -862,6 +877,25 @@ def clashes_with_fixed_frame(structure, fixed_frame):
         i >= structure.clashes_with_fixed_frame for i in distances.flatten()
     )
 
+def z_min_max_clashes(structure):
+    """_summary_
+    Checks if all atoms of the structure are within the specified range.
+    
+    """
+    
+    if "z_min_max" in structure.parameters["configuration"]:
+        z_min_max = structure.parameters["configuration"]["z_min_max"]
+        mols = structure.molecules[0].copy()
+        for molecule in structure.molecules[1:]:
+            mols.extend(molecule)
+        z_atoms = mols.get_positions()[:, 2]
+        
+        return np.any((z_atoms < z_min_max[0]) | (z_atoms > z_min_max[1]))
+        
+    else:
+        return False
+
+# TODO: Check if this is still up to date with supercell finder. For example no check for intermolecular clashes/ clashes du to pbc
 
 def all_right(structure, fixed_frame):
     """
@@ -881,34 +915,46 @@ def all_right(structure, fixed_frame):
 
     ready = False
 
+    # TODO: Add a check for fixed frame which makes sure all atoms have the same number of neighbors
+    # Numerical instability can lead to atoms missing/ too many being added. This will cause holes or overlaping
+    # atoms. If the neighbours of equivalent atoms differ, it indicates one of the above (assuming mic)
+    # 'inside' in function generate_supercell_points is causing to this problem
+    
     if not internal_clashes(structure):
-        if len(structure.molecules) > 1:
-            if not intramolecular_clashes(structure):
+        if not z_min_max_clashes(structure):
+            if len(structure.molecules) > 1:
+                if not intramolecular_clashes(structure):
+                    if hasattr(fixed_frame, "fixed_frame"):
+                        if not clashes_with_fixed_frame(structure, fixed_frame):
+                            if (
+                                hasattr(structure, "adsorption_surface")
+                                and structure.adsorption_surface
+                            ):
+                                if adsorption_surface(structure, fixed_frame):
+                                    ready = True
+                            else:
+                                ready = True
+                    else:
+                        ready = True
+            else:
                 if hasattr(fixed_frame, "fixed_frame"):
                     if not clashes_with_fixed_frame(structure, fixed_frame):
                         if (
-                            hasattr(structure, "adsorption_surface")
-                            and structure.adsorption_surface
+                            hasattr(structure, "adsorption")
+                            and not structure.adsorption_surface
                         ):
-                            if adsorption_surface(structure, fixed_frame):
+                            if adsorption_point(structure, fixed_frame):
                                 ready = True
+                        elif (
+                                hasattr(structure, "adsorption_surface")
+                                and structure.adsorption_surface
+                            ):
+                                if adsorption_surface(structure, fixed_frame):
+                                    ready = True
                         else:
                             ready = True
                 else:
                     ready = True
-        else:
-            if hasattr(fixed_frame, "fixed_frame"):
-                if not clashes_with_fixed_frame(structure, fixed_frame):
-                    if (
-                        hasattr(structure, "adsorption")
-                        and structure.adsorption
-                    ):
-                        if adsorption_point(structure, fixed_frame):
-                            ready = True
-                    else:
-                        ready = True
-            else:
-                ready = True
 
     return ready
 
@@ -959,3 +1005,26 @@ def merge_together(structure, fixed_frame):
     if hasattr(fixed_frame, "fixed_frame"):
         ensemble += fixed_frame.fixed_frame
     return ensemble
+
+def run_with_timeout_decorator(func1, func2, timeout=10, *args, **kwargs):
+    """
+    Runs func1 with a timeout using timeout-decorator. If func1 times out,
+    calls func2.
+    
+    :param func1: The long-running function.
+    :param func2: The backup function.
+    :param timeout: Time limit for func1.
+    :param args: Positional arguments for func1.
+    :param kwargs: Keyword arguments for func1.
+    """
+    # Wrap func1 with a timeout-decorator.
+    timed_func1 = timeout_decorator.timeout(timeout, use_signals=True)(func1)
+    try:
+        result = timed_func1(*args, **kwargs)
+        return result
+    except timeout_decorator.TimeoutError:
+        return func2(*args, **kwargs)
+
+def return_inf():
+    print("Timeout occurred")
+    return np.inf

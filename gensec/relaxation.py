@@ -11,6 +11,7 @@ import os
 #import imp
 import numpy as np
 from ase.io import read
+from ase.optimize import BFGS, BFGSLineSearch, LBFGS, LBFGSLineSearch ,GPMin , MDMin, FIRE
 from ase.optimize.precon.neighbors import estimate_nearest_neighbour_distance
 import gensec.precon as precon
 import shutil
@@ -76,7 +77,7 @@ class Calculator:
         """
         z = parameters["calculator"]["constraints"]["fix_atoms"]
         c = FixAtoms(
-            indices=[atom.index for atom in atoms if atom.position[2] <= z[-1]]
+            indices=[atom.index for atom in atoms if (atom.position[2] <= z[-1]) and (atom.position[2] >= z[0])]
         )
         atoms.set_constraint(c)
 
@@ -173,6 +174,60 @@ class Calculator:
             except:
                 print("Something is wrong!")
         return mu
+
+    def simple_relax(self, init_atoms, parameters, directory):
+        
+        atoms = init_atoms.copy()
+        
+        if "constraints" in parameters["calculator"]:
+            z = parameters["calculator"]["constraints"]["fix_atoms"]
+            c = FixAtoms(
+                indices=[atom.index for atom in atoms if (atom.position[2] <= z[-1]) and (atom.position[2] >= z[0])]
+            )
+            atoms.set_constraint(c)
+        
+        name = parameters["name"]
+        folder = parameters["calculator"]["supporting_files_folder"]
+        ase_file_name = parameters["calculator"]["ase_parameters_file"]
+        full_path = os.path.join(self.parent, folder, ase_file_name)
+        self.calculator = load_source(ase_file_name, full_path).calculator
+        atoms.calc = self.calculator
+        
+        algo = parameters["calculator"]["algorithm"]
+        logfile=os.path.join(directory, "logfile.log")
+        restart=os.path.join(directory, "qn.pckl")
+        trajectory=os.path.join(directory, "trajectory_{}.traj".format(name))
+        
+        if algo == "BFGS":
+            opt = BFGS(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "BFGSLineSearch":
+            opt = BFGSLineSearch(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "LBFGS":
+            opt = LBFGS(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "LBFGSLineSearch":
+            opt = LBFGSLineSearch(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "GPMin":
+            opt = GPMin(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "MDMin":
+            opt = MDMin(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+        elif algo == "FIRE":
+            if "downhill_check" in parameters["calculator"]:
+                downhill_check = parameters["calculator"]["downhill_check"]
+            else:
+                downhill_check = False
+            opt = FIRE(atoms, logfile=logfile, restart=restart, trajectory=trajectory, downhill_check=downhill_check)
+        
+        else:
+            print("Did not set valid algorithm in parameters.json. Using FIRE with no downhill check.")
+            opt = FIRE(atoms, logfile=logfile, restart=restart, trajectory=trajectory)
+    
+        opt.run(fmax=parameters["calculator"]["fmax"], steps=parameters["calculator"]["steps"])
+        write(os.path.join(directory, "final_configuration_{}.in".format(name)), atoms, format="aims")
+        # TODO: There should be a tag which makes it easy to filter which calculations finished and which reached the step limit
+        try:
+            self.calculator.close()
+        except:
+            pass
 
     def relax(self, structure, fixed_frame, parameters, directory):
         """Perform geometry optimization with specified ASE
@@ -337,7 +392,7 @@ class Calculator:
         )
 
         try:
-            calculator.close()
+            self.calculator.close()
         except:
             pass
 
@@ -565,8 +620,9 @@ class Calculator:
                 structure.set_structure_positions(atoms)
                 if hasattr(structure, "fixed_frame"):
                     fixed_frame.set_fixed_frame_positions(structure, atoms)
-
-                calculator.relax(structure, fixed_frame, parameters, d)
+                
+                calculator.simple_relax(atoms.copy(), parameters, d)
+                # calculator.relax(structure, fixed_frame, parameters, d)
                 concatenate_trajs(d, traj)
                 calculator.finished(d)
                 try:
@@ -588,7 +644,8 @@ class Calculator:
                 if hasattr(structure, "fixed_frame"):
                     fixed_frame.set_fixed_frame_positions(structure, atoms)
 
-                calculator.relax(structure, fixed_frame, parameters, d)
+                calculator.simple_relax(atoms.copy(), parameters, d)
+                #calculator.relax(structure, fixed_frame, parameters, d)
                 concatenate_trajs(d, traj)
                 calculator.finished(d)
                 try:

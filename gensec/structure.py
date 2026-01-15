@@ -4,6 +4,19 @@ from gensec.modules import *
 from ase.io import read, write
 from random import random, randint, uniform, choice, sample
 import itertools
+import sys
+import numpy as np
+
+# TODO: Change geometry to have same syntax as fixed frame (in the input and therefore how it is read by GenSec)
+
+# TODO: Check descriptions for completeness and redundancies
+
+# TODO: Add comments to code for complex operations
+
+# TODO: port defaults to check_input
+
+# Long term TODO: Rethink design regarding Frame and Structure classes and simplify the current implementation for development
+
 
 
 class Structure:
@@ -14,7 +27,7 @@ class Structure:
     This class represents a structure composed of multiple molecules. It includes methods for creating the structure based on parameters from a file, creating a configuration for the structure, and creating a torsion and orientation for the structure. The structure object includes attributes for the atoms in the structure, the full and isolated connectivity matrices, a list of torsions, a minimum image convention (MIC) flag, a list of molecules, a mu parameter for the exponential preconditioner, and periodic boundary conditions (PBC).
     """
 
-    def __init__(self, parameters):
+    def __init__(self, parameters, supercell_finder=None):
         """
         Initializes the structure object.
 
@@ -25,17 +38,72 @@ class Structure:
         """
         self.parameters = parameters
 
-        self.atoms = read(
-            parameters["geometry"][0], format=parameters["geometry"][1]
-        )
+        if supercell_finder is not None:
+            self.atoms = supercell_finder.F_geo.copy()
+            self.atoms.set_constraint()
+            
+            self.coms_given = True
+            self.supercell_finder = supercell_finder
+            self.pbc = supercell_finder.cell
+            self.mic = True
+            self.atoms.set_cell(self.pbc)
+            self.atoms.set_pbc(True)
+            self.mu = None  # Parameter mu for exponential preconditioner
+            # TODO: Change to account for multiple molecules in F_geo. If there are multiple molecules it is added as one to self.molecules right now.
+            self.molecules = []
+            for i in range(self.supercell_finder.F_sc_points_number):
+                self.molecules.append(self.atoms.copy())
+                old_com=self.molecules[i].get_center_of_mass()
+                self.molecules[i].set_center_of_mass(np.array([self.supercell_finder.F_sc_points[i, 0], self.supercell_finder.F_sc_points[i, 1], old_com[2]]))
+                
+            # self.num_molecules = self.supercell_finder.F_sc_points_number * self.parameters["number_of_replicas"]
+            
+        else:
+            self.atoms = read(
+            parameters["geometry"]["filename"], format=parameters["geometry"]["format"]
+            )
+            self.atoms.set_constraint()
+            self.atoms.pbc = False
+            
+            self.molecules = [self.atoms.copy() for i in range(self.parameters["number_of_replicas"])]
+            # self.num_molecules = self.parameters["number_of_replicas"]
+            
+            if parameters["mic"]["activate"] == True:
+                self.pbc = parameters["mic"]["pbc"]
+                self.mic = True
+                self.atoms.set_cell(self.pbc)
+                self.atoms.set_pbc(True)
+                self.mu = None  # Parameter mu for exponential preconditioner
+            
+        if parameters["configuration"]["adsorption"]["activate"]:
+            self.adsorption = True
+            self.adsorption_range = parameters["configuration"]["adsorption"]["range"]
+            
+            if parameters["configuration"]["adsorption"]["method"] == "surface":
+                self.adsorption_surface = True
+                self.adsorption_surface_Z = parameters["configuration"]["adsorption"]["surface"]
+                self.adsorption_surface_mols = parameters["configuration"]["adsorption"]["molecules"]
+            elif parameters["configuration"]["adsorption"]["method"] == "point":
+                self.adsorption_surface = False
+                self.adsorption_point = parameters["configuration"]["adsorption"]["point"]
+            
+            
+        
         self.connectivity_matrix_full = create_connectivity_matrix(
             self.atoms, bothways=True
         )
         self.connectivity_matrix_isolated = create_connectivity_matrix(
             self.atoms, bothways=False
         )
-
-        if parameters["configuration"]["torsions"]["activate"]:
+                
+        self.clashes_intramolecular = parameters["configuration"]["clashes"][
+            "intramolecular"
+        ]
+        self.clashes_with_fixed_frame = parameters["configuration"]["clashes"][
+            "with_fixed_frame"
+        ]
+        # TODO: For some reason this fails sometimes if the atoms are imported from supercell_finder. This might be due to the fact that torions were already applied but 
+        if parameters["configuration"]["torsions"]["activate"] and (supercell_finder is None or parameters["supercell_finder"]["unit_cell_method"] == "inputfile"):
             if (
                 parameters["configuration"]["torsions"]["list_of_tosrions"]
                 == "auto"
@@ -52,30 +120,9 @@ class Structure:
                 self.list_of_torsions = parameters["configuration"]["torsions"][
                     "list_of_tosrions"
                 ]
-
-        if parameters["mic"]["activate"] == True:
-            self.pbc = parameters["mic"]["pbc"]
-            self.mic = True
-            self.atoms.set_cell(self.pbc)
-            self.atoms.set_pbc(True)
-            self.mu = None  # Parameter mu for exponential preconditioner
-        self.molecules = [
-            self.atoms.copy() for i in range(parameters["number_of_replicas"])
-        ]
-        self.clashes_intramolecular = parameters["configuration"]["clashes"][
-            "intramolecular"
-        ]
-        self.clashes_with_fixed_frame = parameters["configuration"]["clashes"][
-            "with_fixed_frame"
-        ]
-        if parameters["configuration"]["adsorption"]["activate"]:
-            self.adsorption = True
-            self.adsorption_range = parameters["configuration"]["adsorption"][
-                "range"
-            ]
-            self.adsorption_point = parameters["configuration"]["adsorption"][
-                "point"
-            ]
+        
+        
+        # TODO: delte comments, keep out of master version. Instead use legacy branch or leave in old versions
         #if parameters["configuration"]["adsorption_surface"]["activate"]:
             #self.adsorption_surface = True
             #self.adsorption_surface_range = parameters["configuration"][
@@ -91,7 +138,7 @@ class Structure:
         # for i in range(len(self.cycles)):
         # self.cycles[i] = make_canonical_pyranosering(self.atoms, self.cycles[i])
 
-    def create_configuration(self, parameters):
+    def create_configuration(self, parameters, success=None):
         """
         Creates a configuration for the structure.
 
@@ -118,13 +165,19 @@ class Structure:
                 tuple: A tuple containing a numpy array of torsion angles and a dictionary mapping each torsion to its angle.
             """
             if parameters["configuration"]["torsions"]["values"] == "random":
-                torsions = np.array(
-                    [randint(0, 360) for i in self.list_of_torsions]
-                )
+                torsions = np.array([randint(0, 360) for i in self.list_of_torsions])
+            elif parameters["configuration"]["torsions"]["values"] == "restricted":
+                max_angle = parameters["configuration"]["torsions"]["max_angle"]
+                torsions = np.array([randint(-max_angle, max_angle) for i in self.list_of_torsions])
+            elif parameters["configuration"]["torsions"]["values"] == "discretized":
+                ang_ar = parameters["configuration"]["torsions"]["angles_linspace"]
+                angles = np.linspace(ang_ar[0], ang_ar[1], ang_ar[2])
+                torsions = np.array([choice(angles) for i in self.list_of_torsions])
             t = {
                 "m{}t{}".format(label, i): torsions[i]
                 for i in range(len(torsions))
             }
+            
             return torsions, t
 
         def make_orientation(self, parameters, label):
@@ -162,30 +215,34 @@ class Structure:
             ):
                 # Discretizes the values for the main vector of the molecuele
                 # for the angle part the number of allowed rotations
-                turns = int(
-                    360.0
-                    // parameters["configuration"]["orientations"]["angle"]
-                )
+                
+                #TODO: Rethink if linspace should include endpoint. Should be identical accross codebase. Maybe add option in parameters. 
+                # Thought being: If I want evenly spaced angles, between 0 and 360 deg, standard setting includes 360 which would mean double counting
+                
+                if "angles_linspace" in parameters["configuration"]["orientations"]:
+                    ang_ar = parameters["configuration"]["orientations"][
+                        "angles_linspace"
+                    ]
+                    angles = np.linspace(ang_ar[0], ang_ar[1], ang_ar[2])
+                #TODO: Remove in future version and make above standard
+                else:
+                    turns = int(
+                        360.0
+                        // parameters["configuration"]["orientations"]["angle"]
+                    )
 
-                angles = np.linspace(0, 360, num=turns + 1)
+                    angles = np.linspace(0, 360, num=turns + 1)
+                # TODO: Include tyoe in check_input
                 if (
                     parameters["configuration"]["orientations"]["vector"][
-                        "Type"
+                        "type"
                     ]
                     == "exclusion"
                 ):
                     exclude = np.eye(3)[choice([0, 1, 2])]
-                    # print("Exclude")
-                    # print(exclude)
-                    x = parameters["configuration"]["orientations"]["vector"][
-                        "x"
-                    ]
-                    y = parameters["configuration"]["orientations"]["vector"][
-                        "y"
-                    ]
-                    z = parameters["configuration"]["orientations"]["vector"][
-                        "z"
-                    ]
+                    x = parameters["configuration"]["orientations"]["vector"]["x"]
+                    y = parameters["configuration"]["orientations"]["vector"]["y"]
+                    z = parameters["configuration"]["orientations"]["vector"]["z"]
                     quaternion = produce_quaternion(
                         choice(angles),
                         np.array(
@@ -197,17 +254,15 @@ class Structure:
                         ),
                     )
                 else:
-                    x = parameters["configuration"]["orientations"]["vector"][
-                        "x"
-                    ]
-                    y = parameters["configuration"]["orientations"]["vector"][
-                        "y"
-                    ]
-                    z = parameters["configuration"]["orientations"]["vector"][
-                        "z"
-                    ]
+                    if success is not None:
+                        ang = angles[success]
+                    else:
+                        ang = choice(angles)
+                    x = parameters["configuration"]["orientations"]["vector"]["x"]
+                    y = parameters["configuration"]["orientations"]["vector"]["y"]
+                    z = parameters["configuration"]["orientations"]["vector"]["z"]
                     quaternion = produce_quaternion(
-                        choice(angles),
+                        ang,
                         np.array([choice(x), choice(y), choice(z)]),
                     )
 
@@ -245,6 +300,13 @@ class Structure:
             Returns:
                 tuple: A tuple containing a numpy array of the COM coordinates and a dictionary mapping the label and index to the COM coordinates.
             """
+            # TODO: For the case where we first want to generate the molecules inside a unit cell and then get the supercell, how
+            # can we implement that efficiently while not overloading the user input but keeping it understandable?
+            
+            # Comment: This default procedure will basicaly always have clashes if we have more than one molecule. Rethink for label > 0
+            if hasattr(self, "supercell_finder"):
+                parameters["configuration"]["coms"]["values"] = "given"
+            
             if not parameters["configuration"]["coms"]["activate"]:
                 com = [0, 0, 0]
                 c = {"m{}c{}".format(label, i): com[i] for i in range(len(com))}
@@ -267,6 +329,23 @@ class Structure:
                 com = np.array(
                     [choice(x_space), choice(y_space), choice(z_space)]
                 )
+            elif parameters["configuration"]["coms"]["values"] == "given":
+                
+                # TODO: How do we allow for different z-levels? Should we even? Also rethink if z_values makes it too nested and dificult to understand
+                
+                if parameters["configuration"]["coms"]["z_values"] == "identical":
+                    if label == 0:
+                        z = parameters["configuration"]["coms"]["z_axis"]
+                        self.z_choice_temp = choice(np.linspace(start=z[0], stop=z[1], num=z[2], endpoint=True))
+                else:
+                    z = parameters["configuration"]["coms"]["z_axis"]     
+                    self.z_choice_temp = choice(np.linspace(start=z[0], stop=z[1], num=z[2], endpoint=True))
+                
+                com = np.array([self.supercell_finder.F_sc_points[label, 0], 
+                                self.supercell_finder.F_sc_points[label, 1], 
+                                self.z_choice_temp])
+                
+            # TODO: This default should be ported to check_input. Also rethink if this is the best default    
             else:
                 com = np.array(
                     [
@@ -280,16 +359,11 @@ class Structure:
 
         if parameters["configuration"]["torsions"]["activate"]:
             torsions, t = make_torsion(self, parameters, label=0)
-        # if parameters["configuration"]["orientations"]["activate"]:
+        
         quaternion, q = make_orientation(self, parameters, label=0)
-        # else:
-        # default = [0,0,0,1]
-        # quaternion, q = [0,0,0,1], {"m{}q{}".format(0, i) : default[i] for i in range(len(default))}     # Initial orientation
-        # if parameters["configuration"]["coms"]["activate"]:
+
         coms, c = make_com(self, parameters, label=0)
-        # else:
-        # default = [0, 0, 0]
-        # coms, c = [0,0,0], {"m{}c{}".format(0, i) : default[i] for i in range(len(default))}  # put center of mass to the origin
+        
         if not any(
             parameters["configuration"][i]["activate"]
             for i in parameters["configuration"]
@@ -329,6 +403,7 @@ class Structure:
                         self, parameters, label=i
                     )
 
+                # TODO: Why do we have coms same?
                 if parameters["configuration"]["coms"]["same"]:
                     c_temp = {
                         "m{}c{}".format(i, k): c["m0c{}".format(k)]
@@ -343,7 +418,7 @@ class Structure:
                     full_conf.update(**q_temp, **c_temp)
                     vec = np.hstack((quaternion, coms))
                 configuration = np.hstack((configuration, vec))
-        # print(full_conf)
+                
         return configuration, full_conf
 
     def extract_conf_keys_from_row(self):
@@ -362,18 +437,17 @@ class Structure:
         q = [0, 0, 0, 1]
         c = [0, 0, 0]
         for i in range(0, len(self.molecules)):
-            if self.parameters["configuration"]["torsions"]["activate"]:
-                t_temp = {"m{}t{}".format(i, k): t for k in range(len(t))}
             q_temp = {"m{}q{}".format(i, k): q for k in range(len(q))}
             c_temp = {"m{}c{}".format(i, k): c for k in range(len(c))}
             if self.parameters["configuration"]["torsions"]["activate"]:
+                t_temp = {"m{}t{}".format(i, k): t for k in range(len(t))}
                 full_conf.update(**t_temp, **q_temp, **c_temp)
             else:
                 full_conf.update(**q_temp, **c_temp)
 
         return list(full_conf.keys())
 
-    def read_configuration(self, atoms_positions):
+    def read_configuration(self, atoms_positions, replicas_from_scf = 1):
         """
         Reads the configuration from atoms positions.
 
@@ -387,39 +461,78 @@ class Structure:
         """
 
         full_conf = {}
-        for ii in range(len(self.molecules)):
+        for ii in range(len(self.molecules) * replicas_from_scf):
             atoms = self.molecules[0].get_positions()
             torsions = []
             positions = atoms_positions.get_positions()[
                 ii * len(atoms) : (ii + 1) * len(atoms)
             ]
             self.molecules[ii].set_positions(positions)
-            for torsion in self.list_of_torsions:
-                torsions.append(
-                    self.molecules[ii].get_dihedral(
-                        a0=torsion[0],
-                        a1=torsion[1],
-                        a2=torsion[2],
-                        a3=torsion[3],
-                    )
-                )
+                
             orientations = measure_quaternion(
                 self.molecules[ii], 0, len(atoms) - 1
             )
             com = self.molecules[ii].get_center_of_mass()
-            t_temp = {
-                "m{}t{}".format(ii, k): torsions[k]
-                for k in range(len(torsions))
-            }
+            
             q_temp = {
                 "m{}q{}".format(ii, k): orientations[k]
                 for k in range(len(orientations))
             }
             c_temp = {"m{}c{}".format(ii, k): com[k] for k in range(len(com))}
-            full_conf.update(**t_temp, **q_temp, **c_temp)
+            if self.parameters["configuration"]["torsions"]["activate"]:
+                for torsion in self.list_of_torsions:
+                    torsions.append(self.molecules[ii].get_dihedral(a0=torsion[0],a1=torsion[1],a2=torsion[2],a3=torsion[3]))
+                t_temp = {"m{}t{}".format(ii, k): torsions[k] for k in range(len(torsions))}
+                full_conf.update(**t_temp, **q_temp, **c_temp)
+            
+            else:
+                full_conf.update(**q_temp, **c_temp)
 
         return full_conf
+    
+    def get_configuration(self, atoms_input):
+        """
+        Function to get the configuration of a given atoms object where structure is the initial structure from parameters.
+        """
+        full_conf = {}
+        ii = 0
+        def safe_floor_fraction(a, b, tol=1e-10):
+            result = a / b
+            if np.isclose(result, np.round(result), atol=tol):
+                return int(np.round(result))
+            return int(np.floor(result))
+        
+        max_molecules = safe_floor_fraction(len(atoms_input), len(self.atoms))
+        atoms_symbol =self.atoms.get_chemical_symbols()
+        while (ii < max_molecules) and atoms_symbol == atoms_input.get_chemical_symbols()[ii * len(self.atoms) : (ii + 1) * len(self.atoms)]:
+            temp_positions = atoms_input.get_positions()[ii * len(self.atoms) : (ii + 1) * len(self.atoms)]
+            temp_mol = self.atoms.copy()
+            temp_mol.set_positions(temp_positions)
+                
+            orientations = measure_quaternion(temp_mol, 0, len(self.atoms) - 1)
+            com = temp_mol.get_center_of_mass()
+            
+            q_temp = {"m{}q{}".format(ii, k): orientations[k] for k in range(len(orientations))}
+            c_temp = {"m{}c{}".format(ii, k): com[k] for k in range(len(com))}
+            
+            if self.parameters["configuration"]["torsions"]["activate"]:
+                torsions = []
+                for torsion in self.list_of_torsions:
+                    torsions.append(temp_mol.get_dihedral(a0=torsion[0],a1=torsion[1],a2=torsion[2],a3=torsion[3]))
+                t_temp = {"m{}t{}".format(ii, k): torsions[k] for k in range(len(torsions))}
+                full_conf.update(**t_temp, **q_temp, **c_temp)
+            
+            else:
+                full_conf.update(**q_temp, **c_temp)
+                
+            ii += 1
 
+        return full_conf
+        
+        
+        
+
+    # TODO: delete, keep out of master version. Instead use legacy branch or leave in old versions
     def apply_configuration(self, configuration):
         """Summary
 
@@ -512,7 +625,6 @@ class Structure:
                         range(len(self.list_of_torsions)),
                         len(self.list_of_torsions),
                     )
-                    # print(sampled_torsions)
                     # for t in range(len(self.list_of_torsions)):
                     while t < len(self.list_of_torsions):
                         fixed_indices = carried_atoms(
@@ -532,6 +644,8 @@ class Structure:
                             t += 1
                     else:
                         pass
+                
+                # TODO: delete comments and keep out of master version. Instead use legacy branch or leave in old versions
                 # numtorsions = randint(1, 2)
                 # # len(self.list_of_torsions) // 10
                 # # print("Select {} of torsions".format(numtorsions))
@@ -603,6 +717,7 @@ class Structure:
                     indices=fixed_indices,
                 )
 
+    # TODO: delete, keep out of master version. Instead use legacy branch or leave in old versions
     def torsions_from_conf(self, configuration):
         """Summary
 
@@ -675,6 +790,7 @@ class Structure:
             self.molecules[mol].set_positions(mol_atoms)
 
     def find_in_database(self, conf, database, parameters):
+        #TODO: Update this function
         """Check if the configuration is stored in database
 
         [description]
@@ -769,7 +885,7 @@ class Fixed_frame:
         pbc (TYPE): Description
     """
 
-    def __init__(self, parameters):
+    def __init__(self, parameters, given_atoms=None):
         """
         Initializes the Fixed_frame object.
 
@@ -782,19 +898,28 @@ class Fixed_frame:
             parameters (dict): A dictionary of parameters for initializing the Fixed_frame object. 
                             It should contain a "fixed_frame" key with a dictionary value that includes "activate", "filename", and "format" keys.
         """
-        # Minimum Image Convention
-        self.mic = False
-        if parameters["fixed_frame"]["activate"] == True:
-            self.fixed_frame = read(
-                parameters["fixed_frame"]["filename"],
-                format=parameters["fixed_frame"]["format"],
-            )
-
-        if parameters["mic"]["activate"] == True:
-            self.pbc = parameters["mic"]["pbc"]
+        if given_atoms is not None:
+            self.fixed_frame = given_atoms
             self.mic = True
-            self.fixed_frame.set_cell(self.pbc)
-            self.fixed_frame.set_pbc(True)
+            self.pbc = self.fixed_frame.get_cell()
+        else:
+            # Minimum Image Convention
+            self.mic = False
+            if parameters["fixed_frame"]["activate"] == True:
+                self.fixed_frame = read(
+                    parameters["fixed_frame"]["filename"],
+                    format=parameters["fixed_frame"]["format"],
+                )
+
+            if parameters["mic"]["activate"] == True:
+                self.pbc = parameters["mic"]["pbc"]
+                self.mic = True
+                self.fixed_frame.set_cell(self.pbc)
+                self.fixed_frame.set_pbc(True)
+                
+        #This was running unconditionally and was breaking the tests, I hope this fixes. Philipp maybe check if this is ok in all cases.
+        if hasattr(self, 'fixed_frame'):
+            self.fixed_frame.positions[:, 2] = self.fixed_frame.positions[:, 2] - np.max(self.fixed_frame.positions[:, 2])
 
     def get_len(self):
         """
