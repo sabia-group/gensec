@@ -4,7 +4,10 @@
 	"trials": 100,
 	"success": 1000,
 	"number_of_replicas" : 1,
-	"geometry" : ["hexane.in", "aims"], 
+	"geometry" : {
+    "filename" : "hexane.in",
+    "format" : "aims"
+},
 	"fixed_frame" : {"activate" : false,
 					"filename" : "slab.in",
 					"format" : "aims"
