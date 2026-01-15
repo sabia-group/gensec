@@ -29,8 +29,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.12.8
-          architecture: x64
+          python-version: 3.12
       
       # Installing of the dependencies for GenSec
       - name: Install dependencies
