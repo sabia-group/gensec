@@ -42,6 +42,7 @@ jobs:
           pip install networkx
           pip install pandas
           pip install flake8
+          pip install timeout-decorator
          
       # Running the tests for GenSec
       - name: Tests
