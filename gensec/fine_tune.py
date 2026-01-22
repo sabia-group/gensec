@@ -534,12 +534,23 @@ def run_finetune_loop(parameters, fps_db_path):
 
         default_name = ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
         run_name = f"{default_name}_round{round_index:03d}"
+
+        train_xyz = datasets["train"]
+        if not os.path.isabs(train_xyz):
+            train_xyz = os.path.abspath(train_xyz)
+
+        val_xyz = datasets.get("val")
+        if val_xyz and not os.path.isabs(val_xyz):
+            val_xyz = os.path.abspath(val_xyz)
+
         test_xyz = fixed_test_extxyz or datasets.get("test")
+        if test_xyz and not os.path.isabs(test_xyz):
+            test_xyz = os.path.abspath(test_xyz)
 
         result = run_mace_training(
             parameters,
-            datasets["train"],
-            datasets.get("val"),
+            train_xyz,
+            val_xyz,
             test_xyz,
             workdir=round_dir,
             foundation_override=current_model,
