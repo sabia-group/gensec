@@ -359,6 +359,12 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
     test_subset_db = ft.get("test_subset_db", "db_test_subset.db")
     test_labeled_db = ft.get("test_set_db", "db_labeled_test.db")
     test_extxyz = ft.get("test_set_extxyz", "mace_dataset_test.extxyz")
+    
+    # Convert to absolute path so it works from any cwd
+    if not os.path.isabs(test_extxyz):
+        test_extxyz = os.path.abspath(test_extxyz)
+    if not os.path.isabs(test_labeled_db):
+        test_labeled_db = os.path.abspath(test_labeled_db)
 
     if os.path.exists(test_extxyz) and os.path.exists(test_labeled_db):
         existing = ase.db.connect(test_labeled_db).count()
