@@ -216,19 +216,25 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
 
 def _locate_model(workdir, name):
     """Locate model: {name}_stagetwo.model or {name}.model (no compiled)."""
+    print(f"[fine_tune] _locate_model: workdir={workdir}, name={name}")
     if not os.path.isdir(workdir):
+        print(f"[fine_tune] workdir is not a directory!")
         return None
     
-    # Try stagetwo first (with SWA) - explicitly NOT the compiled version
+    # Try stagetwo first (with SWA)
     stagetwo_path = os.path.join(workdir, f"{name}_stagetwo.model")
+    print(f"[fine_tune] Checking: {stagetwo_path}")
     if os.path.exists(stagetwo_path) and not stagetwo_path.endswith("_compiled.model"):
         return stagetwo_path
     
     # Fall back to regular model (no SWA) - explicitly NOT the compiled version
     regular_path = os.path.join(workdir, f"{name}.model")
+    print(f"[fine_tune] Checking: {regular_path}")
     if os.path.exists(regular_path) and not regular_path.endswith("_compiled.model"):
+        print(f"[fine_tune] Found model: {regular_path}")
         return regular_path
     
+    print(f"[fine_tune] No model found")
     return None
 
 
