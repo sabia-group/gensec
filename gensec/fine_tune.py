@@ -427,26 +427,43 @@ def run_finetune_loop(parameters, fps_db_path):
     while next_index < total_fps:
         round_dir = os.path.join(os.getcwd(), f"fine_tune_round_{round_index:03d}")
         os.makedirs(round_dir, exist_ok=True)
-        batch_db_path = os.path.join(round_dir, f"fps_batch_round_{round_index:03d}.db")
-        batch_written, _ = _extract_fps_batch(
-            fps_db_path,
-            next_index,
-            batch_size,
-            batch_db_path,
-            round_index=round_index,
-        )
-
-        if batch_written == 0:
-            print("[fine_tune] FPS database exhausted before reaching RMSE targets.")
-            break
-
-        print(f"[fine_tune] Round {round_index}: labeling {batch_written} FPS structures starting at index {next_index}.")
         round_labeled_db = os.path.join(round_dir, f"db_labeled_round_{round_index:03d}.db")
-        compute_labels_on_db(parameters, batch_db_path, db_out_path=round_labeled_db)
-        _append_labeled_round(round_labeled_db, global_labeled_db)
-
         dataset_prefix = os.path.join(round_dir, "mace_dataset")
-        datasets = prepare_mace_extxyz(parameters, round_labeled_db, out_prefix=dataset_prefix)
+        dataset_train_path = f"{dataset_prefix}_train.extxyz"
+        
+        # Check if round already prepared (labeled DB and datasets exist)
+        round_already_prepared = (
+            os.path.exists(round_labeled_db) and 
+            ase.db.connect(round_labeled_db).count() > 0 and
+            os.path.exists(dataset_train_path)
+        )
+        
+        if round_already_prepared:
+            print(f"[fine_tune] Round {round_index}: detected existing labeled DB and datasets, skipping labeling/prep.")
+            batch_written = ase.db.connect(round_labeled_db).count()
+            datasets = {
+                "train": dataset_train_path,
+                "val": f"{dataset_prefix}_val.extxyz" if os.path.exists(f"{dataset_prefix}_val.extxyz") else None,
+            }
+        else:
+            batch_db_path = os.path.join(round_dir, f"fps_batch_round_{round_index:03d}.db")
+            batch_written, _ = _extract_fps_batch(
+                fps_db_path,
+                next_index,
+                batch_size,
+                batch_db_path,
+                round_index=round_index,
+            )
+
+            if batch_written == 0:
+                print("[fine_tune] FPS database exhausted before reaching RMSE targets.")
+                break
+
+            print(f"[fine_tune] Round {round_index}: labeling {batch_written} FPS structures starting at index {next_index}.")
+            compute_labels_on_db(parameters, batch_db_path, db_out_path=round_labeled_db)
+            _append_labeled_round(round_labeled_db, global_labeled_db)
+
+            datasets = prepare_mace_extxyz(parameters, round_labeled_db, out_prefix=dataset_prefix)
 
         default_name = ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
         run_name = f"{default_name}_round{round_index:03d}"
