@@ -205,14 +205,32 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     result = {
         "run_name": name,
         "workdir": workdir or os.getcwd(),
-        "log_dir": os.path.join(workdir or os.getcwd(), "log"),
+        "log_dir": os.path.join(workdir or os.getcwd(), "logs"),
         "command": cmd,
     }
-    #Locating stagetwo model if it exists after SWA, just by filname convention... this could be fragile...
-    stage_two_candidate = os.path.join(result["workdir"], f"{name}_stagetwo.model")
-    if os.path.exists(stage_two_candidate):
-        result["stage_two_model"] = stage_two_candidate
+    # Locate model: try stagetwo first (with SWA), then regular model
+    model = _locate_model(result["workdir"], name)
+    if model:
+        result["model"] = model
     return result
+
+
+def _locate_model(workdir, name):
+    """Locate model: {name}_stagetwo.model or {name}.model (no compiled)."""
+    if not os.path.isdir(workdir):
+        return None
+    
+    # Try stagetwo first (with SWA)
+    stagetwo_path = os.path.join(workdir, f"{name}_stagetwo.model")
+    if os.path.exists(stagetwo_path) and not stagetwo_path.endswith("_compiled.model"):
+        return stagetwo_path
+    
+    # Fall back to regular model (no SWA) - explicitly NOT the compiled version
+    regular_path = os.path.join(workdir, f"{name}.model")
+    if os.path.exists(regular_path) and not regular_path.endswith("_compiled.model"):
+        return regular_path
+    
+    return None
 
 
 def _parse_mace_test_rmse(log_dir):
@@ -354,6 +372,12 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
     test_subset_db = ft.get("test_subset_db", "db_test_subset.db")
     test_labeled_db = ft.get("test_set_db", "db_labeled_test.db")
     test_extxyz = ft.get("test_set_extxyz", "mace_dataset_test.extxyz")
+    
+    # Convert to absolute path so it works from any cwd
+    if not os.path.isabs(test_extxyz):
+        test_extxyz = os.path.abspath(test_extxyz)
+    if not os.path.isabs(test_labeled_db):
+        test_labeled_db = os.path.abspath(test_labeled_db)
 
     if os.path.exists(test_extxyz) and os.path.exists(test_labeled_db):
         existing = ase.db.connect(test_labeled_db).count()
@@ -560,7 +584,7 @@ def run_finetune_loop(parameters, fps_db_path):
         energy_rmse, force_rmse = _parse_mace_test_rmse(result["log_dir"])
         print(f"[fine_tune] Round {round_index} TEST RMSE: energy={energy_rmse:.3f} meV/atom, force={force_rmse:.3f} meV/Å")
 
-        stage_model = result.get("stage_two_model", current_model)
+        stage_model = result.get("model", current_model)
         history_entry = {
             "round": round_index,
             "fps_start_index": next_index,
