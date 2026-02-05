@@ -325,6 +325,20 @@ def _append_labeled_round(round_db_path, global_db_path):
         dest.write(atoms, data=data)
 
 
+def _write_cumulative_train_db(global_db_path, out_db_path):
+    src = ase.db.connect(global_db_path)
+    if os.path.exists(out_db_path):
+        os.remove(out_db_path)
+    dest = ase.db.connect(out_db_path)
+
+    for row in src.select():
+        data = dict(row.data) if row.data else {}
+        if data.get("subset") == "test":
+            continue
+        atoms = row.toatoms()
+        dest.write(atoms, data=data)
+
+
 def _copy_labeled_subset_db(source_db_path, dest_db_path, start_index=0, limit=None, subset_label=None, extra_metadata=None):
     src = ase.db.connect(source_db_path)
     if os.path.exists(dest_db_path):
@@ -504,19 +518,20 @@ def run_finetune_loop(parameters, fps_db_path):
         round_dir = os.path.join(os.getcwd(), f"fine_tune_round_{round_index:03d}")
         os.makedirs(round_dir, exist_ok=True)
         round_labeled_db = os.path.join(round_dir, f"db_labeled_round_{round_index:03d}.db")
+        cumulative_db = os.path.join(round_dir, f"db_labeled_cumulative_{round_index:03d}.db")
         dataset_prefix = os.path.join(round_dir, "mace_dataset")
         dataset_train_path = f"{dataset_prefix}_train.extxyz"
         
         # Check if this round was already prepared (e.g., previous run crashed during training)
         round_already_prepared = (
-            os.path.exists(round_labeled_db) and 
-            ase.db.connect(round_labeled_db).count() > 0 and
+            os.path.exists(cumulative_db) and
+            ase.db.connect(cumulative_db).count() > 0 and
             os.path.exists(dataset_train_path)
         )
         
         if round_already_prepared:
             print(f"[fine_tune] Round {round_index}: detected existing labeled DB and datasets, skipping labeling/prep.")
-            batch_written = ase.db.connect(round_labeled_db).count()
+            batch_written = ase.db.connect(round_labeled_db).count() if os.path.exists(round_labeled_db) else 0
             datasets = {
                 "train": dataset_train_path,
                 "val": f"{dataset_prefix}_val.extxyz" if os.path.exists(f"{dataset_prefix}_val.extxyz") else None,
@@ -535,7 +550,8 @@ def run_finetune_loop(parameters, fps_db_path):
                 break
             print(f"[fine_tune] Round {round_index}: reusing {batch_written} pre-labeled structures starting at index {next_index}.")
             
-            datasets = prepare_mace_extxyz(parameters, round_labeled_db, out_prefix=dataset_prefix)
+            _write_cumulative_train_db(global_labeled_db, cumulative_db)
+            datasets = prepare_mace_extxyz(parameters, cumulative_db, out_prefix=dataset_prefix)
         else:
             batch_db_path = os.path.join(round_dir, f"fps_batch_round_{round_index:03d}.db")
             batch_written, _ = _extract_fps_batch(
@@ -554,7 +570,8 @@ def run_finetune_loop(parameters, fps_db_path):
             compute_labels_on_db(parameters, batch_db_path, db_out_path=round_labeled_db)
             _append_labeled_round(round_labeled_db, global_labeled_db)
             
-            datasets = prepare_mace_extxyz(parameters, round_labeled_db, out_prefix=dataset_prefix)
+            _write_cumulative_train_db(global_labeled_db, cumulative_db)
+            datasets = prepare_mace_extxyz(parameters, cumulative_db, out_prefix=dataset_prefix)
 
         default_name = ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
         run_name = f"{default_name}_round{round_index:03d}"
