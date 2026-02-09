@@ -1,5 +1,6 @@
 import os
 import json
+import random
 import ase.db
 from ase.io import write, read
 import numpy as np
@@ -311,6 +312,24 @@ def _append_labeled_round(round_db_path, global_db_path):
         dest.write(atoms, data=data)
 
 
+def _build_train_pool_db(source_db_path, exclude_ids, out_db_path):
+    src = ase.db.connect(source_db_path)
+    if os.path.exists(out_db_path):
+        os.remove(out_db_path)
+    dest = ase.db.connect(out_db_path)
+
+    for row in src.select():
+        if row.id in exclude_ids:
+            continue
+        atoms = row.toatoms()
+        data = dict(row.data) if row.data else {}
+        data.setdefault("subset", "train")
+        data["source_row_id"] = row.id
+        dest.write(atoms, data=data)
+
+    return dest.count()
+
+
 def _write_cumulative_train_db(global_db_path, out_db_path):
     src = ase.db.connect(global_db_path)
     if os.path.exists(out_db_path):
@@ -372,6 +391,7 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
     test_subset_db = ft.get("test_subset_db", "db_test_subset.db")
     test_labeled_db = ft.get("test_set_db", "db_labeled_test.db")
     test_extxyz = ft.get("test_set_extxyz", "mace_dataset_test.extxyz")
+    train_pool_db = ft.get("train_pool_db", "db_train_pool.db")
     
     # Convert to absolute path so it works from any cwd
     if not os.path.isabs(test_extxyz):
@@ -385,39 +405,74 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
         if not os.path.exists(global_labeled_db):
             _append_labeled_round(test_labeled_db, global_labeled_db)
             print(f"[fine_tune] Initialized global_labeled_db from existing test set.")
-        return {"extxyz": test_extxyz, "reserved_count": existing}
+
+        if not os.path.exists(train_pool_db):
+            source_db = labeled_source_db or fps_db_path
+            test_ids = []
+            for row in ase.db.connect(test_labeled_db).select():
+                data = dict(row.data) if row.data else {}
+                if "source_row_id" in data:
+                    test_ids.append(int(data["source_row_id"]))
+            if test_ids:
+                _build_train_pool_db(source_db, set(test_ids), train_pool_db)
+            else:
+                print("[fine_tune] Warning: existing test set has no source_row_id metadata; train pool will include all structures.")
+                _build_train_pool_db(source_db, set(), train_pool_db)
+
+        return {"extxyz": test_extxyz, "train_pool_db": train_pool_db}
 
     if labeled_source_db:
-        print(f"[fine_tune] Preparing fixed test set using first {test_size} entries from external labeled DB: {labeled_source_db}.")
-        total_available = ase.db.connect(labeled_source_db).count()
+        print(f"[fine_tune] Preparing fixed test set using {test_size} random entries from external labeled DB: {labeled_source_db}.")
+        source_conn = ase.db.connect(labeled_source_db)
+        total_available = source_conn.count()
         if total_available < test_size:
             raise ValueError(
                 f"Requested test_set_size={test_size} but external labeled DB has only {total_available} entries."
             )
-        written = _copy_labeled_subset_db(
-            labeled_source_db,
-            test_labeled_db,
-            start_index=0,
-            limit=test_size,
-            subset_label="test",
-        )
+        ids = [row.id for row in source_conn.select()]
+        chosen_ids = set(random.sample(ids, test_size))
+
+        if os.path.exists(test_subset_db):
+            os.remove(test_subset_db)
+        test_db = ase.db.connect(test_subset_db)
+        for row in source_conn.select():
+            if row.id not in chosen_ids:
+                continue
+            atoms = row.toatoms()
+            data = dict(row.data) if row.data else {}
+            data["subset"] = "test"
+            data["source_row_id"] = row.id
+            test_db.write(atoms, data=data)
+
+        written = test_db.count()
         _write_extxyz_from_db(test_labeled_db, test_extxyz)
         if os.path.abspath(labeled_source_db) != os.path.abspath(global_labeled_db):
             _append_labeled_round(test_labeled_db, global_labeled_db)
+        _build_train_pool_db(labeled_source_db, chosen_ids, train_pool_db)
     else:
-        print(f"[fine_tune] Preparing fixed test set with first {test_size} FPS structures.")
-        written, total = _extract_fps_batch(
-            fps_db_path,
-            start_index=0,
-            batch_size=test_size,
-            out_db_path=test_subset_db,
-            round_index=None,
-            extra_metadata={"subset": "test"},
-        )
-        if written < test_size:
+        print(f"[fine_tune] Preparing fixed test set with {test_size} random FPS structures (preserving pool).")
+        fps_conn = ase.db.connect(fps_db_path)
+        total = fps_conn.count()
+        if total < test_size:
             raise ValueError(
                 f"Requested test_set_size={test_size} but FPS database has only {total} entries."
             )
+
+        ids = [row.id for row in fps_conn.select()]
+        chosen_ids = set(random.sample(ids, test_size))
+
+        if os.path.exists(test_subset_db):
+            os.remove(test_subset_db)
+        test_db = ase.db.connect(test_subset_db)
+
+        for row in fps_conn.select():
+            if row.id not in chosen_ids:
+                continue
+            atoms = row.toatoms()
+            data = dict(row.data) if row.data else {}
+            data["subset"] = "test"
+            data["source_row_id"] = row.id
+            test_db.write(atoms, data=data)
 
         compute_labels_on_db(parameters, test_subset_db, db_out_path=test_labeled_db)
         _write_extxyz_from_db(test_labeled_db, test_extxyz)
@@ -425,7 +480,9 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
         if os.path.exists(test_subset_db):
             os.remove(test_subset_db)
 
-    return {"extxyz": test_extxyz, "reserved_count": written}
+        _build_train_pool_db(fps_db_path, chosen_ids, train_pool_db)
+
+    return {"extxyz": test_extxyz, "train_pool_db": train_pool_db}
 
 
 def run_finetune_loop(parameters, fps_db_path):
@@ -443,7 +500,7 @@ def run_finetune_loop(parameters, fps_db_path):
     loop_use_external = bool(ft.get("loop_use_external_labeled_db", False))
     external_labeled_db = None
     fixed_test_info = None
-    reserved_count = 0
+    pool_db_path = fps_db_path
 
     if loop_use_external:
         if test_size <= 0:
@@ -464,24 +521,18 @@ def run_finetune_loop(parameters, fps_db_path):
             global_labeled_db,
             labeled_source_db=external_labeled_db,
         )
-        reserved_count = fixed_test_info["reserved_count"]
+        pool_db_path = fixed_test_info.get("train_pool_db", external_labeled_db)
     else:
         if test_size > 0:
             fixed_test_info = _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labeled_db)
-            reserved_count = fixed_test_info["reserved_count"]
+            pool_db_path = fixed_test_info.get("train_pool_db", fps_db_path)
         elif ft.get("fixed_test_extxyz"):
-            fixed_test_info = {"extxyz": ft["fixed_test_extxyz"], "reserved_count": 0}
+            fixed_test_info = {"extxyz": ft["fixed_test_extxyz"]}
 
     fixed_test_extxyz = fixed_test_info["extxyz"] if fixed_test_info else None
 
-    state = _load_loop_state(state_path, foundation_model, initial_index=reserved_count)
-    state_reserved = state.get("reserved_fps", reserved_count)
-    if state_reserved < reserved_count:
-        state_reserved = reserved_count
-    state["reserved_fps"] = state_reserved
-    reserved = state_reserved
-
-    next_index = max(state.get("next_fps_index", reserved), reserved)
+    state = _load_loop_state(state_path, foundation_model, initial_index=0)
+    next_index = state.get("next_fps_index", 0)
     round_index = state.get("round_index", 1)
 
     if loop_use_external:
@@ -489,15 +540,11 @@ def run_finetune_loop(parameters, fps_db_path):
         total_pool = pool_conn.count()
         if total_pool == 0:
             raise ValueError(f"External labeled DB is empty: {external_labeled_db}")
-        if total_pool <= reserved_count:
-            raise ValueError("No external labeled structures left for training after reserving the fixed test set")
     else:
-        fps_db = ase.db.connect(fps_db_path)
+        fps_db = ase.db.connect(pool_db_path)
         total_pool = fps_db.count()
         if total_pool == 0:
-            raise ValueError(f"FPS database is empty: {fps_db_path}")
-        if total_pool <= reserved_count:
-            raise ValueError("No FPS structures left for training after reserving the fixed test set")
+            raise ValueError(f"FPS database is empty: {pool_db_path}")
 
     while next_index < total_pool:
         round_dir = os.path.join(os.getcwd(), f"fine_tune_round_{round_index:03d}")
@@ -523,7 +570,7 @@ def run_finetune_loop(parameters, fps_db_path):
             }
         elif loop_use_external:
             batch_written = _copy_labeled_subset_db(
-                external_labeled_db,
+                pool_db_path,
                 round_labeled_db,
                 start_index=next_index,
                 limit=batch_size,
@@ -540,7 +587,7 @@ def run_finetune_loop(parameters, fps_db_path):
         else:
             batch_db_path = os.path.join(round_dir, f"fps_batch_round_{round_index:03d}.db")
             batch_written, _ = _extract_fps_batch(
-                fps_db_path,
+                pool_db_path,
                 next_index,
                 batch_size,
                 batch_db_path,
@@ -599,14 +646,14 @@ def run_finetune_loop(parameters, fps_db_path):
             "next_fps_index": next_index + batch_written,
             "round_index": round_index + 1,
             "status": "running",
-            "reserved_fps": reserved,
+            "reserved_fps": 0,
         })
         _save_loop_state(state_path, state)
 
         if energy_rmse <= energy_target and force_rmse <= force_target:
             print(f"[fine_tune] RMSE targets reached in round {round_index}.")
             state["status"] = "converged"
-            state["reserved_fps"] = reserved
+            state["reserved_fps"] = 0
             _save_loop_state(state_path, state)
             return
 
@@ -616,7 +663,7 @@ def run_finetune_loop(parameters, fps_db_path):
     pool_name = "external labeled" if loop_use_external else "FPS"
     print(f"[fine_tune] Loop stopped because the {pool_name} pool was exhausted before convergence.")
     state["status"] = "exhausted"
-    state["reserved_fps"] = reserved
+    state["reserved_fps"] = 0
     _save_loop_state(state_path, state)
 
 
