@@ -186,6 +186,16 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         if isinstance(v, bool):
             merged[k] = None if v else "False"
             continue
+        if isinstance(v, dict):
+            parts = []
+            for key, val in v.items():
+                try:
+                    key_out = int(key)
+                except (TypeError, ValueError):
+                    key_out = key
+                parts.append(f"{key_out}: {val}")
+            merged[k] = "{" + ", ".join(parts) + "}"
+            continue
         if isinstance(v, (list, tuple)):
             merged[k] = ",".join(str(x) for x in v)
             continue
