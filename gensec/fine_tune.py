@@ -153,7 +153,6 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("energy_weight", 1.0),
         ("forces_weight", 100.0),
         ("multiheads_finetuning", False),
-        ("E0s", "average"),
         ("scaling", "rms_forces_scaling"),
         ("swa", None),
         ("start_swa", 60),
@@ -163,7 +162,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("valid_batch_size", 6),
         ("max_num_epochs", 100),
         ("ema", None),
-        ("ema_decay", 0.9999),
+        ("ema_decay", 0.999),
         ("lr", 0.001),
         ("amsgrad", None),
         ("default_dtype", "float64"),
@@ -208,29 +207,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         "log_dir": os.path.join(workdir or os.getcwd(), "logs"),
         "command": cmd,
     }
-    # Locate model: try stagetwo first (with SWA), then regular model
-    model = _locate_model(result["workdir"], name)
-    if model:
-        result["model"] = model
     return result
-
-
-def _locate_model(workdir, name):
-    """Locate model: {name}_stagetwo.model or {name}.model (no compiled)."""
-    if not os.path.isdir(workdir):
-        return None
-    
-    # Try stagetwo first (with SWA)
-    stagetwo_path = os.path.join(workdir, f"{name}_stagetwo.model")
-    if os.path.exists(stagetwo_path) and not stagetwo_path.endswith("_compiled.model"):
-        return stagetwo_path
-    
-    # Fall back to regular model (no SWA) - explicitly NOT the compiled version
-    regular_path = os.path.join(workdir, f"{name}.model")
-    if os.path.exists(regular_path) and not regular_path.endswith("_compiled.model"):
-        return regular_path
-    
-    return None
 
 
 def _parse_mace_test_rmse(log_dir):
@@ -244,7 +221,7 @@ def _parse_mace_test_rmse(log_dir):
 
     latest_log = log_files[-1]
     energy_rmse = force_rmse = None
-    with open(latest_log, "r", encoding="utf-8", errors="ignore") as handle:
+    with open(latest_log, "r") as handle:
         for line in handle:
             if "Default_Default" not in line:
                 continue
@@ -252,7 +229,7 @@ def _parse_mace_test_rmse(log_dir):
             if len(parts) >= 3:
                 energy_rmse = float(parts[1])
                 force_rmse = float(parts[2])
-                break
+                # Keep the last TEST row so we capture stage-two metrics if present.
 
     if energy_rmse is None or force_rmse is None:
         raise ValueError("Could not parse TEST RMSE from MACE log")
@@ -275,7 +252,6 @@ def _load_loop_state(state_path, foundation_model, initial_index=0):
     return {
         "next_fps_index": initial_index,
         "round_index": 1,
-        "last_model_path": foundation_model,
         "history": [],
         "status": "initialized",
         "reserved_fps": initial_index,
@@ -497,7 +473,6 @@ def run_finetune_loop(parameters, fps_db_path):
 
     next_index = max(state.get("next_fps_index", reserved), reserved)
     round_index = state.get("round_index", 1)
-    current_model = state.get("last_model_path", foundation_model)
 
     if loop_use_external:
         pool_conn = ase.db.connect(external_labeled_db)
@@ -594,14 +569,13 @@ def run_finetune_loop(parameters, fps_db_path):
             val_xyz,
             test_xyz,
             workdir=round_dir,
-            foundation_override=current_model,
+            foundation_override=foundation_model,
             run_name=run_name,
         )
 
         energy_rmse, force_rmse = _parse_mace_test_rmse(result["log_dir"])
         print(f"[fine_tune] Round {round_index} TEST RMSE: energy={energy_rmse:.3f} meV/atom, force={force_rmse:.3f} meV/Å")
 
-        stage_model = result.get("model", current_model)
         history_entry = {
             "round": round_index,
             "fps_start_index": next_index,
@@ -609,11 +583,9 @@ def run_finetune_loop(parameters, fps_db_path):
             "energy_rmse_mev_per_atom": energy_rmse,
             "force_rmse_mev_per_a": force_rmse,
             "round_dir": round_dir,
-            "model_path": stage_model,
         }
         state.setdefault("history", []).append(history_entry)
         state.update({
-            "last_model_path": stage_model,
             "next_fps_index": next_index + batch_written,
             "round_index": round_index + 1,
             "status": "running",
@@ -630,7 +602,6 @@ def run_finetune_loop(parameters, fps_db_path):
 
         next_index += batch_written
         round_index += 1
-        current_model = stage_model
 
     pool_name = "external labeled" if loop_use_external else "FPS"
     print(f"[fine_tune] Loop stopped because the {pool_name} pool was exhausted before convergence.")
