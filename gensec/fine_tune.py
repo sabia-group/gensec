@@ -138,6 +138,12 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
 
     name = run_name or ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
     user_args = ft.get("mace_args", {}) or {}
+    use_multihead = bool(ft.get("multiheads_finetuning", False))
+    if use_multihead and "E0s" not in user_args:
+        raise ValueError(
+            "fine_tuning.mace_args.E0s is mandatory when multiheads_finetuning=True. "
+            "Provide E0s explicitly (for example a dict of atomic-number keys to atomic energies)."
+        )
 
     mace_exe = shutil.which("mace_run_train")
     if not mace_exe:
@@ -153,7 +159,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("forces_key", "forces"),
         ("energy_weight", 1.0),
         ("forces_weight", 100.0),
-        ("multiheads_finetuning", False),
+        ("multiheads_finetuning", use_multihead),
         ("scaling", "rms_forces_scaling"),
         ("swa", None),
         ("start_swa", 60),
@@ -162,15 +168,35 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("batch_size", 2),
         ("valid_batch_size", 6),
         ("max_num_epochs", 100),
-        ("ema", None),
+        ("ema", None if not use_multihead else True),
         ("ema_decay", 0.999),
-        ("lr", 0.001),
+        ("lr", 0.001 if not use_multihead else 0.0001),
         ("amsgrad", None),
         ("default_dtype", "float64"),
         ("device", "cuda"),
         ("save_cpu", None),
         ("seed", 0),
     ]
+
+    if use_multihead:
+        pt_train_file = ft.get("pt_train_file")
+        if not pt_train_file:
+            raise ValueError("fine_tuning.pt_train_file must be provided when multiheads_finetuning=True")
+        base_args.extend([
+            ("pt_train_file", pt_train_file),
+            ("num_samples_pt", int(ft.get("num_samples_pt", 30000))),
+            ("filter_type_pt", ft.get("filter_type_pt", "combinations")),
+            ("subselect_pt", ft.get("subselect_pt", "fps")),
+            ("weight_pt", float(ft.get("weight_pt", 1.0))),
+            ("weight_ft", float(ft.get("weight_ft", 10.0))),
+        ])
+        if ft.get("atomic_numbers") is not None:
+            base_args.append(("atomic_numbers", ft.get("atomic_numbers")))
+        if ft.get("head_pt") is not None:
+            base_args.append(("head_pt", ft.get("head_pt")))
+        if ft.get("head_ft") is not None:
+            base_args.append(("head_ft", ft.get("head_ft")))
+
     if valid_xyz:
         base_args.append(("valid_file", valid_xyz))
     if test_xyz:
@@ -398,6 +424,8 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
         test_extxyz = os.path.abspath(test_extxyz)
     if not os.path.isabs(test_labeled_db):
         test_labeled_db = os.path.abspath(test_labeled_db)
+    if not os.path.isabs(train_pool_db):
+        train_pool_db = os.path.abspath(train_pool_db)
 
     if os.path.exists(test_extxyz) and os.path.exists(test_labeled_db):
         existing = ase.db.connect(test_labeled_db).count()
@@ -432,9 +460,9 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
         ids = [row.id for row in source_conn.select()]
         chosen_ids = set(random.sample(ids, test_size))
 
-        if os.path.exists(test_subset_db):
-            os.remove(test_subset_db)
-        test_db = ase.db.connect(test_subset_db)
+        if os.path.exists(test_labeled_db):
+            os.remove(test_labeled_db)
+        test_db = ase.db.connect(test_labeled_db)
         for row in source_conn.select():
             if row.id not in chosen_ids:
                 continue
@@ -445,6 +473,8 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
             test_db.write(atoms, data=data)
 
         written = test_db.count()
+        if written != test_size:
+            raise ValueError(f"Expected {test_size} test structures, got {written} from external labeled DB")
         _write_extxyz_from_db(test_labeled_db, test_extxyz)
         if os.path.abspath(labeled_source_db) != os.path.abspath(global_labeled_db):
             _append_labeled_round(test_labeled_db, global_labeled_db)
@@ -681,16 +711,16 @@ def run_full_pipeline(parameters, fps_db_path):
     global_labeled_db = ft.get("global_labeled_db", "db_labeled_global.db")
     test_size = int(ft.get("test_set_size", 0))
     fixed_test_info = None
-    reserved_count = 0
+    source_fps_db = fps_db_path
 
     if test_size > 0:
         fixed_test_info = _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labeled_db)
-        reserved_count = fixed_test_info["reserved_count"]
+        source_fps_db = fixed_test_info.get("train_pool_db", fps_db_path)
     elif ft.get("fixed_test_extxyz"):
         extxyz_path = ft["fixed_test_extxyz"]
         if not os.path.exists(extxyz_path):
             raise FileNotFoundError(f"Configured fixed_test_extxyz not found: {extxyz_path}")
-        fixed_test_info = {"extxyz": extxyz_path, "reserved_count": 0}
+        fixed_test_info = {"extxyz": extxyz_path}
 
     fixed_test_extxyz = fixed_test_info["extxyz"] if fixed_test_info else None
 
@@ -699,23 +729,11 @@ def run_full_pipeline(parameters, fps_db_path):
 
     if do_labeling:
         print("[fine_tune] Starting labeling...")
-        source_fps_db = fps_db_path
-        if reserved_count > 0:
-            fps_conn = ase.db.connect(fps_db_path)
-            total_entries = fps_conn.count()
-            remaining = total_entries - reserved_count
-            if remaining <= 0:
-                raise ValueError("No FPS structures left for training after reserving the fixed test set")
-            train_subset_db = ft.get("train_subset_db", "db_train_subset.db")
-            _extract_fps_batch(
-                fps_db_path,
-                start_index=reserved_count,
-                batch_size=remaining,
-                out_db_path=train_subset_db,
-                round_index=None,
-                extra_metadata={"subset": "train"},
-            )
-            source_fps_db = train_subset_db
+        if not os.path.exists(source_fps_db):
+            raise FileNotFoundError(f"Training source DB not found: {source_fps_db}")
+        train_total = ase.db.connect(source_fps_db).count()
+        if train_total <= 0:
+            raise ValueError("No structures available for training after test-set selection")
 
         db_labeled = compute_labels_on_db(
             parameters,
@@ -728,8 +746,6 @@ def run_full_pipeline(parameters, fps_db_path):
         db_labeled = ft.get("out_db_labeled", "db_labeled.db")
         if not os.path.exists(db_labeled):
             raise ValueError(f"Labeling disabled but labeled DB not found: {db_labeled}")
-        if reserved_count > 0:
-            print("[fine_tune] Warning: fixed test set reserved but labeling was skipped; ensure the labeled DB excludes those structures.")
 
     print("[fine_tune] Preparing MACE extxyz dataset...")
     datasets = prepare_mace_extxyz(parameters, db_labeled, out_prefix=ft.get("out_prefix", "mace_dataset"))
