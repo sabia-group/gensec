@@ -138,7 +138,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
 
     name = run_name or ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
     user_args = ft.get("mace_args", {}) or {}
-    use_multihead = bool(ft.get("multiheads_finetuning", False))
+    use_multihead = bool(user_args.get("multiheads_finetuning", False))
     if use_multihead and "E0s" not in user_args:
         raise ValueError(
             "fine_tuning.mace_args.E0s is mandatory when multiheads_finetuning=True. "
@@ -179,23 +179,26 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     ]
 
     if use_multihead:
-        pt_train_file = ft.get("pt_train_file")
+        pt_train_file = user_args.get("pt_train_file")
         if not pt_train_file:
-            raise ValueError("fine_tuning.pt_train_file must be provided when multiheads_finetuning=True")
+            raise ValueError("fine_tuning.mace_args.pt_train_file must be provided when multiheads_finetuning=True (can be a file path or 'mp')")
         base_args.extend([
             ("pt_train_file", pt_train_file),
-            ("num_samples_pt", int(ft.get("num_samples_pt", 30000))),
-            ("filter_type_pt", ft.get("filter_type_pt", "combinations")),
-            ("subselect_pt", ft.get("subselect_pt", "fps")),
-            ("weight_pt", float(ft.get("weight_pt", 1.0))),
-            ("weight_ft", float(ft.get("weight_ft", 10.0))),
+            ("num_samples_pt", int(user_args.get("num_samples_pt", 30000))),
+            ("filter_type_pt", user_args.get("filter_type_pt", "combinations")),
+            ("subselect_pt", user_args.get("subselect_pt", "fps")),
+            ("weight_pt", float(user_args.get("weight_pt", 1.0))),
+            ("weight_ft", float(user_args.get("weight_ft", 10.0))),
         ])
-        if ft.get("atomic_numbers") is not None:
-            base_args.append(("atomic_numbers", ft.get("atomic_numbers")))
-        if ft.get("head_pt") is not None:
-            base_args.append(("head_pt", ft.get("head_pt")))
-        if ft.get("head_ft") is not None:
-            base_args.append(("head_ft", ft.get("head_ft")))
+        atomic_numbers = user_args.get("atomic_numbers")
+        head_pt = user_args.get("head_pt")
+        head_ft = user_args.get("head_ft")
+        if atomic_numbers is not None:
+            base_args.append(("atomic_numbers", atomic_numbers))
+        if head_pt is not None:
+            base_args.append(("head_pt", head_pt))
+        if head_ft is not None:
+            base_args.append(("head_ft", head_ft))
 
     if valid_xyz:
         base_args.append(("valid_file", valid_xyz))
