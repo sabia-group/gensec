@@ -6,6 +6,7 @@ from ase.io import write, read
 import numpy as np
 import subprocess
 import shutil
+import copy
 from gensec.relaxation import load_source
 
 def _k_grid_from_cell(atoms, reference_atoms, k_density):
@@ -139,10 +140,10 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     name = run_name or ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
     user_args = ft.get("mace_args", {}) or {}
     use_multihead = bool(user_args.get("multiheads_finetuning", True))
-    if use_multihead and "E0s" not in user_args:
+    has_heads_cfg = isinstance(user_args.get("heads"), dict) and len(user_args.get("heads", {})) > 0
+    if use_multihead and "E0s" not in user_args and not has_heads_cfg:
         raise ValueError(
-            "fine_tuning.mace_args.E0s is mandatory when multiheads_finetuning=True. "
-            "Provide E0s explicitly (for example a dict of atomic-number keys to atomic energies)."
+            "fine_tuning.mace_args.E0s is mandatory when multiheads_finetuning=True unless you provide a heads dict."
         )
 
     mace_exe = shutil.which("mace_run_train")
@@ -153,7 +154,6 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     # Default args
     base_args = [
         ("name", name),
-        ("train_file", train_xyz),
         ("foundation_model", foundation_model),
         ("energy_key", "energy"),
         ("forces_key", "forces"),
@@ -173,8 +173,10 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("default_dtype", "float64"),
         ("device", "cuda"),
         ("save_cpu", None),
-        ("seed", 0),
     ]
+
+    if not has_heads_cfg:
+        base_args.append(("train_file", train_xyz))
 
     if use_multihead:
         # EMA in MACE is a flag-style argument: use --ema (no explicit value).
@@ -200,9 +202,31 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         if weight_pt_head is not None:
             base_args.append(("weight_pt_head", weight_pt_head))
 
-    if valid_xyz:
+    if has_heads_cfg:
+        heads_cfg = copy.deepcopy(user_args["heads"])
+        ft_head_name = user_args.get("ft_head_name", "default")
+        if ft_head_name not in heads_cfg:
+            raise ValueError(
+                f"fine_tuning.mace_args.heads must contain the fine-tuning head '{ft_head_name}'."
+            )
+
+        ft_head = heads_cfg[ft_head_name]
+        if not isinstance(ft_head, dict):
+            raise ValueError(f"fine_tuning.mace_args.heads['{ft_head_name}'] must be a mapping.")
+
+        ft_head.setdefault("train_file", train_xyz)
+        if valid_xyz:
+            ft_head.setdefault("valid_file", valid_xyz)
+        if test_xyz:
+            ft_head.setdefault("test_file", test_xyz)
+
+        # When using head dictionaries, per-head train/valid/test paths should be used instead
+        # of top-level train_file/valid_file/test_file arguments.
+        base_args.append(("heads", heads_cfg))
+
+    if valid_xyz and not has_heads_cfg:
         base_args.append(("valid_file", valid_xyz))
-    if test_xyz:
+    if test_xyz and not has_heads_cfg:
         base_args.append(("test_file", test_xyz))
 
     # overwrite existing keys, append new ones
@@ -234,14 +258,17 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
                 merged[k] = None if v else "False"
             continue
         if isinstance(v, dict):
-            parts = []
-            for key, val in v.items():
-                try:
-                    key_out = int(key)
-                except (TypeError, ValueError):
-                    key_out = key
-                parts.append(f"{key_out}: {val}")
-            merged[k] = "{" + ", ".join(parts) + "}"
+            if k == "E0s":
+                parts = []
+                for key, val in v.items():
+                    try:
+                        key_out = int(key)
+                    except (TypeError, ValueError):
+                        key_out = key
+                    parts.append(f"{key_out}: {val}")
+                merged[k] = "{" + ", ".join(parts) + "}"
+            else:
+                merged[k] = repr(v)
             continue
         if isinstance(v, (list, tuple)):
             if k == "atomic_numbers":
