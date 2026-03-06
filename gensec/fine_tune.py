@@ -138,7 +138,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
 
     name = run_name or ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
     user_args = ft.get("mace_args", {}) or {}
-    use_multihead = bool(user_args.get("multiheads_finetuning", False))
+    use_multihead = bool(user_args.get("multiheads_finetuning", True))
     if use_multihead and "E0s" not in user_args:
         raise ValueError(
             "fine_tuning.mace_args.E0s is mandatory when multiheads_finetuning=True. "
@@ -162,10 +162,9 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("multiheads_finetuning", use_multihead),
         ("scaling", "rms_forces_scaling"),
         ("swa", None),
-        ("start_swa", 60),
         ("swa_energy_weight", 100.0),
         ("swa_forces_weight", 1.0),
-        ("batch_size", 2),
+        ("batch_size", 4),
         ("valid_batch_size", 6),
         ("max_num_epochs", 100),
         ("ema", None if not use_multihead else True),
@@ -192,13 +191,18 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ])
         atomic_numbers = user_args.get("atomic_numbers")
         head_pt = user_args.get("head_pt")
-        head_ft = user_args.get("head_ft")
+        head_ft = user_args.get("head_ft", "default")
+        if str(head_ft).lower() != "default":
+            raise ValueError(
+                "fine_tuning.mace_args.head_ft must be 'default' when multiheads_finetuning=True "
+                "(required by current TEST RMSE parser expecting Default_Default lines)."
+            )
+        head_ft = "default"
         if atomic_numbers is not None:
             base_args.append(("atomic_numbers", atomic_numbers))
         if head_pt is not None:
             base_args.append(("head_pt", head_pt))
-        if head_ft is not None:
-            base_args.append(("head_ft", head_ft))
+        base_args.append(("head_ft", head_ft))
 
     if valid_xyz:
         base_args.append(("valid_file", valid_xyz))
@@ -208,13 +212,18 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     # overwrite existing keys, append new ones
     merged = {k: v for k, v in base_args}
 
+    bool_value_args = {"multiheads_finetuning"}
+
     for k, v in user_args.items():
         #trying to handle all cases of value
         if v is None:
             merged[k] = None
             continue
         if isinstance(v, bool):
-            merged[k] = None if v else "False"
+            if k in bool_value_args:
+                merged[k] = "True" if v else "False"
+            else:
+                merged[k] = None if v else "False"
             continue
         if isinstance(v, dict):
             parts = []
