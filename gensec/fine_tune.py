@@ -204,6 +204,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
 
     if has_heads_cfg:
         heads_cfg = copy.deepcopy(user_args["heads"])
+        e0s_workdir = workdir or os.getcwd()
         ft_head_name = user_args.get("ft_head_name", "default")
         if ft_head_name not in heads_cfg:
             raise ValueError(
@@ -220,6 +221,11 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
                     f"fine_tuning.mace_args.heads['{head_name}'].weight_pt is not supported. "
                     "Set fine_tuning.mace_args.weight_pt at top level instead."
                 )
+            if isinstance(head_cfg, dict) and isinstance(head_cfg.get("E0s"), dict):
+                e0s_path = os.path.abspath(os.path.join(e0s_workdir, f"e0s_{head_name}.json"))
+                with open(e0s_path, "w", encoding="utf-8") as e0s_handle:
+                    json.dump(head_cfg["E0s"], e0s_handle, indent=2)
+                head_cfg["E0s"] = e0s_path
 
         ft_head.setdefault("train_file", train_xyz)
         if valid_xyz:
