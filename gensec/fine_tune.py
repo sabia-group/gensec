@@ -116,12 +116,12 @@ def prepare_mace_extxyz(parameters, db_in_path, out_prefix="mace_dataset"):
 
         if hasattr(row, 'data') and row.data:
             if "REF_energy" in row.data:
-                atoms.info["energy"] = float(row.data["REF_energy"])
+                atoms.info["REF_energy"] = float(row.data["REF_energy"])
             if "REF_forces" in row.data:
                 # Reshape flattened forces back to (N, 3)
                 forces_flat = np.array(row.data["REF_forces"])
                 n_atoms = len(atoms)
-                atoms.arrays["forces"] = forces_flat.reshape(n_atoms, 3) 
+                atoms.arrays["REF_forces"] = forces_flat.reshape(n_atoms, 3)
         
         if i < n_train:
             write(paths["train"], atoms, format="extxyz", append=True)
@@ -155,8 +155,8 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     base_args = [
         ("name", name),
         ("foundation_model", foundation_model),
-        ("energy_key", "energy"),
-        ("forces_key", "forces"),
+        ("energy_key", "REF_energy"),
+        ("forces_key", "REF_forces"),
         ("energy_weight", 1.0),
         ("forces_weight", 100.0),
         ("multiheads_finetuning", use_multihead),
@@ -313,7 +313,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     return result
 
 
-def _parse_mace_test_rmse(log_dir):
+def _parse_mace_test_rmse(log_dir, ft_head_name="default"):
     """Grab TEST RMSE numbers from the newest log file in log_dir."""
     log_files = sorted(
         (os.path.join(log_dir, name) for name in os.listdir(log_dir)),
@@ -324,12 +324,17 @@ def _parse_mace_test_rmse(log_dir):
 
     latest_log = log_files[-1]
     energy_rmse = force_rmse = None
+    expected_config = f"default_{ft_head_name}".lower()
     with open(latest_log, "r") as handle:
         for line in handle:
-            if "Default_Default" not in line:
+            line_lower = line.lower()
+            if "default_" not in line_lower:
                 continue
             parts = [segment.strip() for segment in line.split("|") if segment.strip()]
             if len(parts) >= 3:
+                config_type = parts[0].lower()
+                if config_type != expected_config and config_type != "default_default":
+                    continue
                 energy_rmse = float(parts[1])
                 force_rmse = float(parts[2])
                 # Keep the last TEST row so we capture stage-two metrics if present.
@@ -469,10 +474,10 @@ def _write_extxyz_from_db(db_path, out_path):
         atoms.calc = None
         if hasattr(row, "data") and row.data:
             if "REF_energy" in row.data:
-                atoms.info["energy"] = float(row.data["REF_energy"])
+                atoms.info["REF_energy"] = float(row.data["REF_energy"])
             if "REF_forces" in row.data:
                 forces_flat = np.array(row.data["REF_forces"])
-                atoms.arrays["forces"] = forces_flat.reshape(len(atoms), 3)
+                atoms.arrays["REF_forces"] = forces_flat.reshape(len(atoms), 3)
         write(out_path, atoms, format="extxyz", append=True)
 
 
@@ -726,7 +731,8 @@ def run_finetune_loop(parameters, fps_db_path):
             run_name=run_name,
         )
 
-        energy_rmse, force_rmse = _parse_mace_test_rmse(result["log_dir"])
+        ft_head_name = ft.get("mace_args", {}).get("ft_head_name", "default")
+        energy_rmse, force_rmse = _parse_mace_test_rmse(result["log_dir"], ft_head_name=ft_head_name)
         print(f"[fine_tune] Round {round_index} TEST RMSE: energy={energy_rmse:.3f} meV/atom, force={force_rmse:.3f} meV/Å")
 
         history_entry = {
