@@ -167,7 +167,6 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("batch_size", 4),
         ("valid_batch_size", 6),
         ("max_num_epochs", 100),
-        ("ema", None if not use_multihead else True),
         ("ema_decay", 0.999),
         ("lr", 0.001 if not use_multihead else 0.0001),
         ("amsgrad", None),
@@ -176,6 +175,10 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("save_cpu", None),
         ("seed", 0),
     ]
+
+    if use_multihead:
+        # EMA in MACE is a flag-style argument: use --ema (no explicit value).
+        base_args.append(("ema", None))
 
     if use_multihead:
         pt_train_file = user_args.get("pt_train_file")
@@ -220,6 +223,18 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
             merged[k] = None
             continue
         if isinstance(v, bool):
+            if k == "swa":
+                if v:
+                    merged[k] = None
+                else:
+                    merged.pop(k, None)
+                continue
+            if k == "ema":
+                if v:
+                    merged[k] = None
+                else:
+                    merged.pop(k, None)
+                continue
             if k in bool_value_args:
                 merged[k] = "True" if v else "False"
             else:
