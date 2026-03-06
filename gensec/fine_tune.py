@@ -190,22 +190,16 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
             ("filter_type_pt", user_args.get("filter_type_pt", "combinations")),
             ("subselect_pt", user_args.get("subselect_pt", "fps")),
             ("weight_pt", float(user_args.get("weight_pt", 1.0))),
-            ("weight_ft", float(user_args.get("weight_ft", 10.0))),
         ])
         atomic_numbers = user_args.get("atomic_numbers")
-        head_pt = user_args.get("head_pt")
-        head_ft = user_args.get("head_ft", "default")
-        if str(head_ft).lower() != "default":
-            raise ValueError(
-                "fine_tuning.mace_args.head_ft must be 'default' when multiheads_finetuning=True "
-                "(required by current TEST RMSE parser expecting Default_Default lines)."
-            )
-        head_ft = "default"
+        foundation_head = user_args.get("foundation_head")
+        weight_pt_head = user_args.get("weight_pt_head")
         if atomic_numbers is not None:
             base_args.append(("atomic_numbers", atomic_numbers))
-        if head_pt is not None:
-            base_args.append(("head_pt", head_pt))
-        base_args.append(("head_ft", head_ft))
+        if foundation_head is not None:
+            base_args.append(("foundation_head", foundation_head))
+        if weight_pt_head is not None:
+            base_args.append(("weight_pt_head", weight_pt_head))
 
     if valid_xyz:
         base_args.append(("valid_file", valid_xyz))
