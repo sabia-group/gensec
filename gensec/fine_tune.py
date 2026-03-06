@@ -189,7 +189,6 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
             ("num_samples_pt", int(user_args.get("num_samples_pt", 30000))),
             ("filter_type_pt", user_args.get("filter_type_pt", "combinations")),
             ("subselect_pt", user_args.get("subselect_pt", "fps")),
-            ("weight_pt", float(user_args.get("weight_pt", 1.0))),
         ])
         atomic_numbers = user_args.get("atomic_numbers")
         foundation_head = user_args.get("foundation_head")
@@ -245,7 +244,10 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
             merged[k] = "{" + ", ".join(parts) + "}"
             continue
         if isinstance(v, (list, tuple)):
-            merged[k] = ",".join(str(x) for x in v)
+            if k == "atomic_numbers":
+                merged[k] = "[" + ",".join(str(int(x)) for x in v) + "]"
+            else:
+                merged[k] = ",".join(str(x) for x in v)
             continue
         merged[k] = v
  
