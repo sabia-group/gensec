@@ -214,6 +214,13 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         if not isinstance(ft_head, dict):
             raise ValueError(f"fine_tuning.mace_args.heads['{ft_head_name}'] must be a mapping.")
 
+        for head_name, head_cfg in heads_cfg.items():
+            if isinstance(head_cfg, dict) and "weight_pt" in head_cfg:
+                raise ValueError(
+                    f"fine_tuning.mace_args.heads['{head_name}'].weight_pt is not supported. "
+                    "Set fine_tuning.mace_args.weight_pt at top level instead."
+                )
+
         ft_head.setdefault("train_file", train_xyz)
         if valid_xyz:
             ft_head.setdefault("valid_file", valid_xyz)
@@ -236,6 +243,9 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
 
     for k, v in user_args.items():
         #trying to handle all cases of value
+        if k == "heads" and has_heads_cfg:
+            # Keep the enriched heads from base_args (it includes injected train/valid/test paths).
+            continue
         if v is None:
             merged[k] = None
             continue
