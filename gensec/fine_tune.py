@@ -498,9 +498,13 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
     if not os.path.isabs(train_pool_db):
         train_pool_db = os.path.abspath(train_pool_db)
 
-    if os.path.exists(test_extxyz) and os.path.exists(test_labeled_db):
+    if os.path.exists(test_labeled_db):
         existing = ase.db.connect(test_labeled_db).count()
-        print(f"[fine_tune] Warining: Using existing fixed test set: {test_labeled_db} ({existing} structures). Test set creation skipped.")
+        if os.path.exists(test_extxyz):
+            print(f"[fine_tune] Warining: Using existing fixed test set: {test_labeled_db} ({existing} structures). Test set creation skipped.")
+        else:
+            print(f"[fine_tune] Rebuilding missing test extxyz from existing labeled test DB: {test_labeled_db} ({existing} structures).")
+            _write_extxyz_from_db(test_labeled_db, test_extxyz)
         if not os.path.exists(global_labeled_db):
             _append_labeled_round(test_labeled_db, global_labeled_db)
             print(f"[fine_tune] Initialized global_labeled_db from existing test set.")
@@ -654,21 +658,28 @@ def run_finetune_loop(parameters, fps_db_path):
         cumulative_db = os.path.join(round_dir, f"db_labeled_cumulative_{round_index:03d}.db")
         dataset_prefix = os.path.join(round_dir, "mace_dataset")
         dataset_train_path = f"{dataset_prefix}_train.extxyz"
+        dataset_val_path = f"{dataset_prefix}_val.extxyz"
         
-        # Check if this round was already prepared (e.g., previous run crashed during training)
-        round_already_prepared = (
+        # Check if this round already has labeled cumulative data.
+        # If extxyz files are missing, regenerate them from cumulative DB to avoid relabeling.
+        round_has_cumulative = (
             os.path.exists(cumulative_db) and
-            ase.db.connect(cumulative_db).count() > 0 and
-            os.path.exists(dataset_train_path)
+            ase.db.connect(cumulative_db).count() > 0
         )
         
-        if round_already_prepared:
-            print(f"[fine_tune] Round {round_index}: detected existing labeled DB and datasets, skipping labeling/prep.")
+        if round_has_cumulative:
+            if os.path.exists(dataset_train_path) and os.path.exists(dataset_val_path):
+                print(f"[fine_tune] Round {round_index}: detected existing labeled DB and datasets, skipping labeling/prep.")
+                datasets = {
+                    "train": dataset_train_path,
+                    "val": dataset_val_path,
+                }
+            else:
+                print(f"[fine_tune] Round {round_index}: rebuilding missing train/val extxyz from cumulative labeled DB.")
+                datasets = prepare_mace_extxyz(parameters, cumulative_db, out_prefix=dataset_prefix)
             batch_written = ase.db.connect(round_labeled_db).count() if os.path.exists(round_labeled_db) else 0
-            datasets = {
-                "train": dataset_train_path,
-                "val": f"{dataset_prefix}_val.extxyz" if os.path.exists(f"{dataset_prefix}_val.extxyz") else None,
-            }
+            if batch_written == 0:
+                print(f"[fine_tune] Warning: {round_labeled_db} missing or empty; next_fps_index may not advance for this resumed round.")
         elif loop_use_external:
             batch_written = _copy_labeled_subset_db(
                 pool_db_path,
