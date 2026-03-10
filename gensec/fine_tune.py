@@ -6,7 +6,6 @@ from ase.io import write, read
 import numpy as np
 import subprocess
 import shutil
-import copy
 from gensec.relaxation import load_source
 
 def _k_grid_from_cell(atoms, reference_atoms, k_density):
@@ -139,12 +138,6 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
 
     name = run_name or ft.get("mace_output_name", parameters.get("name", "mace_finetune"))
     user_args = ft.get("mace_args", {}) or {}
-    use_multihead = bool(user_args.get("multiheads_finetuning", True))
-    has_heads_cfg = isinstance(user_args.get("heads"), dict) and len(user_args.get("heads", {})) > 0
-    if use_multihead and "E0s" not in user_args and not has_heads_cfg:
-        raise ValueError(
-            "fine_tuning.mace_args.E0s is mandatory when multiheads_finetuning=True unless you provide a heads dict."
-        )
 
     mace_exe = shutil.which("mace_run_train")
     if not mace_exe:
@@ -159,7 +152,6 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("forces_key", "REF_forces"),
         ("energy_weight", 1.0),
         ("forces_weight", 100.0),
-        ("multiheads_finetuning", use_multihead),
         ("scaling", "rms_forces_scaling"),
         ("swa", None),
         ("swa_energy_weight", 100.0),
@@ -168,90 +160,24 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("valid_batch_size", 6),
         ("max_num_epochs", 100),
         ("ema_decay", 0.999),
-        ("lr", 0.001 if not use_multihead else 0.0001),
+        ("lr", 0.001),
         ("amsgrad", None),
         ("default_dtype", "float64"),
         ("device", "cuda"),
         ("save_cpu", None),
+        ("train_file", train_xyz),
     ]
 
-    if not has_heads_cfg:
-        base_args.append(("train_file", train_xyz))
-
-    if use_multihead:
-        # EMA in MACE is a flag-style argument: use --ema (no explicit value).
-        base_args.append(("ema", None))
-
-    if use_multihead:
-        pt_train_file = user_args.get("pt_train_file")
-        if not pt_train_file:
-            raise ValueError("fine_tuning.mace_args.pt_train_file must be provided when multiheads_finetuning=True (can be a file path or 'mp')")
-        base_args.extend([
-            ("pt_train_file", pt_train_file),
-            ("num_samples_pt", int(user_args.get("num_samples_pt", 30000))),
-            ("filter_type_pt", user_args.get("filter_type_pt", "combinations")),
-            ("subselect_pt", user_args.get("subselect_pt", "fps")),
-        ])
-        atomic_numbers = user_args.get("atomic_numbers")
-        foundation_head = user_args.get("foundation_head")
-        weight_pt_head = user_args.get("weight_pt_head")
-        if atomic_numbers is not None:
-            base_args.append(("atomic_numbers", atomic_numbers))
-        if foundation_head is not None:
-            base_args.append(("foundation_head", foundation_head))
-        if weight_pt_head is not None:
-            base_args.append(("weight_pt_head", weight_pt_head))
-
-    if has_heads_cfg:
-        heads_cfg = copy.deepcopy(user_args["heads"])
-        e0s_workdir = workdir or os.getcwd()
-        ft_head_name = user_args.get("ft_head_name", "default")
-        if ft_head_name not in heads_cfg:
-            raise ValueError(
-                f"fine_tuning.mace_args.heads must contain the fine-tuning head '{ft_head_name}'."
-            )
-
-        ft_head = heads_cfg[ft_head_name]
-        if not isinstance(ft_head, dict):
-            raise ValueError(f"fine_tuning.mace_args.heads['{ft_head_name}'] must be a mapping.")
-
-        for head_name, head_cfg in heads_cfg.items():
-            if isinstance(head_cfg, dict) and "weight_pt" in head_cfg:
-                raise ValueError(
-                    f"fine_tuning.mace_args.heads['{head_name}'].weight_pt is not supported. "
-                    "Set fine_tuning.mace_args.weight_pt at top level instead."
-                )
-            if isinstance(head_cfg, dict) and isinstance(head_cfg.get("E0s"), dict):
-                e0s_path = os.path.abspath(os.path.join(e0s_workdir, f"e0s_{head_name}.json"))
-                with open(e0s_path, "w", encoding="utf-8") as e0s_handle:
-                    json.dump(head_cfg["E0s"], e0s_handle, indent=2)
-                head_cfg["E0s"] = e0s_path
-
-        ft_head.setdefault("train_file", train_xyz)
-        if valid_xyz:
-            ft_head.setdefault("valid_file", valid_xyz)
-        if test_xyz:
-            ft_head.setdefault("test_file", test_xyz)
-
-        # When using head dictionaries, per-head train/valid/test paths should be used instead
-        # of top-level train_file/valid_file/test_file arguments.
-        base_args.append(("heads", heads_cfg))
-
-    if valid_xyz and not has_heads_cfg:
+    if valid_xyz:
         base_args.append(("valid_file", valid_xyz))
-    if test_xyz and not has_heads_cfg:
+    if test_xyz:
         base_args.append(("test_file", test_xyz))
 
     # overwrite existing keys, append new ones
     merged = {k: v for k, v in base_args}
 
-    bool_value_args = {"multiheads_finetuning"}
-
     for k, v in user_args.items():
-        #trying to handle all cases of value
-        if k == "heads" and has_heads_cfg:
-            # Keep the enriched heads from base_args (it includes injected train/valid/test paths).
-            continue
+        # trying to handle all cases of value
         if v is None:
             merged[k] = None
             continue
@@ -268,10 +194,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
                 else:
                     merged.pop(k, None)
                 continue
-            if k in bool_value_args:
-                merged[k] = "True" if v else "False"
-            else:
-                merged[k] = None if v else "False"
+            merged[k] = None if v else "False"
             continue
         if isinstance(v, dict):
             if k == "E0s":
@@ -313,7 +236,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     return result
 
 
-def _parse_mace_test_rmse(log_dir, ft_head_name="default"):
+def _parse_mace_test_rmse(log_dir):
     """Grab TEST RMSE numbers from the newest log file in log_dir."""
     log_files = sorted(
         (os.path.join(log_dir, name) for name in os.listdir(log_dir)),
@@ -324,7 +247,7 @@ def _parse_mace_test_rmse(log_dir, ft_head_name="default"):
 
     latest_log = log_files[-1]
     energy_rmse = force_rmse = None
-    expected_config = f"default_{ft_head_name}".lower()
+    expected_config = "default_default"
     with open(latest_log, "r") as handle:
         for line in handle:
             line_lower = line.lower()
@@ -333,7 +256,7 @@ def _parse_mace_test_rmse(log_dir, ft_head_name="default"):
             parts = [segment.strip() for segment in line.split("|") if segment.strip()]
             if len(parts) >= 3:
                 config_type = parts[0].lower()
-                if config_type != expected_config and config_type != "default_default":
+                if config_type != expected_config:
                     continue
                 energy_rmse = float(parts[1])
                 force_rmse = float(parts[2])
@@ -362,6 +285,14 @@ def _load_loop_state(state_path, foundation_model, initial_index=0):
         "history": [],
         "status": "initialized",
     }
+
+
+def _round_batch_size(round_index):
+    """Hard-coded naive loop schedule for newly labeled structures per round."""
+    schedule = [60, 40, 30, 25, 20, 15]
+    if round_index <= len(schedule):
+        return schedule[round_index - 1]
+    return 10
 
 
 def _save_loop_state(state_path, state):
@@ -592,9 +523,6 @@ def run_finetune_loop(parameters, fps_db_path):
     ft = parameters["fine_tuning"]
     energy_target = float(ft["rmse_energy_target"])
     force_target = float(ft["rmse_force_target"])
-    batch_size = int(ft.get("fps_batch_size", 10))
-    if batch_size <= 0:
-        raise ValueError("fine_tuning.fps_batch_size must be positive")
 
     state_path = ft.get("state_file", "fine_tune_state.json")
     global_labeled_db = ft.get("global_labeled_db", "db_labeled_global.db")
@@ -650,6 +578,7 @@ def run_finetune_loop(parameters, fps_db_path):
             raise ValueError(f"FPS database is empty: {pool_db_path}")
 
     while next_index < total_pool:
+        batch_size = _round_batch_size(round_index)
         round_dir = os.path.join(os.getcwd(), f"fine_tune_round_{round_index:03d}")
         os.makedirs(round_dir, exist_ok=True)
         round_labeled_db = os.path.join(round_dir, f"db_labeled_round_{round_index:03d}.db")
@@ -740,8 +669,7 @@ def run_finetune_loop(parameters, fps_db_path):
             run_name=run_name,
         )
 
-        ft_head_name = ft.get("mace_args", {}).get("ft_head_name", "default")
-        energy_rmse, force_rmse = _parse_mace_test_rmse(result["log_dir"], ft_head_name=ft_head_name)
+        energy_rmse, force_rmse = _parse_mace_test_rmse(result["log_dir"])
         print(f"[fine_tune] Round {round_index} TEST RMSE: energy={energy_rmse:.3f} meV/atom, force={force_rmse:.3f} meV/Å")
 
         history_entry = {
