@@ -349,7 +349,6 @@ def _load_loop_state(state_path, foundation_model, initial_index=0):
         with open(state_path, "r", encoding="utf-8") as handle:
             state = json.load(handle)
         state.setdefault("history", [])
-        state.setdefault("reserved_fps", initial_index)
         if state.get("next_fps_index", initial_index) < initial_index:
             state["next_fps_index"] = initial_index
         return state
@@ -362,7 +361,6 @@ def _load_loop_state(state_path, foundation_model, initial_index=0):
         "round_index": 1,
         "history": [],
         "status": "initialized",
-        "reserved_fps": initial_index,
     }
 
 
@@ -759,14 +757,12 @@ def run_finetune_loop(parameters, fps_db_path):
             "next_fps_index": next_index + batch_written,
             "round_index": round_index + 1,
             "status": "running",
-            "reserved_fps": 0,
         })
         _save_loop_state(state_path, state)
 
         if energy_rmse <= energy_target and force_rmse <= force_target:
             print(f"[fine_tune] RMSE targets reached in round {round_index}.")
             state["status"] = "converged"
-            state["reserved_fps"] = 0
             _save_loop_state(state_path, state)
             return
 
@@ -776,7 +772,6 @@ def run_finetune_loop(parameters, fps_db_path):
     pool_name = "external labeled" if loop_use_external else "FPS"
     print(f"[fine_tune] Loop stopped because the {pool_name} pool was exhausted before convergence.")
     state["status"] = "exhausted"
-    state["reserved_fps"] = 0
     _save_loop_state(state_path, state)
 
 
