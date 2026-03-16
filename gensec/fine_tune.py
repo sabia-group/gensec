@@ -1,12 +1,17 @@
 import os
 import json
 import random
+import math
+import importlib
 import ase.db
 from ase.io import write, read
 import numpy as np
 import subprocess
 import shutil
+from ase.constraints import FixAtoms
+from ase.optimize import FIRE
 from gensec.relaxation import load_source
+from gensec.fps_selection import select_structures_fps
 
 def _k_grid_from_cell(atoms, reference_atoms, k_density):
     """Compute k-grid by comparing cell lengths to reference cell."""
@@ -82,34 +87,23 @@ def compute_labels_on_db(parameters, db_in_path, db_out_path="db_labeled.db"):
 
 
 def prepare_mace_extxyz(parameters, db_in_path, out_prefix="mace_dataset"):
-    """Convert labeled DB into MACE extxyz files (train/val)."""
-    ft = parameters["fine_tuning"]
-    split = ft.get("split_ratio", [0.9, 0.1])
-    if len(split) < 2:
-        raise ValueError("fine_tuning.split_ratio must have at least two entries (train, val)")
-    if len(split) > 2:
-        print("[fine_tune] Warning: split_ratio has more than two entries; only train/val are used in loop mode.")
-    split_ratio = (float(split[0]), float(split[1]))
+    """Convert labeled DB into a single MACE extxyz training file.
 
+    Validation splitting is delegated to MACE via valid_fraction.
+    """
     db = ase.db.connect(db_in_path)
     n_total = db.count()
     if n_total == 0:
         raise ValueError("Input DB is empty: " + db_in_path)
 
-    n_train = int(n_total * split_ratio[0])
-    n_val = int(n_total * split_ratio[1])
-    n_train = min(n_train, n_total)
-    n_val = min(max(n_val, 0), n_total - n_train)
-
     paths = {
         "train": f"{out_prefix}_train.extxyz",
-        "val": f"{out_prefix}_val.extxyz",
     }
     for p in paths.values():
         if os.path.exists(p):
             os.remove(p)
 
-    for i, row in enumerate(db.select()):
+    for row in db.select():
         atoms = row.toatoms()
         atoms.calc = None
 
@@ -121,11 +115,8 @@ def prepare_mace_extxyz(parameters, db_in_path, out_prefix="mace_dataset"):
                 forces_flat = np.array(row.data["REF_forces"])
                 n_atoms = len(atoms)
                 atoms.arrays["REF_forces"] = forces_flat.reshape(n_atoms, 3)
-        
-        if i < n_train:
-            write(paths["train"], atoms, format="extxyz", append=True)
-        else:
-            write(paths["val"], atoms, format="extxyz", append=True)
+
+        write(paths["train"], atoms, format="extxyz", append=True)
     return paths
 
 
@@ -158,7 +149,9 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("swa_forces_weight", 1.0),
         ("batch_size", 4),
         ("valid_batch_size", 6),
+        ("valid_fraction", 0.1),
         ("max_num_epochs", 100),
+        ("ema", None),
         ("ema_decay", 0.999),
         ("lr", 0.001),
         ("amsgrad", None),
@@ -169,6 +162,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     ]
 
     if valid_xyz:
+        base_args = [(k, v) for k, v in base_args if k != "valid_fraction"]
         base_args.append(("valid_file", valid_xyz))
     if test_xyz:
         base_args.append(("test_file", test_xyz))
@@ -300,6 +294,261 @@ def _save_loop_state(state_path, state):
         json.dump(state, handle, indent=2)
 
 
+def _find_newest_model_file(search_dir, preferred_name=None):
+    candidates = []
+    preferred = []
+    for root, _, files in os.walk(search_dir):
+        for fname in files:
+            if not fname.endswith(".model"):
+                continue
+            path = os.path.join(root, fname)
+            if preferred_name and preferred_name in fname:
+                preferred.append(path)
+            else:
+                candidates.append(path)
+
+    source = preferred if preferred else candidates
+    if not source:
+        return None
+    return max(source, key=os.path.getmtime)
+
+
+def _build_phase2_calculator(model_path, ft):
+    try:
+        mace_calculators = importlib.import_module("mace.calculators")
+        MACECalculator = getattr(mace_calculators, "MACECalculator")
+    except Exception as exc:
+        raise RuntimeError("Phase-2 relaxation requires mace Python package with MACECalculator.") from exc
+
+    device = str(ft.get("phase2_device", ft.get("mace_args", {}).get("device", "cuda")))
+    dtype = str(ft.get("phase2_dtype", ft.get("mace_args", {}).get("default_dtype", "float64")))
+    kwargs = {
+        "device": device,
+        "default_dtype": dtype,
+    }
+
+    try:
+        return MACECalculator(model_paths=model_path, **kwargs)
+    except TypeError:
+        return MACECalculator(model_path=model_path, **kwargs)
+
+
+def _relax_db_with_model(parameters, source_db_path, model_path, out_db_path, fmax=0.01, steps=1000):
+    ft = parameters["fine_tuning"]
+    calc = _build_phase2_calculator(model_path, ft)
+    src = ase.db.connect(source_db_path)
+    if os.path.exists(out_db_path):
+        os.remove(out_db_path)
+    out = ase.db.connect(out_db_path)
+
+    fix_atoms = (
+        parameters.get("calculator", {})
+        .get("constraints", {})
+        .get("fix_atoms", [])
+    )
+
+    written = 0
+    skipped = 0
+    for row in src.select():
+        atoms = row.toatoms()
+        if fix_atoms:
+            atoms.set_constraint(FixAtoms(indices=list(fix_atoms)))
+        atoms.calc = calc
+
+        try:
+            opt = FIRE(atoms, logfile=None)
+            opt.run(fmax=float(fmax), steps=int(steps))
+            relaxed_energy = float(atoms.get_potential_energy())
+            max_force = float(np.linalg.norm(atoms.get_forces(), axis=1).max())
+        except Exception as exc:
+            print(f"[fine_tune] Phase-2 relax skipped row {row.id}: {exc}")
+            skipped += 1
+            continue
+
+        data = dict(row.data) if row.data else {}
+        data["phase2_relaxed_energy"] = relaxed_energy
+        data["phase2_relaxed_fmax"] = max_force
+        data["phase2_relaxed_model"] = os.path.abspath(model_path)
+        data["phase2_source_row_id"] = row.id
+        out.write(atoms, data=data)
+        written += 1
+
+    print(f"[fine_tune] Phase-2 relax finished: wrote {written}, skipped {skipped}")
+    return out_db_path
+
+
+def _select_low_energy_db(relaxed_db_path, out_db_path, fraction=1.0 / 3.0, min_count=50):
+    db = ase.db.connect(relaxed_db_path)
+    rows = []
+    for row in db.select():
+        data = dict(row.data) if row.data else {}
+        if "phase2_relaxed_energy" in data:
+            rows.append((float(data["phase2_relaxed_energy"]), row.id))
+
+    if not rows:
+        raise ValueError("No phase2_relaxed_energy entries found in relaxed DB.")
+
+    rows.sort(key=lambda item: item[0])
+    total = len(rows)
+    n_keep = max(int(math.ceil(total * float(fraction))), int(min_count))
+    n_keep = min(n_keep, total)
+    selected_ids = {row_id for _, row_id in rows[:n_keep]}
+
+    if os.path.exists(out_db_path):
+        os.remove(out_db_path)
+    out = ase.db.connect(out_db_path)
+    for row in db.select():
+        if row.id not in selected_ids:
+            continue
+        atoms = row.toatoms()
+        data = dict(row.data) if row.data else {}
+        data["phase2_subset"] = "low_energy"
+        out.write(atoms, data=data)
+
+    print(f"[fine_tune] Phase-2 low-energy subset: kept {n_keep}/{total} structures")
+    return out_db_path
+
+
+def _fps_select_db(source_db_path, out_db_path, n_select=50):
+    db = ase.db.connect(source_db_path)
+    rows = list(db.select())
+    if not rows:
+        raise ValueError(f"Input DB for phase-2 FPS is empty: {source_db_path}")
+
+    frames = [row.toatoms() for row in rows]
+    selected_idx = select_structures_fps(frames, n_select=min(int(n_select), len(frames)))
+    selected_ids = {rows[idx].id for idx in selected_idx}
+
+    if os.path.exists(out_db_path):
+        os.remove(out_db_path)
+    out = ase.db.connect(out_db_path)
+    for row in rows:
+        if row.id not in selected_ids:
+            continue
+        atoms = row.toatoms()
+        data = dict(row.data) if row.data else {}
+        data["phase2_subset"] = "low_energy_fps"
+        out.write(atoms, data=data)
+
+    print(f"[fine_tune] Phase-2 FPS subset: selected {len(selected_ids)} structures")
+    return out_db_path
+
+
+def run_phase2_relax_refine(parameters, fps_db_path):
+    ft = parameters["fine_tuning"]
+    if not ft.get("loop_activate", False):
+        print("[fine_tune] Phase-2 requested without loop_activate; skipping phase-2.")
+        return
+
+    phase2_dir = os.path.abspath(ft.get("phase2_folder", "fine_tune_relax"))
+    os.makedirs(phase2_dir, exist_ok=True)
+
+    state_path = ft.get("state_file", "fine_tune_state.json")
+    if not os.path.exists(state_path):
+        raise FileNotFoundError(f"Phase-2 requires phase-1 state file: {state_path}")
+    with open(state_path, "r", encoding="utf-8") as handle:
+        state = json.load(handle)
+    if state.get("phase2", {}).get("status") == "completed":
+        print("[fine_tune] Phase-2 already completed; skipping.")
+        return
+
+    latest_model = os.path.abspath("latest.model")
+    phase1_model = os.path.abspath("phase1.model")
+    if os.path.exists(latest_model):
+        model_path = latest_model
+    elif os.path.exists(phase1_model):
+        model_path = phase1_model
+    else:
+        raise FileNotFoundError("No model found for phase-2 relax. Expected latest.model or phase1.model in the run directory.")
+
+    print(f"[fine_tune] Phase-2 using model: {model_path}")
+
+    source_db = os.path.abspath(fps_db_path)
+    if not os.path.exists(source_db):
+        raise FileNotFoundError(f"Phase-2 source DB not found: {source_db}")
+
+    relax_db = os.path.join(phase2_dir, "db_relax_all.db")
+    lowe_db = os.path.join(phase2_dir, "db_relax_lowE.db")
+    lowe_fps_db = os.path.join(phase2_dir, "db_relax_lowE_fps.db")
+    lowe_fps_label_db = os.path.join(phase2_dir, "db_relax_lowE_fps_label.db")
+    augmented_db = os.path.join(phase2_dir, "db_labeled_augmented.db")
+
+    _relax_db_with_model(
+        parameters,
+        source_db,
+        model_path,
+        relax_db,
+        fmax=float(ft.get("phase2_relax_fmax", 0.01)),
+        steps=int(ft.get("phase2_relax_steps", 20)),
+    )
+    _select_low_energy_db(
+        relax_db,
+        lowe_db,
+        fraction=float(ft.get("phase2_low_energy_fraction", 1.0 / 3.0)),
+        min_count=int(ft.get("phase2_low_energy_min", 50)),
+    )
+    _fps_select_db(
+        lowe_db,
+        lowe_fps_db,
+        n_select=int(ft.get("phase2_fps_n_select", 50)),
+    )
+
+    compute_labels_on_db(parameters, lowe_fps_db, db_out_path=lowe_fps_label_db)
+
+    if not state.get("history"):
+        raise ValueError("Phase-2 requires at least one completed phase-1 round in state history.")
+    last_round = int(state["history"][-1].get("round"))
+    phase1_round_dir = os.path.abspath(f"fine_tune_round_{last_round:03d}")
+    phase1_db = os.path.join(phase1_round_dir, f"db_labeled_cumulative_{last_round:03d}.db")
+    if not os.path.exists(phase1_db):
+        raise FileNotFoundError(f"Could not find phase-1 cumulative DB: {phase1_db}")
+
+    shutil.copy2(phase1_db, augmented_db)
+    _append_labeled_round(lowe_fps_label_db, augmented_db)
+
+    datasets = prepare_mace_extxyz(parameters, augmented_db, out_prefix=os.path.join(phase2_dir, "mace_dataset_augmented"))
+
+    test_xyz = None
+    if ft.get("fixed_test_extxyz"):
+        test_xyz = ft["fixed_test_extxyz"]
+    else:
+        test_extxyz = ft.get("test_set_extxyz", "mace_dataset_test.extxyz")
+        if os.path.exists(test_extxyz):
+            test_xyz = test_extxyz
+
+    phase2_result = run_mace_training(
+        parameters,
+        datasets["train"],
+        datasets.get("val"),
+        test_xyz,
+        workdir=phase2_dir,
+        run_name=f"{ft.get('mace_output_name', parameters.get('name', 'mace_finetune'))}_phase2",
+    )
+
+    phase2_model_src = _find_newest_model_file(phase2_dir)
+    if phase2_model_src:
+        phase2_latest_model = os.path.abspath("latest.model")
+        shutil.copy2(phase2_model_src, phase2_latest_model)
+        print(f"[fine_tune] Updated latest model after phase-2: {phase2_latest_model}")
+        phase2_final_model = os.path.abspath("final.model")
+        shutil.copy2(phase2_model_src, phase2_final_model)
+        print(f"[fine_tune] Saved final model after phase-2: {phase2_final_model}")
+
+    state["phase2"] = {
+        "status": "completed",
+        "phase2_dir": phase2_dir,
+        "source_db": source_db,
+        "relax_db": relax_db,
+        "low_energy_db": lowe_db,
+        "low_energy_fps_db": lowe_fps_db,
+        "low_energy_fps_label_db": lowe_fps_label_db,
+        "augmented_db": augmented_db,
+        "phase2_model_input": model_path,
+        "phase2_training": phase2_result,
+    }
+    _save_loop_state(state_path, state)
+
+
 def _extract_fps_batch(fps_db_path, start_index, batch_size, out_db_path, round_index=None, extra_metadata=None):
     db_in = ase.db.connect(fps_db_path)
     total = db_in.count()
@@ -410,6 +659,104 @@ def _write_extxyz_from_db(db_path, out_path):
         write(out_path, atoms, format="extxyz", append=True)
 
 
+def _split_test_db_easy(labeled_test_db, easy_db_path):
+    src = ase.db.connect(labeled_test_db)
+    rows = list(src.select())
+    if not rows:
+        raise ValueError(f"Labeled test DB is empty: {labeled_test_db}")
+
+    scored = []
+    for row in rows:
+        data = dict(row.data) if row.data else {}
+        if "REF_forces" not in data:
+            continue
+        forces_flat = np.asarray(data["REF_forces"], dtype=float).reshape(-1)
+        if forces_flat.size == 0:
+            continue
+        idx = int(np.argmax(np.abs(forces_flat)))
+        peak_component = float(forces_flat[idx])
+        marker = peak_component
+        scored.append((marker, row.id))
+
+    if not scored:
+        raise ValueError(f"No REF_forces found in labeled test DB: {labeled_test_db}")
+
+    markers = np.asarray([item[0] for item in scored], dtype=float)
+    q20 = float(np.quantile(markers, 0.2))
+    q80 = float(np.quantile(markers, 0.8))
+    easy_ids = {row_id for marker, row_id in scored if (marker >= q20 and marker <= q80)}
+    split_meta = {"mode": "signed", "q20": q20, "q80": q80}
+
+    if not easy_ids:
+        sorted_scored = sorted(scored, key=lambda item: item[0])
+        n = len(sorted_scored)
+        keep = max(1, int(math.ceil(0.6 * n)))
+        easy_ids = {row_id for _, row_id in sorted_scored[:keep]}
+
+    if os.path.exists(easy_db_path):
+        os.remove(easy_db_path)
+
+    easy_db = ase.db.connect(easy_db_path)
+    for row in rows:
+        atoms = row.toatoms()
+        data = dict(row.data) if row.data else {}
+        if row.id in easy_ids:
+            easy_data = dict(data)
+            easy_data["subset"] = "test_easy"
+            easy_db.write(atoms, data=easy_data)
+
+    print(f"[fine_tune] Test split (force-quintile): full={len(rows)}, easy={len(easy_ids)}")
+    return {
+        "easy_db": easy_db_path,
+        "full_count": len(rows),
+        "easy_count": len(easy_ids),
+        **split_meta,
+    }
+
+
+def _evaluate_model_on_labeled_db(parameters, model_path, labeled_db_path):
+    ft = parameters["fine_tuning"]
+    calc = _build_phase2_calculator(model_path, ft)
+
+    db = ase.db.connect(labeled_db_path)
+    energy_err = []
+    force_err = []
+    n_atoms_total = 0
+    n_structures = 0
+
+    for row in db.select():
+        data = dict(row.data) if row.data else {}
+        if "REF_energy" not in data or "REF_forces" not in data:
+            continue
+
+        atoms = row.toatoms()
+        atoms.calc = calc
+        pred_energy = float(atoms.get_potential_energy())
+        pred_forces = np.asarray(atoms.get_forces(), dtype=float)
+
+        ref_energy = float(data["REF_energy"])
+        ref_forces = np.asarray(data["REF_forces"], dtype=float).reshape(len(atoms), 3)
+
+        energy_err.append((pred_energy - ref_energy) / len(atoms))
+        force_err.append((pred_forces - ref_forces).reshape(-1))
+        n_atoms_total += len(atoms)
+        n_structures += 1
+
+    if n_structures == 0:
+        raise ValueError(f"No labeled structures with REF_energy/REF_forces in {labeled_db_path}")
+
+    energy_err = np.asarray(energy_err, dtype=float)
+    force_err = np.concatenate(force_err)
+
+    return {
+        "db_path": os.path.abspath(labeled_db_path),
+        "n_structures": int(n_structures),
+        "n_atoms": int(n_atoms_total),
+        "energy_rmse_mev_per_atom": float(np.sqrt(np.mean(energy_err ** 2)) * 1000.0),
+        "force_rmse_mev_per_a": float(np.sqrt(np.mean(force_err ** 2)) * 1000.0),
+    }
+
+
 def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labeled_db, labeled_source_db=None):
     if test_size <= 0:
         return None
@@ -417,15 +764,24 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
     test_subset_db = ft.get("test_subset_db", "db_test_subset.db")
     test_labeled_db = ft.get("test_set_db", "db_labeled_test.db")
     test_extxyz = ft.get("test_set_extxyz", "mace_dataset_test.extxyz")
+    test_easy_db = ft.get("test_set_easy_db", "db_labeled_test_easy.db")
+    test_easy_extxyz = ft.get("test_set_easy_extxyz", "mace_dataset_test_easy.extxyz")
     train_pool_db = ft.get("train_pool_db", "db_train_pool.db")
+    test_seed = ft.get("test_set_seed", 0)
     
     # Convert to absolute path so it works from any cwd
     if not os.path.isabs(test_extxyz):
         test_extxyz = os.path.abspath(test_extxyz)
     if not os.path.isabs(test_labeled_db):
         test_labeled_db = os.path.abspath(test_labeled_db)
+    if not os.path.isabs(test_easy_db):
+        test_easy_db = os.path.abspath(test_easy_db)
+    if not os.path.isabs(test_easy_extxyz):
+        test_easy_extxyz = os.path.abspath(test_easy_extxyz)
     if not os.path.isabs(train_pool_db):
         train_pool_db = os.path.abspath(train_pool_db)
+
+    sampler = random if test_seed is None else random.Random(int(test_seed))
 
     if os.path.exists(test_labeled_db):
         existing = ase.db.connect(test_labeled_db).count()
@@ -451,7 +807,18 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
                 print("[fine_tune] Warning: existing test set has no source_row_id metadata; train pool will include all structures.")
                 _build_train_pool_db(source_db, set(), train_pool_db)
 
-        return {"extxyz": test_extxyz, "train_pool_db": train_pool_db}
+        split_info = _split_test_db_easy(test_labeled_db, test_easy_db)
+        _write_extxyz_from_db(test_easy_db, test_easy_extxyz)
+
+        return {
+            "extxyz": test_extxyz,
+            "all_db": test_labeled_db,
+            "all_extxyz": test_extxyz,
+            "easy_db": test_easy_db,
+            "easy_extxyz": test_easy_extxyz,
+            "train_pool_db": train_pool_db,
+            "split": split_info,
+        }
 
     if labeled_source_db:
         print(f"[fine_tune] Preparing fixed test set using {test_size} random entries from external labeled DB: {labeled_source_db}.")
@@ -462,7 +829,7 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
                 f"Requested test_set_size={test_size} but external labeled DB has only {total_available} entries."
             )
         ids = [row.id for row in source_conn.select()]
-        chosen_ids = set(random.sample(ids, test_size))
+        chosen_ids = set(sampler.sample(ids, test_size))
 
         if os.path.exists(test_labeled_db):
             os.remove(test_labeled_db)
@@ -480,6 +847,8 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
         if written != test_size:
             raise ValueError(f"Expected {test_size} test structures, got {written} from external labeled DB")
         _write_extxyz_from_db(test_labeled_db, test_extxyz)
+        split_info = _split_test_db_easy(test_labeled_db, test_easy_db)
+        _write_extxyz_from_db(test_easy_db, test_easy_extxyz)
         if os.path.abspath(labeled_source_db) != os.path.abspath(global_labeled_db):
             _append_labeled_round(test_labeled_db, global_labeled_db)
         _build_train_pool_db(labeled_source_db, chosen_ids, train_pool_db)
@@ -493,7 +862,7 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
             )
 
         ids = [row.id for row in fps_conn.select()]
-        chosen_ids = set(random.sample(ids, test_size))
+        chosen_ids = set(sampler.sample(ids, test_size))
 
         if os.path.exists(test_subset_db):
             os.remove(test_subset_db)
@@ -510,13 +879,23 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
 
         compute_labels_on_db(parameters, test_subset_db, db_out_path=test_labeled_db)
         _write_extxyz_from_db(test_labeled_db, test_extxyz)
+        split_info = _split_test_db_easy(test_labeled_db, test_easy_db)
+        _write_extxyz_from_db(test_easy_db, test_easy_extxyz)
         _append_labeled_round(test_labeled_db, global_labeled_db)
         if os.path.exists(test_subset_db):
             os.remove(test_subset_db)
 
         _build_train_pool_db(fps_db_path, chosen_ids, train_pool_db)
 
-    return {"extxyz": test_extxyz, "train_pool_db": train_pool_db}
+    return {
+        "extxyz": test_extxyz,
+        "all_db": test_labeled_db,
+        "all_extxyz": test_extxyz,
+        "easy_db": test_easy_db,
+        "easy_extxyz": test_easy_extxyz,
+        "train_pool_db": train_pool_db,
+        "split": split_info,
+    }
 
 
 def run_finetune_loop(parameters, fps_db_path):
@@ -560,9 +939,13 @@ def run_finetune_loop(parameters, fps_db_path):
         elif ft.get("fixed_test_extxyz"):
             fixed_test_info = {"extxyz": ft["fixed_test_extxyz"]}
 
-    fixed_test_extxyz = fixed_test_info["extxyz"] if fixed_test_info else None
+    fixed_test_db = fixed_test_info.get("all_db") if fixed_test_info else None
+    fixed_test_easy_db = fixed_test_info.get("easy_db") if fixed_test_info else None
 
     state = _load_loop_state(state_path, foundation_model, initial_index=0)
+    if state.get("status") == "converged":
+        print("[fine_tune] Phase-1 already converged; skipping loop.")
+        return
     next_index = state.get("next_fps_index", 0)
     round_index = state.get("round_index", 1)
 
@@ -585,7 +968,6 @@ def run_finetune_loop(parameters, fps_db_path):
         cumulative_db = os.path.join(round_dir, f"db_labeled_cumulative_{round_index:03d}.db")
         dataset_prefix = os.path.join(round_dir, "mace_dataset")
         dataset_train_path = f"{dataset_prefix}_train.extxyz"
-        dataset_val_path = f"{dataset_prefix}_val.extxyz"
         
         # Check if this round already has labeled cumulative data.
         # If extxyz files are missing, regenerate them from cumulative DB to avoid relabeling.
@@ -595,14 +977,13 @@ def run_finetune_loop(parameters, fps_db_path):
         )
         
         if round_has_cumulative:
-            if os.path.exists(dataset_train_path) and os.path.exists(dataset_val_path):
-                print(f"[fine_tune] Round {round_index}: detected existing labeled DB and datasets, skipping labeling/prep.")
+            if os.path.exists(dataset_train_path):
+                print(f"[fine_tune] Round {round_index}: detected existing labeled DB and training dataset, skipping labeling/prep.")
                 datasets = {
                     "train": dataset_train_path,
-                    "val": dataset_val_path,
                 }
             else:
-                print(f"[fine_tune] Round {round_index}: rebuilding missing train/val extxyz from cumulative labeled DB.")
+                print(f"[fine_tune] Round {round_index}: rebuilding missing training extxyz from cumulative labeled DB.")
                 datasets = prepare_mace_extxyz(parameters, cumulative_db, out_prefix=dataset_prefix)
             batch_written = ase.db.connect(round_labeled_db).count() if os.path.exists(round_labeled_db) else 0
             if batch_written == 0:
@@ -655,22 +1036,45 @@ def run_finetune_loop(parameters, fps_db_path):
         if val_xyz and not os.path.isabs(val_xyz):
             val_xyz = os.path.abspath(val_xyz)
 
-        test_xyz = fixed_test_extxyz or datasets.get("test")
-        if test_xyz and not os.path.isabs(test_xyz):
-            test_xyz = os.path.abspath(test_xyz)
-
         result = run_mace_training(
             parameters,
             train_xyz,
             val_xyz,
-            test_xyz,
+            None,
             workdir=round_dir,
             foundation_override=foundation_model,
             run_name=run_name,
         )
+        phase1_model_src = _find_newest_model_file(result["workdir"], preferred_name=run_name)
+        if phase1_model_src:
+            latest_model = os.path.abspath("latest.model")
+            shutil.copy2(phase1_model_src, latest_model)
+            print(f"[fine_tune] Updated latest phase-1 model: {latest_model}")
+        else:
+            print(f"[fine_tune] Warning: no .model artifact found in {result['workdir']}")
 
-        energy_rmse, force_rmse = _parse_mace_test_rmse(result["log_dir"])
-        print(f"[fine_tune] Round {round_index} TEST RMSE: energy={energy_rmse:.3f} meV/atom, force={force_rmse:.3f} meV/Å")
+        if not fixed_test_db:
+            raise ValueError("Test DB is required for loop convergence evaluation.")
+        if not phase1_model_src:
+            raise ValueError("No trained model artifact found; cannot evaluate test/easy RMSE.")
+
+        test_metrics = _evaluate_model_on_labeled_db(parameters, phase1_model_src, fixed_test_db)
+        easy_metrics = None
+        if fixed_test_easy_db and os.path.exists(fixed_test_easy_db):
+            easy_metrics = _evaluate_model_on_labeled_db(parameters, phase1_model_src, fixed_test_easy_db)
+
+        energy_rmse = test_metrics["energy_rmse_mev_per_atom"]
+        force_rmse = test_metrics["force_rmse_mev_per_a"]
+        print(
+            f"[fine_tune] Round {round_index} TEST RMSE: "
+            f"energy={energy_rmse:.3f} meV/atom, force={force_rmse:.3f} meV/Å"
+        )
+        if easy_metrics:
+            print(
+                f"[fine_tune] Round {round_index} EASY TEST RMSE: "
+                f"energy={easy_metrics['energy_rmse_mev_per_atom']:.3f} meV/atom, "
+                f"force={easy_metrics['force_rmse_mev_per_a']:.3f} meV/Å"
+            )
 
         history_entry = {
             "round": round_index,
@@ -679,6 +1083,9 @@ def run_finetune_loop(parameters, fps_db_path):
             "energy_rmse_mev_per_atom": energy_rmse,
             "force_rmse_mev_per_a": force_rmse,
             "round_dir": round_dir,
+            "phase1_model": phase1_model_src,
+            "test_eval": test_metrics,
+            "easy_test_eval": easy_metrics,
         }
         state.setdefault("history", []).append(history_entry)
         state.update({
@@ -690,6 +1097,10 @@ def run_finetune_loop(parameters, fps_db_path):
 
         if energy_rmse <= energy_target and force_rmse <= force_target:
             print(f"[fine_tune] RMSE targets reached in round {round_index}.")
+            if phase1_model_src:
+                phase1_model = os.path.abspath("phase1.model")
+                shutil.copy2(phase1_model_src, phase1_model)
+                print(f"[fine_tune] Saved converged phase-1 model: {phase1_model}")
             state["status"] = "converged"
             _save_loop_state(state_path, state)
             return
@@ -712,6 +1123,9 @@ def run_full_pipeline(parameters, fps_db_path):
     if ft.get("loop_activate"):
         print("[fine_tune] Starting iterative fine-tuning loop...")
         run_finetune_loop(parameters, fps_db_path)
+        if ft.get("phase2_activate", False):
+            print("[fine_tune] Starting phase-2 relax/refine...")
+            run_phase2_relax_refine(parameters, fps_db_path)
         return # if loop is activated, we do not proceed with single-shot fine-tuning
 
     global_labeled_db = ft.get("global_labeled_db", "db_labeled_global.db")
