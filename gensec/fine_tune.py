@@ -150,7 +150,8 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("batch_size", 4),
         ("valid_batch_size", 6),
         ("valid_fraction", 0.1),
-        ("max_num_epochs", 100),
+        ("max_num_epochs", 3000),
+        ("patience", 50),
         ("ema", None),
         ("ema_decay", 0.999),
         ("lr", 0.001),
@@ -659,39 +660,141 @@ def _write_extxyz_from_db(db_path, out_path):
         write(out_path, atoms, format="extxyz", append=True)
 
 
-def _split_test_db_easy(labeled_test_db, easy_db_path):
+def _get_row_force_marker(row):
+    data = dict(row.data) if row.data else {}
+    if "REF_forces" in data:
+        ref_forces = np.asarray(data["REF_forces"], dtype=float).reshape(-1, 3)
+        if ref_forces.size:
+            return float(np.linalg.norm(ref_forces, axis=1).max())
+
+    row_fmax = getattr(row, "fmax", None)
+    if row_fmax is not None:
+        try:
+            row_fmax = float(row_fmax)
+            if np.isfinite(row_fmax):
+                return row_fmax
+        except (TypeError, ValueError):
+            pass
+
+    try:
+        atoms = row.toatoms()
+        if getattr(atoms, "calc", None) is not None:
+            forces = np.asarray(atoms.get_forces(), dtype=float)
+            if forces.size:
+                return float(np.linalg.norm(forces, axis=1).max())
+    except Exception:
+        pass
+
+    return None
+
+
+def _score_rows_by_force_marker(rows):
+    scored = []
+    for row in rows:
+        marker = _get_row_force_marker(row)
+        if marker is None:
+            continue
+        scored.append((marker, row.id))
+    return sorted(scored, key=lambda item: item[0])
+
+
+def _split_scored_rows_into_bins(scored_rows, n_bins):
+    if not scored_rows:
+        return []
+
+    n_bins = max(1, min(int(n_bins), len(scored_rows)))
+    edges = np.linspace(0, len(scored_rows), n_bins + 1, dtype=int)
+    bins = []
+    for idx in range(n_bins):
+        start = int(edges[idx])
+        end = int(edges[idx + 1])
+        chunk = scored_rows[start:end]
+        if chunk:
+            bins.append(chunk)
+    return bins
+
+
+def _pick_test_ids_from_force_bins(scored_rows, test_size, sampler, n_bins=5):
+    if len(scored_rows) < test_size:
+        raise ValueError(
+            f"Requested test_set_size={test_size} but only {len(scored_rows)} labeled entries have REF_forces."
+        )
+
+    bins = _split_scored_rows_into_bins(scored_rows, n_bins)
+    bin_pools = [[row_id for _, row_id in chunk] for chunk in bins]
+    selected_by_bin = {idx: [] for idx in range(len(bin_pools))}
+    remaining = int(test_size)
+
+    while remaining > 0:
+        progress = False
+        for idx, pool in enumerate(bin_pools):
+            if remaining <= 0:
+                break
+            if not pool:
+                continue
+            chosen_id = sampler.choice(pool)
+            pool.remove(chosen_id)
+            selected_by_bin[idx].append(chosen_id)
+            remaining -= 1
+            progress = True
+        if not progress:
+            break
+
+    if remaining != 0:
+        raise ValueError("Could not complete stratified test-set sampling from force bins.")
+
+    marker_by_id = {row_id: marker for marker, row_id in scored_rows}
+    return {
+        "selected_ids": {row_id for ids in selected_by_bin.values() for row_id in ids},
+        "selected_by_bin": selected_by_bin,
+        "marker_by_id": marker_by_id,
+        "n_bins": len(bin_pools),
+    }
+
+
+def _split_test_db_easy(labeled_test_db, easy_db_path, n_bins=5, drop_hardest_bins=2):
     src = ase.db.connect(labeled_test_db)
     rows = list(src.select())
     if not rows:
         raise ValueError(f"Labeled test DB is empty: {labeled_test_db}")
 
-    scored = []
+    metadata_bin_ids = {}
     for row in rows:
         data = dict(row.data) if row.data else {}
-        if "REF_forces" not in data:
-            continue
-        forces_flat = np.asarray(data["REF_forces"], dtype=float).reshape(-1)
-        if forces_flat.size == 0:
-            continue
-        idx = int(np.argmax(np.abs(forces_flat)))
-        peak_component = float(forces_flat[idx])
-        marker = peak_component
-        scored.append((marker, row.id))
+        if "test_bin_index" in data:
+            metadata_bin_ids[row.id] = int(data["test_bin_index"])
 
-    if not scored:
-        raise ValueError(f"No REF_forces found in labeled test DB: {labeled_test_db}")
+    if metadata_bin_ids and len(metadata_bin_ids) == len(rows):
+        n_bins = max(metadata_bin_ids.values()) + 1
+        n_drop_hardest = max(0, min(int(drop_hardest_bins), max(0, n_bins - 1)))
+        hardest_start = max(0, n_bins - n_drop_hardest)
+        easy_ids = {row_id for row_id, bin_idx in metadata_bin_ids.items() if bin_idx < hardest_start}
+    else:
+        scored = _score_rows_by_force_marker(rows)
+        if not scored:
+            raise ValueError(f"No REF_forces found in labeled test DB: {labeled_test_db}")
 
-    markers = np.asarray([item[0] for item in scored], dtype=float)
-    q20 = float(np.quantile(markers, 0.2))
-    q80 = float(np.quantile(markers, 0.8))
-    easy_ids = {row_id for marker, row_id in scored if (marker >= q20 and marker <= q80)}
-    split_meta = {"mode": "signed", "q20": q20, "q80": q80}
+        bins = _split_scored_rows_into_bins(scored, n_bins)
+        n_bins = len(bins)
+        n_drop_hardest = max(0, min(int(drop_hardest_bins), max(0, n_bins - 1)))
+        hardest_start = max(0, n_bins - n_drop_hardest)
+        easy_ids = {
+            row_id
+            for bin_idx, chunk in enumerate(bins)
+            if bin_idx < hardest_start
+            for _, row_id in chunk
+        }
+
+    split_meta = {
+        "mode": "abs_force_bins",
+        "n_bins": n_bins,
+        "drop_hardest_bins": n_drop_hardest,
+    }
 
     if not easy_ids:
-        sorted_scored = sorted(scored, key=lambda item: item[0])
-        n = len(sorted_scored)
-        keep = max(1, int(math.ceil(0.6 * n)))
-        easy_ids = {row_id for _, row_id in sorted_scored[:keep]}
+        scored = _score_rows_by_force_marker(rows)
+        keep = max(1, len(scored) - max(1, len(scored) // 3))
+        easy_ids = {row_id for _, row_id in scored[:keep]}
 
     if os.path.exists(easy_db_path):
         os.remove(easy_db_path)
@@ -705,7 +808,7 @@ def _split_test_db_easy(labeled_test_db, easy_db_path):
             easy_data["subset"] = "test_easy"
             easy_db.write(atoms, data=easy_data)
 
-    print(f"[fine_tune] Test split (force-quintile): full={len(rows)}, easy={len(easy_ids)}")
+    print(f"[fine_tune] Test split (force bins): full={len(rows)}, easy={len(easy_ids)}")
     return {
         "easy_db": easy_db_path,
         "full_count": len(rows),
@@ -768,6 +871,8 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
     test_easy_extxyz = ft.get("test_set_easy_extxyz", "mace_dataset_test_easy.extxyz")
     train_pool_db = ft.get("train_pool_db", "db_train_pool.db")
     test_seed = ft.get("test_set_seed", 0)
+    test_force_bins = int(ft.get("test_set_force_bins", 5))
+    test_easy_drop_hardest_bins = int(ft.get("test_set_easy_drop_hardest_bins", 2))
     
     # Convert to absolute path so it works from any cwd
     if not os.path.isabs(test_extxyz):
@@ -807,7 +912,12 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
                 print("[fine_tune] Warning: existing test set has no source_row_id metadata; train pool will include all structures.")
                 _build_train_pool_db(source_db, set(), train_pool_db)
 
-        split_info = _split_test_db_easy(test_labeled_db, test_easy_db)
+        split_info = _split_test_db_easy(
+            test_labeled_db,
+            test_easy_db,
+            n_bins=test_force_bins,
+            drop_hardest_bins=test_easy_drop_hardest_bins,
+        )
         _write_extxyz_from_db(test_easy_db, test_easy_extxyz)
 
         return {
@@ -821,65 +931,94 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
         }
 
     if labeled_source_db:
-        print(f"[fine_tune] Preparing fixed test set using {test_size} random entries from external labeled DB: {labeled_source_db}.")
+        print(f"[fine_tune] Preparing fixed test set using stratified force-bin sampling from external labeled DB: {labeled_source_db}.")
         source_conn = ase.db.connect(labeled_source_db)
-        total_available = source_conn.count()
+        rows = list(source_conn.select())
+        scored = _score_rows_by_force_marker(rows)
+        total_available = len(scored)
         if total_available < test_size:
             raise ValueError(
-                f"Requested test_set_size={test_size} but external labeled DB has only {total_available} entries."
+                f"Requested test_set_size={test_size} but external labeled DB has only {total_available} labeled entries with REF_forces."
             )
-        ids = [row.id for row in source_conn.select()]
-        chosen_ids = set(sampler.sample(ids, test_size))
+        pick_info = _pick_test_ids_from_force_bins(scored, test_size, sampler, n_bins=test_force_bins)
+        chosen_ids = pick_info["selected_ids"]
+        selected_bin_by_id = {
+            row_id: bin_idx
+            for bin_idx, ids in pick_info["selected_by_bin"].items()
+            for row_id in ids
+        }
 
         if os.path.exists(test_labeled_db):
             os.remove(test_labeled_db)
         test_db = ase.db.connect(test_labeled_db)
-        for row in source_conn.select():
+        for row in rows:
             if row.id not in chosen_ids:
                 continue
             atoms = row.toatoms()
             data = dict(row.data) if row.data else {}
             data["subset"] = "test"
             data["source_row_id"] = row.id
+            data["test_bin_index"] = int(selected_bin_by_id[row.id])
+            data["test_force_marker"] = float(pick_info["marker_by_id"][row.id])
+            data["test_split_strategy"] = "force_bins"
             test_db.write(atoms, data=data)
 
         written = test_db.count()
         if written != test_size:
             raise ValueError(f"Expected {test_size} test structures, got {written} from external labeled DB")
         _write_extxyz_from_db(test_labeled_db, test_extxyz)
-        split_info = _split_test_db_easy(test_labeled_db, test_easy_db)
+        split_info = _split_test_db_easy(
+            test_labeled_db,
+            test_easy_db,
+            n_bins=test_force_bins,
+            drop_hardest_bins=test_easy_drop_hardest_bins,
+        )
         _write_extxyz_from_db(test_easy_db, test_easy_extxyz)
         if os.path.abspath(labeled_source_db) != os.path.abspath(global_labeled_db):
             _append_labeled_round(test_labeled_db, global_labeled_db)
         _build_train_pool_db(labeled_source_db, chosen_ids, train_pool_db)
     else:
-        print(f"[fine_tune] Preparing fixed test set with {test_size} random FPS structures (preserving pool).")
+        print(f"[fine_tune] Preparing fixed test set using stratified force-bin sampling from FPS pool: {fps_db_path}.")
         fps_conn = ase.db.connect(fps_db_path)
-        total = fps_conn.count()
+        rows = list(fps_conn.select())
+        scored = _score_rows_by_force_marker(rows)
+        total = len(scored)
         if total < test_size:
             raise ValueError(
-                f"Requested test_set_size={test_size} but FPS database has only {total} entries."
+                f"Requested test_set_size={test_size} but FPS database has only {total} entries with usable force data."
             )
-
-        ids = [row.id for row in fps_conn.select()]
-        chosen_ids = set(sampler.sample(ids, test_size))
+        pick_info = _pick_test_ids_from_force_bins(scored, test_size, sampler, n_bins=test_force_bins)
+        chosen_ids = pick_info["selected_ids"]
+        selected_bin_by_id = {
+            row_id: bin_idx
+            for bin_idx, ids in pick_info["selected_by_bin"].items()
+            for row_id in ids
+        }
 
         if os.path.exists(test_subset_db):
             os.remove(test_subset_db)
         test_db = ase.db.connect(test_subset_db)
 
-        for row in fps_conn.select():
+        for row in rows:
             if row.id not in chosen_ids:
                 continue
             atoms = row.toatoms()
             data = dict(row.data) if row.data else {}
             data["subset"] = "test"
             data["source_row_id"] = row.id
+            data["test_bin_index"] = int(selected_bin_by_id[row.id])
+            data["test_force_marker"] = float(pick_info["marker_by_id"][row.id])
+            data["test_split_strategy"] = "force_bins"
             test_db.write(atoms, data=data)
 
         compute_labels_on_db(parameters, test_subset_db, db_out_path=test_labeled_db)
         _write_extxyz_from_db(test_labeled_db, test_extxyz)
-        split_info = _split_test_db_easy(test_labeled_db, test_easy_db)
+        split_info = _split_test_db_easy(
+            test_labeled_db,
+            test_easy_db,
+            n_bins=test_force_bins,
+            drop_hardest_bins=test_easy_drop_hardest_bins,
+        )
         _write_extxyz_from_db(test_easy_db, test_easy_extxyz)
         _append_labeled_round(test_labeled_db, global_labeled_db)
         if os.path.exists(test_subset_db):
