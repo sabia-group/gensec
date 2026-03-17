@@ -13,6 +13,9 @@ from ase.optimize import FIRE
 from gensec.relaxation import load_source
 from gensec.fps_selection import select_structures_fps
 
+TEST_SET_FORCE_BINS = 5
+TEST_SET_EASY_DROP_HARDEST_BINS = 2
+
 def _k_grid_from_cell(atoms, reference_atoms, k_density):
     """Compute k-grid by comparing cell lengths to reference cell."""
     cell = np.asarray(atoms.get_cell())
@@ -152,6 +155,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("valid_fraction", 0.1),
         ("max_num_epochs", 3000),
         ("patience", 50),
+        ("weight_decay", 5e-05),
         ("ema", None),
         ("ema_decay", 0.999),
         ("lr", 0.001),
@@ -284,15 +288,28 @@ def _load_loop_state(state_path, foundation_model, initial_index=0):
 
 def _round_batch_size(round_index):
     """Hard-coded naive loop schedule for newly labeled structures per round."""
-    schedule = [60, 40, 30, 25, 20, 15]
+    schedule = [60, 50, 40, 30, 25]
     if round_index <= len(schedule):
         return schedule[round_index - 1]
-    return 10
+    return 20
 
 
 def _save_loop_state(state_path, state):
     with open(state_path, "w", encoding="utf-8") as handle:
         json.dump(state, handle, indent=2)
+
+
+def _round_metric(value, decimals=3):
+    return round(float(value), int(decimals))
+
+
+def _compact_eval_metrics(metrics, decimals=3):
+    if not metrics:
+        return None
+    return {
+        "energy_rmse_mev_per_atom": _round_metric(metrics["energy_rmse_mev_per_atom"], decimals),
+        "force_rmse_mev_per_a": _round_metric(metrics["force_rmse_mev_per_a"], decimals),
+    }
 
 
 def _find_newest_model_file(search_dir, preferred_name=None):
@@ -871,8 +888,8 @@ def _ensure_fixed_test_set(parameters, fps_db_path, test_size, ft, global_labele
     test_easy_extxyz = ft.get("test_set_easy_extxyz", "mace_dataset_test_easy.extxyz")
     train_pool_db = ft.get("train_pool_db", "db_train_pool.db")
     test_seed = ft.get("test_set_seed", 0)
-    test_force_bins = int(ft.get("test_set_force_bins", 5))
-    test_easy_drop_hardest_bins = int(ft.get("test_set_easy_drop_hardest_bins", 2))
+    test_force_bins = TEST_SET_FORCE_BINS
+    test_easy_drop_hardest_bins = TEST_SET_EASY_DROP_HARDEST_BINS
     
     # Convert to absolute path so it works from any cwd
     if not os.path.isabs(test_extxyz):
@@ -1215,16 +1232,18 @@ def run_finetune_loop(parameters, fps_db_path):
                 f"force={easy_metrics['force_rmse_mev_per_a']:.3f} meV/Å"
             )
 
+        metric_decimals = int(ft.get("state_metric_decimals", 3))
+        compact_test_metrics = _compact_eval_metrics(test_metrics, decimals=metric_decimals)
+        compact_easy_metrics = _compact_eval_metrics(easy_metrics, decimals=metric_decimals)
+
         history_entry = {
             "round": round_index,
             "fps_start_index": next_index,
             "fps_count": batch_written,
-            "energy_rmse_mev_per_atom": energy_rmse,
-            "force_rmse_mev_per_a": force_rmse,
+            "test_rmse": compact_test_metrics,
+            "easy_test_rmse": compact_easy_metrics,
             "round_dir": round_dir,
             "phase1_model": phase1_model_src,
-            "test_eval": test_metrics,
-            "easy_test_eval": easy_metrics,
         }
         state.setdefault("history", []).append(history_entry)
         state.update({
