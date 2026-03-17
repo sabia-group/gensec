@@ -108,7 +108,7 @@
                 }
         },
 
-"fine_tuning": {
+"training": {
     "activate": true,
     "loop_activate": true,
 
@@ -119,30 +119,20 @@
 
     "test_set_size": 25,
 
-    "foundation_model": "medium-0b3",
-    "mace_output_name": "test-loop",
+    "mace_output_name": "scratch-loop",
     "mace_args": {
-
-        "multiheads_finetuning": true,
-        "pt_train_file": "mp",
-        "num_samples_pt": 400,
-        "filter_type_pt": "combinations",
-        "subselect_pt": "random",
-        "weight_pt": 1,
         "atomic_numbers": [1, 6, 7, 8],
+        "r_max": 5.0,
+        "hidden_irreps": "16x0e + 16x1o",
         "swa": false,
         "batch_size": 4,
         "valid_batch_size": 4,
         "max_num_epochs": 30,
-        "heads": {
-                "default": {
-                        "E0s": {
-                                "1": -13.5980301782,
-                                "6": -1029.1067769881,
-                                "7": -1485.3076478427,
-                                "8": -2043.2399676739
-                                }
-                }
+        "E0s": {
+                "1": -13.5980301782,
+                "6": -1029.1067769881,
+                "7": -1485.3076478427,
+                "8": -2043.2399676739
         }
     },
 
@@ -151,7 +141,7 @@
     "fps_batch_size": 12,
     
 
-    "state_file": "fine_tune_state.json",
+        "state_file": "training_state.json",
     "global_labeled_db": "db_labeled_global.db"
 }
 }

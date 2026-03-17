@@ -1,0 +1,52 @@
+# Parameter GUI tool (development)
+tools/parameter_gui/parameters_gui_temp/
+tools/parameter_gui/*.db
+tools/parameter_gui/__pycache__/
+tools/parameter_gui/*.pyc
+tools/parameter_gui/.pytest_cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+results/
+outputs/
+*.model
+*.db
+training_*/
