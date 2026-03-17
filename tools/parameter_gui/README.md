@@ -59,42 +59,30 @@ python tools/launch_gui.py examples/fine-tune/parameters.json
 | **MACE Args** | ✨ Full MACE training hyperparameters (dict editor) |
 | **Calculator** | ASE calculator constraints (frozen atoms, etc.) |
 
-## MACE Arguments (Dict Editor)
+## MACE Arguments
 
-The MACE Arguments section uses an interactive dict editor that accepts **any parameter that `mace_run_train` CLI accepts**:
+The MACE Arguments section provides an interactive editor for MACE training hyperparameters. Most common parameters are already available as individual fields with sensible defaults:
 
-```json
-{
-  "r_max": 5.0,
-  "hidden_irreps": "64x0e + 64x1o",
-  "batch_size": 6,
-  "max_num_epochs": 2000,
-  "patience": 50,
-  "lr": 0.001,
-  "device": "cuda",
-  "default_dtype": "float64",
-  "E0s": {"H": -13.6, "C": -1025.3}
-}
-```
+- `r_max`: Cutoff radius
+- `hidden_irreps`: Network architecture
+- `batch_size`, `valid_batch_size`: Training batch sizes
+- `max_num_epochs`, `patience`: Training convergence
+- `lr`: Learning rate
+- `weight_decay`: L2 regularization
+- `device`, `default_dtype`: Hardware & precision
+- `E0s`: Element reference energies
+- And 15+ more...
 
-### How to Use the Dict Editor
-1. Click on the `mace_args` field
-2. Use `+` button to add new parameters
-3. Enter `key` and `value` for each row
-4. Click `-` to remove unwanted entries
-5. Changes auto-save to JSON format
+**To add custom MACE parameters**: Use the "Additional MACE Args" table at the bottom of the MACE section. This lets you pass any parameter that `mace_run_train` CLI accepts that isn't already in the GUI.
 
-### Common MACE Parameters
-- `r_max`: Cutoff radius (float, default 5.0)
-- `hidden_irreps`: Network architecture (string)
-- `batch_size`: Training batch size (int)
-- `max_num_epochs`: Maximum epochs (int)
-- `patience`: Early stopping patience (int)
-- `lr`: Learning rate (float)
-- `device`: GPU/CPU ("cuda" or "cpu")
-- `E0s`: Element reference energies (dict)
+### How to Add Extra Parameters
+1. Expand the **MACE Arguments** section
+2. Scroll to **Additional MACE Args** table
+3. Click `+` button to add a new row
+4. Enter the parameter name and value
+5. Changes auto-save to JSON
 
-For full MACE CLI documentation, see `mace_run_train --help`
+For full MACE CLI reference, consult `mace_run_train --help`
 
 ## Installation
 
