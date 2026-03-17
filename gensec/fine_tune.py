@@ -127,7 +127,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     """Launch MACE training on the prepared dataset (overrideable via training.mace_args)."""
     ft = parameters["training"]
 
-    name = run_name or ft.get("mace_output_name", parameters.get("name", "mace_training"))
+    name = run_name or ft.get("mace_output_name", "mlip-output")
     user_args = ft.get("mace_args", {}) or {}
 
     mace_exe = shutil.which("mace_run_train")
@@ -543,7 +543,7 @@ def run_phase2_relax_refine(parameters, fps_db_path):
         datasets.get("val"),
         test_xyz,
         workdir=phase2_dir,
-        run_name=f"{ft.get('mace_output_name', parameters.get('name', 'mace_training'))}_phase2",
+        run_name=f"{ft.get('mace_output_name', 'mlip-output')}_phase2",
     )
 
     phase2_model_src = _find_newest_model_file(phase2_dir)
@@ -1183,7 +1183,7 @@ def run_training_loop(parameters, fps_db_path):
             _write_cumulative_train_db(global_labeled_db, cumulative_db)
             datasets = prepare_mace_extxyz(parameters, cumulative_db, out_prefix=dataset_prefix)
 
-        default_name = ft.get("mace_output_name", parameters.get("name", "mace_training"))
+        default_name = ft.get("mace_output_name", "mlip-output")
         run_name = f"{default_name}_round{round_index:03d}"
 
         train_xyz = datasets["train"]

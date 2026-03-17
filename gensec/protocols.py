@@ -269,7 +269,7 @@ class Protocol:
             print(f"FPS selection complete: {len(selected_indices)} structures saved to db_generated_fps.db.")
             
         
-        if "training" in parameters and parameters["training"]["activate"]:
+        if "training" in parameters and parameters["training"].get("activate", False):
             print("training.activate True -> running training pipeline") 
             run_training_pipeline(parameters, "db_generated_fps.db")
 
