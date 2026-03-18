@@ -155,7 +155,7 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
         ("valid_fraction", 0.1),
         ("max_num_epochs", 2000),
         ("patience", 50),
-        ("weight_decay", 5e-05),
+        ("weight_decay", 5e-07),
         ("ema", None),
         ("ema_decay", 0.999),
         ("lr", 0.001),

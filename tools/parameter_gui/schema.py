@@ -39,7 +39,7 @@ PARAMETER_SCHEMA = {
                         "label": "Generate",
                         "subfields": {
                             "activate": {"type": "bool",   "description": "Enable generation"},
-                            "method":   {"type": "string", "description": "Generation method"},
+                            "method":   {"type": "string", "default": "random", "description": "Generation strategy tag. Typical value: 'random' (used in example inputs)."},
                         },
                     },
                     "search": {
@@ -48,7 +48,7 @@ PARAMETER_SCHEMA = {
                         "label": "Search",
                         "subfields": {
                             "activate": {"type": "bool",   "description": "Enable search"},
-                            "method":   {"type": "string", "description": "Search method"},
+                            "method":   {"type": "string", "default": "random", "description": "Search/relaxation selection tag. Typical value: 'random' (used in example inputs)."},
                             "folder":   {"type": "string", "description": "Output folder for search"},
                         },
                     },
@@ -365,6 +365,8 @@ PARAMETER_SCHEMA = {
                     "supporting_files_folder": {"type": "string", "description": "Folder with DFT calculator scripts"},
                     "ase_parameters_file":     {"type": "string", "description": "DFT calculator setup file"},
                     "k_density":               {"type": "float",  "default": 30.0,                 "description": "K-point density for DFT"},
+                    "rmse_energy_target":      {"type": "float",  "default": 10.0,                 "mandatory": True, "description": "Convergence target for TEST energy RMSE (meV/atom)"},
+                    "rmse_force_target":       {"type": "float",  "default": 100.0,                "mandatory": True, "description": "Convergence target for TEST force RMSE (meV/Å)"},
                     "test_set_size":           {"type": "int",    "default": 0,                    "description": "Test set size (0 = skip)"},
                     "phase2_fps_n_select":     {"type": "int",    "default": 50,                   "description": "Phase2 N structures (FPS selection)"},
                     "mace_output_name":        {"type": "string", "default": "mlip-output",        "description": "MACE model output name prefix"},

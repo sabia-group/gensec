@@ -643,15 +643,15 @@ class ParameterGUI(QMainWindow):
         # File toolbar
         file_layout = QHBoxLayout()
         
-        open_btn = QPushButton("📂 Open")
+        open_btn = QPushButton("Open")
         open_btn.clicked.connect(self.open_file_browser)
         file_layout.addWidget(open_btn)
         
-        save_btn = QPushButton("💾 Save")
+        save_btn = QPushButton("Save")
         save_btn.clicked.connect(self.save_file)
         file_layout.addWidget(save_btn)
         
-        save_as_btn = QPushButton("💾 Save As")
+        save_as_btn = QPushButton("Save As")
         save_as_btn.clicked.connect(self.save_file_as)
         file_layout.addWidget(save_as_btn)
         
