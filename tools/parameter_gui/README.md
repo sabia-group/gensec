@@ -1,6 +1,6 @@
-# GenSec Parameter GUI
+# GenSec Parameter GUI (beta)
 
-A PyQt5-based interactive editor for GenSec `parameters.json` files with organized, collapsible sections and intuitive controls.
+A vibe-coded PyQt5-based interactive editor for GenSec `parameters.json` files with organized, collapsible sections and intuitive controls.
 
 ## Defaults Policy
 
