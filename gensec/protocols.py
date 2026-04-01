@@ -3,11 +3,10 @@
 
 import ase.db
 import os
-import sys
 import numpy as np
-from ase.io import read, write
+from ase.io import  write
 from gensec.structure import Structure, Fixed_frame
-from gensec.modules import all_right, merge_together, measure_quaternion, run_with_timeout_decorator, return_inf
+from gensec.modules import all_right, merge_together, run_with_timeout_decorator, return_inf
 from gensec.outputs import Directories
 from gensec.relaxation import Calculator
 from gensec.check_input import Check_input
@@ -17,14 +16,6 @@ from gensec.fine_tune import run_full_pipeline
 from ase.io.trajectory import Trajectory
 
 from gensec.unit_cell_finder import Unit_cell_finder, gen_base_sheet
-
-import time
-
-# TODO: Add a permanent log containing at least all print outputs
-
-# TODO: There might be a potential for speedups in the SC and UC finder by replacing loops with numpy operations and larger numpy arrays.
-
-
 
 class Protocol:
 
@@ -43,6 +34,15 @@ class Protocol:
         """
         pass
 
+    def db_setup(name: str):
+        if not os.path.exists(".db"):
+            _ = open(name + ".db", "w")
+        if os.path.exists(name + ".db-journal"):
+            os.remove(name + ".db-journal")
+        if os.path.exists(name + ".lock"):
+            os.remove(name + ".lock")
+
+
     def run(self, parameters):
         """Summary
 
@@ -54,62 +54,29 @@ class Protocol:
         if parameters["protocol"]["generate"]["activate"] is True:
             # connect to the database and start creating structures there
             print("Start generating of the structures")
-            if not os.path.exists("db_generated.db"):
-                db_generated = open("db_generated.db", "w")
-            if os.path.exists("db_generated.db-journal"):
-                os.remove("db_generated.db-journal")
-            if os.path.exists("db_generated.lock"):
-                os.remove("db_generated.lock")
-
+            
+            self.db_setup("db_generated")
             db_generated = ase.db.connect("db_generated.db")
             
-            if not os.path.exists("db_generated_frames.db") and parameters["fixed_frame"]["is_unit_cell"]:
-                db_generated_frames = open("db_generated_frames.db", "w")
-            if os.path.exists("db_generated_frames.db-journal"):
-                os.remove("db_generated_frames.db-journal")
-            if os.path.exists("db_generated_frames.lock"):
-                os.remove("db_generated_frames.lock")
-            
+            self.db_setup("db_generated_frames")
             db_generated_frames = ase.db.connect("db_generated_frames.db")
 
-            if not os.path.exists("db_relaxed.db"):
-                db_relaxed = open("db_relaxed.db", "w")
-            if os.path.exists("db_relaxed.db-journal"):
-                os.remove("db_relaxed.db-journal")
-            if os.path.exists("db_relaxed.lock"):
-                os.remove("db_relaxed.lock")
-
+            self.db_setup("db_relaxed.db")
             db_relaxed = ase.db.connect("db_relaxed.db")
 
-            if not os.path.exists("db_trajectories.db"):
-                db_trajectories = open("db_trajectories.db", "w")
-            if os.path.exists("db_trajectories.db-journal"):
-                os.remove("db_trajectories.db-journal")
-            if os.path.exists("db_trajectories.db.lock"):
-                os.remove("db_trajectories.db.lock")
-
+            self.db_setup("db_trajectories")
             db_trajectories = ase.db.connect("db_trajectories.db")
 
-            if not os.path.exists("db_generated_visual.db"):
-                db_generated_visual = open("db_generated_visual.db", "w")
-            # if os.path.exists("db_generated.db-journal"):
-            # os.remove("db_generated.db-journal")
-            # if os.path.exists("db_generated.lock"):
-            # os.remove("db_generated.lock")
-
+            self.db_setup("db_generated_visual")
             db_generated_visual = ase.db.connect("db_generated_visual.db")
 
             self.trials = 0
             self.success = db_generated.count()
             print("Generated structures", db_generated.count())
             
-            # Find optimal supercell here
-            # Adjust mic, coms and number of atoms accordingly
-            # Need to eddit coms to give fixed values on top
             # TODO: Implement a checkpoint for the supercell finder so if there is already a database we can use the same supercell
             # TODO: Does still need to be here? Makes things more complicated.But still interesting for cases where you see the cells on images and dont know the exact orientation.
             if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "inputfile":
-                # TODO: what part of parameters should be overwritten? Should probably do this in check_input already. Thinking of mic and coms.
                 supercell_finder = Supercell_finder(parameters)
                 supercell_finder.run()
                 structure = Structure(parameters, supercell_finder)
@@ -126,7 +93,6 @@ class Protocol:
             else:
                 structure = Structure(parameters)
                 fixed_frame = Fixed_frame(parameters)
-                
                 # Check if we have a base sheet we want to work with or if we need to create one from a unit cell. Only supposed to be used to chcek for clashes with the configured structure.
                 if parameters["fixed_frame"]["activate"]:
                     if not parameters["fixed_frame"]["is_unit_cell"]:
@@ -134,26 +100,29 @@ class Protocol:
                     else:                        
                         base_sheet = gen_base_sheet(structure.atoms, fixed_frame.fixed_frame, num_mol = parameters["number_of_replicas"])
                         fixed_frame_sheet = Fixed_frame(parameters, base_sheet)
+                        
             dirs = Directories(parameters)
+            
             if parameters["configuration"]["check_forces"]["activate"]:
                 calculator = Calculator(parameters)
+                
             if "definite" in parameters["configuration"]:
                 definite = parameters["configuration"]["definite"]["activate"]
             else:
                 definite = False
+            
             while self.success < parameters["success"] and self.trials < parameters["trials"]:
                 print(self.trials, self.success)
-                # init_time = time.time()
                 # Generate the vector in internal degrees of freedom
                 if definite:
                     _, conf = structure.create_configuration(parameters, self.success)
                 else:
                     _, conf = structure.create_configuration(parameters)
-                # print(conf)
                 # Apply the configuration to structure
                 structure.apply_conf(conf)
                 if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "find":
                     oriented_mol = structure.atoms_object()
+                    
                 # Check if that structure is sensible
                 is_good = True
                 if all_right(structure, fixed_frame_sheet):
@@ -161,6 +130,8 @@ class Protocol:
                     in_db = False
                     if parameters["protocol"]["check_db"]:
                         in_db = True
+                        
+                        # Currently not recommended to use database check, significantly increases search or makes it even impossible if done wrong
                         if not structure.find_in_database(conf, db_generated, parameters):
                             if not structure.find_in_database(conf, db_relaxed, parameters ):
                                 if not structure.find_in_database(conf, db_trajectories, parameters):
@@ -170,19 +141,13 @@ class Protocol:
                         if parameters["supercell_finder"]["activate"] and parameters["supercell_finder"]["unit_cell_method"] == "find":
                             oriented_mol_with_cell, _, _ = Unit_cell_finder(oriented_mol, parameters = parameters)
                             supercell_finder.set_unit_cell('find', oriented_mol_with_cell)    # TODO: Input parameters (dont restrict to standard ones in definition of the function) and add all to check input 
-                            # print("Init took", time.time() - init_time, "seconds")
-                            # sf_time = time.time()
                             try:
                                 supercell_finder.run()
-                                # print("Supercell finder took", time.time() - sf_time, "seconds")
                                 conf = structure.get_configuration(supercell_finder.F_atoms)
                                 fixed_frame_temp = Fixed_frame(parameters, supercell_finder.S_atoms)
                                 structure_temp = Structure(parameters, supercell_finder)
-                                # col_time = time.time()
                                 if all_right(structure_temp, fixed_frame_temp):
-                                    # print("Colision check took", time.time() - col_time, "seconds")
                                     if parameters["configuration"]["check_forces"]["activate"] == True:
-                                        # force_time = time.time()
                                         if "max_atoms" in parameters["supercell_finder"] and len(supercell_finder.joined_atoms) > parameters["supercell_finder"]["max_atoms"]:
                                             print("Too many atoms in the supercell")
                                             print(len(supercell_finder.joined_atoms))
@@ -192,7 +157,6 @@ class Protocol:
                                             supercell_finder.joined_atoms.calc = calculator.calculator
                                             if not run_with_timeout_decorator(lambda: (supercell_finder.joined_atoms.get_forces() ** 2).sum(axis=1).max(), return_inf, 
                                                                                         timeout = parameters["configuration"]["check_forces"]["max_time"]) > parameters["configuration"]["check_forces"]["max_force"] ** 2:
-                                                # print("Force check took", time.time() - force_time, "seconds")
                                                 db_generated.write(supercell_finder.F_atoms, **conf)
                                                 db_generated_frames.write(supercell_finder.S_atoms, **conf)
                                                 db_generated_visual.write(supercell_finder.joined_atoms, **conf)
@@ -244,20 +208,17 @@ class Protocol:
                     print("Good", conf)
                     print("Generated structures:", self.success)        
                 else:
-                    #print("BAD", conf)
                     if parameters["supercell_finder"]["activate"] and hasattr(supercell_finder, "joined_atoms"):
                         write("bad_luck.xyz",supercell_finder.joined_atoms,format="extxyz")
                     else:
                         write("bad_luck.xyz",merge_together(structure, fixed_frame_sheet),format="extxyz")
-                    # print("Trials made", self.trials)
                     self.trials += 1
         
         if parameters["fps_selection"]["activate"] is True:
             print("Running FPS selection on generated structures...")
             atoms_list = [row.toatoms() for row in db_generated_visual.select()]
             n_select = parameters["fps_selection"]["n_select"]
-            #soap_params = parameters["fps_selection"].get("soap", {}) for now hard-coded
-            selected_indices = select_structures_fps(atoms_list, n_select) #, soap_params)
+            selected_indices = select_structures_fps(atoms_list, n_select)
             # Write selected structures to new db
             db_generated_fps = ase.db.connect("db_generated_fps.db")
             for i in selected_indices:
@@ -272,49 +233,18 @@ class Protocol:
 
         if parameters["protocol"]["search"]["activate"] is True:
             
-            #TODO: Raise error here if db is empty
-            
-            # connect to the database and start creating structures there
-            print("Start relaxing structures")
-            # Create database file or connect to existing one,
-            # unlock them, if they are locked
-            if not os.path.exists("db_generated.db"):
-                db_generated = open("db_generated.db", "w")
-            if os.path.exists("db_generated.db-journal"):
-                os.remove("db_generated.db-journal")
-            if os.path.exists("db_generated.lock"):
-                os.remove("db_generated.lock")
-
-            db_generated = ase.db.connect("db_generated.db")
-
-            if not os.path.exists("db_relaxed.db"):
-                db_relaxed = open("db_relaxed.db", "w")
-            if os.path.exists("db_relaxed.db-journal"):
-                os.remove("db_relaxed.db-journal")
-            if os.path.exists("db_relaxed.lock"):
-                os.remove("db_relaxed.lock")
-
+            self.db_setup("db_relaxed")
             db_relaxed = ase.db.connect("db_relaxed.db")
 
-            if not os.path.exists("db_trajectories.db"):
-                db_trajectories = open("db_trajectories.db", "w")
-            if os.path.exists("db_trajectories.db-journal"):
-                os.remove("db_trajectories.db-journal")
-            if os.path.exists("db_trajectories.db.lock"):
-                os.remove("db_trajectories.db.lock")
-            if not os.path.exists("db_generated_visual.db"):
-                db_generated_visual = open("db_generated_visual.db", "w")
-            # if os.path.exists("db_generated.db-journal"):
-            # os.remove("db_generated.db-journal")
-            # if os.path.exists("db_generated.lock"):
-            # os.remove("db_generated.lock")
-
+            self.db_setup("db_generated_visual")
             db_generated_visual = ase.db.connect("db_generated_visual.db")
 
+            self.db_setup("db_trajectories")
             db_trajectories = ase.db.connect("db_trajectories.db")
 
             name = parameters["name"]
 
+            print("Start relaxing structures")
             self.success = db_relaxed.count()
             print("Relaxed structures", db_relaxed.count())
             structure = Structure(parameters)
@@ -338,53 +268,6 @@ class Protocol:
                 # TODO: If you want to generate on the fly, chagnge so that it doesnt delete the database in the meantime
                 if db_generated_visual.count() == 0:
                     raise ValueError("No structures in the database. Please generate some first.")
-                    
-                    #self.trials = 0
-                    #while self.trials < parameters["trials"]:
-                    #    configuration, conf = structure.create_configuration(
-                    #        parameters
-                    #    )
-                    #    # Apply the configuration to structure
-                    #    structure.apply_conf(conf)
-                    #    # Check if that structure is sensible
-                    #    if parameters["protocol"]["check_db"]:
-                    #        if all_right(structure, fixed_frame):
-                    #            # Check if it is in database
-                    #            if not structure.find_in_database(
-                    #                conf, db_relaxed, parameters
-                    #            ):
-                    #                if not structure.find_in_database(
-                    #                    conf, db_trajectories, parameters
-                    #                ):
-                    #                    #if hasattr(self, "fixed_frame"):
-                    #                    db_generated_visual.write(
-                    #                        structure.atoms_object_visual(
-                    #                            fixed_frame
-                    #                        ),
-                    #                        **conf
-                    #                    )
-                    #                    print("Structure added to generated")
-                    #                    break
-                    #                else:
-                    #                    self.trials += 1
-                    #                    print("Found in database")
-#
-                    #            else:
-                    #                self.trials += 1
-                    #                print("Found in database")
-                    #        else:
-                    #            self.trials += 1
-                    #            print("Trials made", self.trials)
-                    #    else:
-                    #        db_generated.write(structure.atoms_object(), **conf)
-#
-                    #        #if hasattr(self, "fixed_frame"):
-                    #        db_generated_visual.write(
-                    #            structure.atoms_object_visual(fixed_frame),
-                    #            **conf
-                    #        )
-                    #        self.trials = 0
-                    #        self.success = db_generated.count()
                 else:
                     for num, row in enumerate(db_generated_visual.select()):
                         if num < self.success:
@@ -394,13 +277,11 @@ class Protocol:
                         traj_id = row.unique_id
                         # Extract the configuration from the row
                         conf = row.key_value_pairs
-                        # conf = {key: row[key] for key in conf_keys}
                         print("added line")
                         print(row.key_value_pairs)
                         print("added line")
-                        #structure.apply_conf(conf)
                         dirs.dir_num = row.id
-                        # del db_generated[row.id]  # Why would we delete the row? Keeping the database should be better
+                        
                         if parameters["protocol"]["check_db"]:
                             if structure.find_in_database(conf, db_relaxed, parameters) or structure.find_in_database(conf, db_trajectories, parameters):
                                 print("Found in database")
@@ -410,43 +291,32 @@ class Protocol:
                         row_atoms = row.toatoms().copy()
                         dirs.create_directory(parameters)
                         dirs.save_to_directory(row_atoms,parameters)
-                        calculator.simple_relax(row_atoms, parameters, dirs.current_dir(parameters))           #legacy: calculator.relax(structure, fixed_frame,parameters,dirs.current_dir(parameters))
+                        calculator.simple_relax(row_atoms, parameters, dirs.current_dir(parameters))           
+                        #legacy: calculator.relax(structure, fixed_frame,parameters,dirs.current_dir(parameters))
                         
                         calculator.finished(dirs.current_dir(parameters))
                         # Find the final trajectory
-                        traj = Trajectory(
-                            os.path.join(
-                                dirs.current_dir(parameters),
-                                "trajectory_{}.traj".format(name)
-                            )
-                        )
+                        traj = Trajectory(os.path.join(dirs.current_dir(parameters), "trajectory_{}.traj".format(name)))
                         # TODO: The saving of entire trajectories this way is VERY SLOW.
                         # Rethink if we need every step in the database
                         print("Structure relaxed")
-                        # f_max = 10000
-                        e_min = 100000
-                        for i, step in enumerate(traj):
-                            full_conf = structure.get_configuration(step)
-                            db_trajectories.write(
-                                step, **full_conf, trajectory=traj_id
-                            )
-                            # f_max_temp = (step._calc.results['forces'] ** 2).sum(axis=1).max()
-                            # if f_max_temp < f_max:
-                            #     f_max = f_max_temp
-                            #     arg_fmax = i
-                            e_min_temp = step._calc.results['energy']
-                            if e_min_temp < e_min:
-                                e_min = e_min_temp
-                                arg_emin = i
                         
+                        if parameters["save_trajectories"] == True:
+                            e_min = 100000
+                            for i, step in enumerate(traj):
+                                full_conf = structure.get_configuration(step)
+                                db_trajectories.write(step, **full_conf, trajectory=traj_id)
+                                e_min_temp = step._calc.results['energy']
+                                if e_min_temp < e_min:
+                                    e_min = e_min_temp
+                                    arg_emin = i
+                        else: 
+                            energies = [step._calc.results['energy'] for step in traj]
+                            arg_emin = int(np.argmin(energies))
+                            e_min = energies[arg_emin]
+
                         full_conf = structure.get_configuration(traj[arg_emin])
-                        db_relaxed.write(
-                            traj[arg_emin], **full_conf, trajectory=traj_id, step=arg_emin
-                        )
-                        # full_conf = structure.get_configuration(traj[arg_fmax])
-                        # db_relaxed.write(
-                        #     traj[arg_fmax], **full_conf, trajectory=traj_id, step=arg_fmax
-                        # )
+                        db_relaxed.write(traj[arg_emin], **full_conf, trajectory=traj_id, step=arg_emin)
+                        
                         self.success = db_relaxed.count()
-                        #calculator.close()
-                        #break
+            print("Finished relaxations.")            
