@@ -226,10 +226,10 @@ class TestStructure(unittest.TestCase):
 
         with open(os.path.join(dirname, "parameters_generate.json")) as f:
             parameters = json.load(f)
-        parameters["geometry"][0] = os.path.join(
+        parameters["geometry"]["filename"] = os.path.join(
             dirname, "supporting", "molecules", "hexane.xyz"
         )
-        parameters["geometry"][1] = "xyz"
+        parameters["geometry"]["format"] = "xyz"
 
         parameters["fixed_frame"]["activate"] = False
         parameters["fixed_frame"]["filename"] = os.path.join(
