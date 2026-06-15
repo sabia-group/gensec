@@ -12,8 +12,7 @@ from gensec.outputs import Directories
 from gensec.relaxation import Calculator
 from gensec.check_input import Check_input
 from gensec.supercell_finder import Supercell_finder
-from gensec.fps_selection import select_structures_fps
-from gensec.fine_tune import run_training_pipeline
+from gensec.training import run_training_pipeline
 from ase.io.trajectory import Trajectory
 
 from gensec.unit_cell_finder import Unit_cell_finder, gen_base_sheet
@@ -253,20 +252,9 @@ class Protocol:
                     self.trials += 1
         
         if parameters["fps_selection"]["activate"] is True:
-            print("Running FPS selection on generated structures...")
-            if not parameters["protocol"]["generate"]["activate"]:
-                db_generated_visual = ase.db.connect("db_generated_visual.db")
-            atoms_list = [row.toatoms() for row in db_generated_visual.select()]
-            n_select = parameters["fps_selection"].get("n_select", "all")
-            #soap_params = parameters["fps_selection"].get("soap", {}) for now hard-coded
-            selected_indices = select_structures_fps(atoms_list, n_select) #, soap_params)
-            # Write selected structures to new db
-            if os.path.exists("db_generated_fps.db"):
-                os.remove("db_generated_fps.db")
-            db_generated_fps = ase.db.connect("db_generated_fps.db")
-            for i in selected_indices:
-                db_generated_fps.write(atoms_list[i])
-            print(f"FPS selection complete: {len(selected_indices)} structures saved to db_generated_fps.db.")
+            from gensec.fps_selection import run_fps_selection
+
+            run_fps_selection(parameters)
             
         
         if "training" in parameters and parameters["training"].get("activate", False):

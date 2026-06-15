@@ -5,6 +5,31 @@ from featomic import SoapPowerSpectrum
 import metatensor
 from skmatter import sample_selection
 
+
+def run_fps_selection(
+    parameters,
+    source_db_path="db_generated_visual.db",
+    output_db_path="db_generated_fps.db",
+):
+    print("Running FPS selection on generated structures...")
+    db_generated_visual = ase.db.connect(source_db_path)
+    atoms_list = [row.toatoms() for row in db_generated_visual.select()]
+    n_select = parameters["fps_selection"].get("n_select", "all")
+
+    selected_indices = select_structures_fps(atoms_list, n_select)
+
+    if os.path.exists(output_db_path):
+        os.remove(output_db_path)
+    db_generated_fps = ase.db.connect(output_db_path)
+    for i in selected_indices:
+        db_generated_fps.write(atoms_list[i])
+
+    print(
+        f"FPS selection complete: {len(selected_indices)} structures saved to {output_db_path}."
+    )
+    return output_db_path
+
+
 def select_structures_fps(frames, n_select="all"):
     if len(frames) == 0:
         return []
