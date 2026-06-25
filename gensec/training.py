@@ -849,4 +849,6 @@ def run_training_pipeline(parameters, fps_db_path):
             run_phase2_relax_refine(parameters, fps_db_path)
         return
 
+    if ft.get("phase2_activate", False):
+        print("[training] Warning: phase2_activate is ignored when loop_activate is False.")
     run_one_shot_training(parameters, fps_db_path)

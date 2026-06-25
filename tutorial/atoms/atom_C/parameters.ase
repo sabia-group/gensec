@@ -1,0 +1,8 @@
+dict(compute_forces=False,
+     default_initial_moment='hund',
+     relativistic='atomic_zora scalar',
+     sc_accuracy_rho=1e-05,
+     sc_iter_limit=200,
+     species_dir='/u/lazerpo/FHIaims/species_defaults/defaults_2020/light',
+     spin='collinear',
+     xc='pbe')

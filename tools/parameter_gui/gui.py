@@ -11,6 +11,7 @@ Features:
 import sys
 import json
 import os
+import copy
 from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -27,6 +28,63 @@ from tools.parameter_gui.schema import (
     get_category_description, get_schema_field, is_nested_field,
     is_mace_args_field
 )
+
+
+_UNCHANGED = object()
+_DELETE = object()
+
+
+def _deep_diff(previous, current):
+    """Return only the parts of current that differ from previous.
+
+    A loaded parameters file may contain keys that the GUI does not know yet.
+    Comparing widget state to its state immediately after loading lets saving
+    preserve those keys and avoids injecting untouched GUI defaults.
+    """
+    if isinstance(previous, dict) and isinstance(current, dict):
+        changes = {}
+        for key in set(previous) | set(current):
+            if key not in current:
+                changes[key] = _DELETE
+            elif key not in previous:
+                changes[key] = copy.deepcopy(current[key])
+            else:
+                change = _deep_diff(previous[key], current[key])
+                if change is not _UNCHANGED:
+                    changes[key] = change
+        return changes if changes else _UNCHANGED
+
+    if previous != current:
+        return _DELETE if current is None else copy.deepcopy(current)
+    return _UNCHANGED
+
+
+def _apply_changes(original, changes):
+    """Apply a nested change set without dropping keys outside the schema."""
+    if changes is _DELETE:
+        return _DELETE
+    if not isinstance(changes, dict):
+        return copy.deepcopy(changes)
+
+    result = copy.deepcopy(original) if isinstance(original, dict) else {}
+    for key, value in changes.items():
+        updated = _apply_changes(result.get(key), value)
+        if updated is _DELETE:
+            result.pop(key, None)
+        else:
+            result[key] = updated
+    return result
+
+
+def _drop_none_values(value):
+    """Keep blank optional fields out of a brand-new parameters file."""
+    if isinstance(value, dict):
+        return {
+            key: cleaned
+            for key, item in value.items()
+            if (cleaned := _drop_none_values(item)) is not None
+        }
+    return value
 
 
 class E0sTableEditor(QWidget):
@@ -630,6 +688,8 @@ class ParameterGUI(QMainWindow):
         self.param_widgets = {}
         self.param_source_keys = {}
         self.current_file = None
+        self.loaded_data = None
+        self.loaded_widget_values = {}
         
         self._create_ui()
     
@@ -670,10 +730,7 @@ class ParameterGUI(QMainWindow):
         scroll_content = QWidget()
         self.scroll_layout = QVBoxLayout(scroll_content)
         
-        # Build form from schema
-        self._build_form()
-        
-        self.scroll_layout.addStretch()
+        self._reset_form()
         scroll.setWidget(scroll_content)
         main_layout.addWidget(scroll)
         
@@ -721,6 +778,19 @@ class ParameterGUI(QMainWindow):
                     self.param_source_keys[field_name] = source_key
             
             self.scroll_layout.addWidget(cat_section)
+
+    def _reset_form(self):
+        """Rebuild widgets with schema defaults before loading another file."""
+        while self.scroll_layout.count():
+            item = self.scroll_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+        self.param_widgets = {}
+        self.param_source_keys = {}
+        self._build_form()
+        self.scroll_layout.addStretch()
     
     def open_file_browser(self):
         """Open file dialog."""
@@ -735,10 +805,18 @@ class ParameterGUI(QMainWindow):
     def load_file(self, file_path):
         """Load parameters file."""
         try:
-            with open(file_path, "r") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            
+            if not isinstance(data, dict):
+                raise ValueError("Top-level JSON value must be an object")
+
+            self._reset_form()
             self._populate_from_dict(data)
+            self.loaded_data = copy.deepcopy(data)
+            self.loaded_widget_values = {
+                field_name: copy.deepcopy(widget.get_value())
+                for field_name, widget in self.param_widgets.items()
+            }
             self.current_file = file_path
             self.file_label.setText(f"Loaded: {Path(file_path).name}")
             self.statusBar().showMessage(f"Loaded: {file_path}")
@@ -754,8 +832,8 @@ class ParameterGUI(QMainWindow):
         
         try:
             data = self._collect_form_data()
-            with open(self.current_file, "w") as f:
-                json.dump(data, f, indent=2)
+            with open(self.current_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
             self.statusBar().showMessage(f"Saved: {self.current_file}")
             QMessageBox.information(self, "Success", "Parameters saved successfully!")
         except Exception as e:
@@ -780,15 +858,31 @@ class ParameterGUI(QMainWindow):
                 widget.set_value(data[source_key])
     
     def _collect_form_data(self):
-        """Collect all field values."""
-        result = {}
+        """Collect form data without changing untouched loaded values."""
+        if self.loaded_data is None:
+            result = {}
+            for field_name, widget in self.param_widgets.items():
+                source_key = self.param_source_keys.get(field_name, field_name)
+                value = _drop_none_values(widget.get_value())
+                if source_key in result and isinstance(result[source_key], dict) and isinstance(value, dict):
+                    result[source_key].update(value)
+                else:
+                    result[source_key] = value
+            return result
+
+        result = copy.deepcopy(self.loaded_data)
         for field_name, widget in self.param_widgets.items():
             source_key = self.param_source_keys.get(field_name, field_name)
-            value = widget.get_value()
-            if source_key in result and isinstance(result[source_key], dict) and isinstance(value, dict):
-                result[source_key].update(value)
+            original_widget_value = self.loaded_widget_values[field_name]
+            changes = _deep_diff(original_widget_value, widget.get_value())
+            if changes is _UNCHANGED:
+                continue
+
+            updated = _apply_changes(result.get(source_key), changes)
+            if updated is _DELETE:
+                result.pop(source_key, None)
             else:
-                result[source_key] = value
+                result[source_key] = updated
         return result
 
 

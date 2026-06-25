@@ -180,8 +180,8 @@ def Check_input(parameters):
         
         if "max_area_diff" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["max_area_diff"] = 0.1
-        if "Z_cell_length" not in parameters["supercell_finder"]:
-            parameters["supercell_finder"]["Z_cell_length"] = 100
+        if "z_cell_length" not in parameters["supercell_finder"]:
+            parameters["supercell_finder"]["z_cell_length"] = 100
         if "m_range" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["m_range"]["type"] = "max"
             parameters["supercell_finder"]["m_range"]["max_s"] = 15

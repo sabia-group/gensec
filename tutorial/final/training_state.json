@@ -1,0 +1,202 @@
+{
+  "next_fps_index": 270,
+  "round_index": 14,
+  "history": [
+    {
+      "round": 1,
+      "fps_start_index": 0,
+      "fps_count": 60,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 8.608,
+        "force_rmse_mev_per_a": 332.811
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 2.833,
+        "force_rmse_mev_per_a": 64.445
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_001",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_001/MeC_round001_stagetwo_compiled.model"
+    },
+    {
+      "round": 2,
+      "fps_start_index": 60,
+      "fps_count": 40,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 4.347,
+        "force_rmse_mev_per_a": 260.744
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 2.238,
+        "force_rmse_mev_per_a": 43.984
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_002",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_002/MeC_round002_stagetwo_compiled.model"
+    },
+    {
+      "round": 3,
+      "fps_start_index": 100,
+      "fps_count": 30,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 4.951,
+        "force_rmse_mev_per_a": 188.101
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 1.571,
+        "force_rmse_mev_per_a": 29.588
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_003",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_003/MeC_round003_stagetwo_compiled.model"
+    },
+    {
+      "round": 4,
+      "fps_start_index": 130,
+      "fps_count": 25,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 4.436,
+        "force_rmse_mev_per_a": 187.886
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 0.962,
+        "force_rmse_mev_per_a": 26.463
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_004",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_004/MeC_round004_stagetwo_compiled.model"
+    },
+    {
+      "round": 5,
+      "fps_start_index": 155,
+      "fps_count": 20,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 4.326,
+        "force_rmse_mev_per_a": 201.632
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 1.249,
+        "force_rmse_mev_per_a": 37.881
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_005",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_005/MeC_round005_stagetwo_compiled.model"
+    },
+    {
+      "round": 6,
+      "fps_start_index": 175,
+      "fps_count": 15,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 5.452,
+        "force_rmse_mev_per_a": 203.101
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 0.908,
+        "force_rmse_mev_per_a": 27.126
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_006",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_006/MeC_round006_stagetwo_compiled.model"
+    },
+    {
+      "round": 7,
+      "fps_start_index": 190,
+      "fps_count": 10,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 6.524,
+        "force_rmse_mev_per_a": 214.649
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 1.262,
+        "force_rmse_mev_per_a": 37.673
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_007",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_007/MeC_round007_stagetwo_compiled.model"
+    },
+    {
+      "round": 8,
+      "fps_start_index": 200,
+      "fps_count": 10,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 3.214,
+        "force_rmse_mev_per_a": 243.849
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 1.26,
+        "force_rmse_mev_per_a": 39.319
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_008",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_008/MeC_round008_stagetwo_compiled.model"
+    },
+    {
+      "round": 9,
+      "fps_start_index": 210,
+      "fps_count": 10,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 4.398,
+        "force_rmse_mev_per_a": 210.56
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 0.832,
+        "force_rmse_mev_per_a": 27.335
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_009",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_009/MeC_round009_stagetwo_compiled.model"
+    },
+    {
+      "round": 10,
+      "fps_start_index": 220,
+      "fps_count": 10,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 3.628,
+        "force_rmse_mev_per_a": 193.447
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 0.652,
+        "force_rmse_mev_per_a": 28.219
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_010",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_010/MeC_round010_stagetwo_compiled.model"
+    },
+    {
+      "round": 11,
+      "fps_start_index": 230,
+      "fps_count": 10,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 4.896,
+        "force_rmse_mev_per_a": 216.711
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 0.59,
+        "force_rmse_mev_per_a": 25.86
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_011",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_011/MeC_round011_stagetwo_compiled.model"
+    },
+    {
+      "round": 12,
+      "fps_start_index": 240,
+      "fps_count": 20,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 4.674,
+        "force_rmse_mev_per_a": 195.576
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 0.61,
+        "force_rmse_mev_per_a": 26.168
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_012",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_012/MeC_round012_stagetwo_compiled.model"
+    },
+    {
+      "round": 13,
+      "fps_start_index": 260,
+      "fps_count": 10,
+      "test_rmse": {
+        "energy_rmse_mev_per_atom": 3.137,
+        "force_rmse_mev_per_a": 254.816
+      },
+      "easy_test_rmse": {
+        "energy_rmse_mev_per_atom": 0.716,
+        "force_rmse_mev_per_a": 30.121
+      },
+      "round_dir": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_013",
+      "phase1_model": "/ada/u/lazerpo/projectGenSec/fine-tune/train-loop/b1-scratch-loop/training_round_013/MeC_round013_stagetwo_compiled.model"
+    }
+  ],
+  "status": "exhausted"
+}

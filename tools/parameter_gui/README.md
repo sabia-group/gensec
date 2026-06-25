@@ -13,6 +13,9 @@ A vibe-coded PyQt5-based interactive editor for GenSec `parameters.json` files w
 # From gensec/ directory
 python tools/launch_gui.py
 
+# Equivalent package entry point
+python -m tools.parameter_gui
+
 # Or with a file directly
 python tools/launch_gui.py examples/fine-tune/parameters.json
 ```

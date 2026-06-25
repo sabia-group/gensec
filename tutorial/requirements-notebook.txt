@@ -1,0 +1,14 @@
+ase
+numpy
+scipy
+matplotlib
+ipykernel
+ipywidgets
+PyQt5
+networkx
+
+# Optional runtime pieces for the full workflow
+featomic
+metatensor
+skmatter
+mace-torch
