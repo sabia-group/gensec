@@ -13,8 +13,11 @@ Contributors
 ============
 
 Original code: Dmitrii Maksimov
+
 Supervision, small changes, code design: Mariana Rossi
+
 Generation of commensurate supercells and update of the code: Philipp Pestlin
+
 Combination with automated ML training: Paolo Lazzaroni
 
 ============
