@@ -9,6 +9,18 @@ Will send structures to local minima
    :depth: 2
 
 ============
+Contributors
+============
+
+**Dmitrii Maksimov**: Original code
+
+**Mariana Rossi**: Supervision, small changes, code design
+
+**Philipp Pestlin**: Generation of commensurate supercells and major update of the code
+
+**Paolo Lazzaroni**: Combination with automated ML potential training
+
+============
 Introduction
 ============
 
