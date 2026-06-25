@@ -28,6 +28,16 @@ gensec.defaults module
     :undoc-members:
     :show-inheritance:
 
+gensec.fine_tune module
+-----------------------
+
+Utilities for reference labeling and optional MACE fine-tuning.
+
+.. automodule:: gensec.fine_tune
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 gensec.known module
 -------------------
 
