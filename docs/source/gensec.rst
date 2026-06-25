@@ -28,6 +28,19 @@ gensec.defaults module
     :undoc-members:
     :show-inheritance:
 
+gensec.training module
+----------------------
+
+This branch uses the training pipeline in ``gensec.training`` to train ML potentials
+from scratch. The protocol entry point is ``run_training_pipeline`` (triggered when
+``training.activate`` is true), which handles labeling, dataset preparation, and MACE
+training in one-shot or iterative loop mode.
+
+.. automodule:: gensec.training
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 gensec.known module
 -------------------
 
