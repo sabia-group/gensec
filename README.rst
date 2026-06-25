@@ -12,13 +12,13 @@ Will send structures to local minima
 Contributors
 ============
 
-Original code: Dmitrii Maksimov
+*Dmitrii Maksimov*: Original code
 
-Supervision, small changes, code design: Mariana Rossi
+*Mariana Rossi*: Supervision, small changes, code design
 
-Generation of commensurate supercells and update of the code: Philipp Pestlin
+*Philipp Pestlin*: Generation of commensurate supercells and major update of the code
 
-Combination with automated ML training: Paolo Lazzaroni
+*Paolo Lazzaroni*: Combination with automated ML potential training
 
 ============
 Introduction
