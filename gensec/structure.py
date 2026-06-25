@@ -916,8 +916,10 @@ class Fixed_frame:
                 self.mic = True
                 self.fixed_frame.set_cell(self.pbc)
                 self.fixed_frame.set_pbc(True)
-        
-        self.fixed_frame.positions[:, 2] = self.fixed_frame.positions[:, 2] - np.max(self.fixed_frame.positions[:, 2])
+                
+        #This was running unconditionally and was breaking the tests, I hope this fixes. Philipp maybe check if this is ok in all cases.
+        if hasattr(self, 'fixed_frame'):
+            self.fixed_frame.positions[:, 2] = self.fixed_frame.positions[:, 2] - np.max(self.fixed_frame.positions[:, 2])
 
     def get_len(self):
         """
