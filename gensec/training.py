@@ -69,7 +69,19 @@ def _k_grid_from_cell(atoms, reference_atoms, k_density):
     return (kx, ky, kz)
 
 
-def compute_labels_on_db(parameters, db_in_path, db_out_path="db_labeled.db"):
+def _db_has_rows(path):
+    return os.path.exists(path) and ase.db.connect(path).count() > 0
+
+
+def _resume_key_for_row(row):
+    data = dict(row.data) if row.data else {}
+    for key in ("phase2_source_row_id", "source_row_id", "fps_row_id"):
+        if key in data:
+            return key, data[key]
+    return "row_id", row.id
+
+
+def compute_labels_on_db(parameters, db_in_path, db_out_path="db_labeled.db", resume_existing=False):
     """Compute reference energies and forces for all structures in an ASE DB.
 
     This is the expensive labeling step. For every input row, it loads the ASE
@@ -82,6 +94,9 @@ def compute_labels_on_db(parameters, db_in_path, db_out_path="db_labeled.db"):
         parameters: Full GenSec parameters dictionary.
         db_in_path: ASE database containing unlabeled candidate structures.
         db_out_path: ASE database to create with successfully labeled rows.
+        resume_existing: If True, keep an existing output DB and skip input
+            rows already present there. The default keeps the historical
+            behavior and recreates the output DB from scratch.
 
     Returns:
         Path to ``db_out_path``.
@@ -103,14 +118,30 @@ def compute_labels_on_db(parameters, db_in_path, db_out_path="db_labeled.db"):
     ref_atoms = read(ref_file, format=ref_format)
 
     db_in = ase.db.connect(db_in_path)
-    if os.path.exists(db_out_path):
+    if os.path.exists(db_out_path) and not resume_existing:
         os.remove(db_out_path)
     db_out = ase.db.connect(db_out_path)
+    existing_keys = set()
+    if resume_existing and os.path.exists(db_out_path):
+        existing_keys = {
+            _resume_key_for_row(row)
+            for row in db_out.select()
+            if row.data and "REF_energy" in row.data and "REF_forces" in row.data
+        }
+        if existing_keys:
+            print(f"[training] Resuming labels from {db_out_path}: found {len(existing_keys)} existing structures.")
 
     skipped = 0
     written = 0
+    reused = 0
 
     for row in db_in.select():
+        row_key = _resume_key_for_row(row)
+        if row_key in existing_keys:
+            print(f"[training] Reusing existing label for structure id={row.id}")
+            reused += 1
+            continue
+
         print(f"[training] Processing structure id={row.id}")
         atoms = row.toatoms()
         k_grid = _k_grid_from_cell(atoms, ref_atoms, k_density)
@@ -138,7 +169,7 @@ def compute_labels_on_db(parameters, db_in_path, db_out_path="db_labeled.db"):
         db_out.write(atoms, data=data)
         written += 1
 
-    print(f"[training] Labeling finished: wrote {written} structures, skipped {skipped} structures.")
+    print(f"[training] Labeling finished: wrote {written} structures, reused {reused}, skipped {skipped} structures.")
     return db_out_path
 
 
@@ -387,27 +418,43 @@ def run_phase2_relax_refine(parameters, fps_db_path):
 
     # Relax broadly, filter by low predicted energy, then restore diversity
     # before paying for reference labels.
-    _relax_db_with_model(
-        parameters,
-        source_db,
-        model_path,
-        relax_db,
-        fmax=float(ft.get("phase2_relax_fmax", 0.01)),
-        steps=int(ft.get("phase2_relax_steps", 20)),
-    )
-    _select_low_energy_db(
-        relax_db,
-        lowe_db,
-        fraction=float(ft.get("phase2_low_energy_fraction", 1.0 / 3.0)),
-        min_count=int(ft.get("phase2_low_energy_min", 50)),
-    )
-    _fps_select_db(
-        lowe_db,
-        lowe_fps_db,
-        n_select=int(ft.get("phase2_fps_n_select", 50)),
-    )
+    if _db_has_rows(relax_db):
+        print(f"[training] Phase-2 resume: reusing relaxed DB {relax_db}")
+    else:
+        _relax_db_with_model(
+            parameters,
+            source_db,
+            model_path,
+            relax_db,
+            fmax=float(ft.get("phase2_relax_fmax", 0.01)),
+            steps=int(ft.get("phase2_relax_steps", 20)),
+        )
 
-    compute_labels_on_db(parameters, lowe_fps_db, db_out_path=lowe_fps_label_db)
+    if _db_has_rows(lowe_db):
+        print(f"[training] Phase-2 resume: reusing low-energy DB {lowe_db}")
+    else:
+        _select_low_energy_db(
+            relax_db,
+            lowe_db,
+            fraction=float(ft.get("phase2_low_energy_fraction", 1.0 / 3.0)),
+            min_count=int(ft.get("phase2_low_energy_min", 50)),
+        )
+
+    if _db_has_rows(lowe_fps_db):
+        print(f"[training] Phase-2 resume: reusing FPS DB {lowe_fps_db}")
+    else:
+        _fps_select_db(
+            lowe_db,
+            lowe_fps_db,
+            n_select=int(ft.get("phase2_fps_n_select", 50)),
+        )
+
+    compute_labels_on_db(
+        parameters,
+        lowe_fps_db,
+        db_out_path=lowe_fps_label_db,
+        resume_existing=True,
+    )
 
     # Augment the last phase-1 cumulative labeled set, then train one final
     # model on phase-1 labels plus the new phase-2 labels.
