@@ -47,6 +47,3 @@ Thumbs.db
 *.log
 results/
 outputs/
-*.model
-*.db
-training_*/
