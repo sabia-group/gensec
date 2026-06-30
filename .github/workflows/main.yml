@@ -76,3 +76,46 @@ jobs:
           # PDF. Note, this should be the same directory as the input
           # paper.md
           path: .github/workflows/paper.pdf
+
+  docs:
+    runs-on: ubuntu-latest
+    name: Build Docs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install docs dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install sphinx sphinx-rtd-theme numpy ase scipy networkx timeout-decorator
+
+      - name: Build Sphinx HTML
+        run: |
+          make -C docs html
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build/html
+
+  deploy-docs:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    name: Deploy Docs
+    needs: docs
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
