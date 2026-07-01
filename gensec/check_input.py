@@ -226,7 +226,7 @@ def Check_input(parameters):
         
     if parameters["protocol"]["search"]["activate"] is True and "save_trajectories" not in parameters:
         parameters["save_trajectories"] = False # Saving trajectories takes a long time and brings little to no value
-        print("Trajectories will not be saved. If you inted to save them, please set 'save_trajectories' to True")
+        print("Trajectories will not be saved. If you intend to save them, please set 'save_trajectories' to True")
     
     # TODO: Implement check for calculator + give different options for calculator in generate and search.
         
