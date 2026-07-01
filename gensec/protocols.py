@@ -34,13 +34,21 @@ class Protocol:
         """
         pass
 
-    def db_setup(name: str):
-        if not os.path.exists(".db"):
-            _ = open(name + ".db", "w")
-        if os.path.exists(name + ".db-journal"):
-            os.remove(name + ".db-journal")
-        if os.path.exists(name + ".lock"):
-            os.remove(name + ".lock")
+    @staticmethod
+    def db_setup(name: str, cleanup_stale_files: bool = False):
+        db_path = name if name.endswith(".db") else name + ".db"
+        db_base = db_path[:-3]
+
+        if not os.path.exists(db_path):
+            open(db_path, "a").close()
+
+        # In multi-writer mode, lock/journal files may be valid and must not be removed.
+        if cleanup_stale_files:
+            for stale_file in (db_path + "-journal", db_base + ".lock", db_path + ".lock"):
+                try:
+                    os.remove(stale_file)
+                except FileNotFoundError:
+                    pass
 
 
     def run(self, parameters):
@@ -61,7 +69,7 @@ class Protocol:
             self.db_setup("db_generated_frames")
             db_generated_frames = ase.db.connect("db_generated_frames.db")
 
-            self.db_setup("db_relaxed.db")
+            self.db_setup("db_relaxed")
             db_relaxed = ase.db.connect("db_relaxed.db")
 
             self.db_setup("db_trajectories")
@@ -220,6 +228,7 @@ class Protocol:
             n_select = parameters["fps_selection"]["n_select"]
             selected_indices = select_structures_fps(atoms_list, n_select)
             # Write selected structures to new db
+            self.db_setup("db_generated_fps")
             db_generated_fps = ase.db.connect("db_generated_fps.db")
             for i in selected_indices:
                 db_generated_fps.write(atoms_list[i])
