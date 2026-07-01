@@ -114,6 +114,11 @@ def Check_input(parameters):
     elif parameters["supercell_finder"]["activate"] is True:
         if "unit_cell_method" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["unit_cell_method"] = "find"
+        if "z_cell_length" not in parameters["supercell_finder"]:
+            if "Z_cell_length" in parameters["supercell_finder"]:
+                parameters["supercell_finder"]["z_cell_length"] = parameters["supercell_finder"]["Z_cell_length"]
+            else:
+                parameters["supercell_finder"]["z_cell_length"] = 100
         if parameters["supercell_finder"]["unit_cell_method"] == "find" and "unit_cell_finder" not in parameters:
             parameters["unit_cell_finder"] = {
                 "min_angle": 20,
@@ -180,21 +185,21 @@ def Check_input(parameters):
         
         if "max_area_diff" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["max_area_diff"] = 0.1
-        if "Z_cell_length" not in parameters["supercell_finder"]:
-            parameters["supercell_finder"]["Z_cell_length"] = 100
         if "m_range" not in parameters["supercell_finder"]:
-            parameters["supercell_finder"]["m_range"]["type"] = "max"
-            parameters["supercell_finder"]["m_range"]["max_s"] = 15
-            parameters["supercell_finder"]["m_range"]["max_f"] = 15    
+            parameters["supercell_finder"]["m_range"] = {
+                "type": "max",
+                "max_s": 15,
+                "max_f": 15
+            }
         else:
             if parameters["supercell_finder"]["m_range"]["type"] == "max" and "max_s" not in parameters["supercell_finder"]["m_range"]:
                 parameters["supercell_finder"]["m_range"]["max_s"] = 15
             if parameters["supercell_finder"]["m_range"]["type"] == "max" and "max_f" not in parameters["supercell_finder"]["m_range"]:
                 parameters["supercell_finder"]["m_range"]["max_f"] = parameters["supercell_finder"]["m_range"]["max_s"]        
             if "max_range_f" not in parameters["supercell_finder"]["m_range"] and parameters["supercell_finder"]["m_range"]["type"] == "given_range":
-                parameters["supercell_finder"]["max_range_f"] = [3, 3]
+                parameters["supercell_finder"]["m_range"]["max_range_f"] = [3, 3]
             if "max_range_s" not in parameters["supercell_finder"]["m_range"] and parameters["supercell_finder"]["m_range"]["type"] == "given_range":
-                parameters["supercell_finder"]["max_range_s"] = [10, 10]
+                parameters["supercell_finder"]["m_range"]["max_range_s"] = [10, 10]
             if parameters["supercell_finder"]["m_range"]["type"] not in ["max", "given_range"]:
                 raise NotImplementedError("type for m_range not implemented. Choose between max and given_range.")
         if "max_attempts" not in parameters["supercell_finder"]:
@@ -218,6 +223,10 @@ def Check_input(parameters):
     if "name" not in parameters:
         parameters["name"] = "Unnamed"
         print("No name given. Set to default value 'Unnamed'.")
+        
+    if parameters["protocol"]["search"]["activate"] is True and "save_trajectories" not in parameters:
+        parameters["save_trajectories"] = False # Saving trajectories takes a long time and brings little to no value
+        print("Trajectories will not be saved. If you intend to save them, please set 'save_trajectories' to True")
     
     # TODO: Implement check for calculator + give different options for calculator in generate and search.
         
