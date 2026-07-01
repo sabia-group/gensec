@@ -437,6 +437,64 @@ def _score_rows_by_force_marker(rows):
     return sorted(scored, key=lambda item: item[0])
 
 
+def _filter_highest_force_bins(source_db_path, out_db_path, exclude_highest_bins, n_bins=TEST_SET_FORCE_BINS):
+    """Remove the hardest force bins before making the test and training sets.
+
+    Rows keep their original database order, which also preserves an existing
+    FPS ordering. Every row must have a force marker: mixing scored and unscored
+    structures would make the requested cutoff ambiguous.
+    """
+    original_value = exclude_highest_bins
+    try:
+        exclude_highest_bins = int(original_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("training.exclude_highest_force_bins must be 0, 1, or 2.") from exc
+    if exclude_highest_bins not in (0, 1, 2) or str(original_value).strip() not in {"0", "1", "2"}:
+        raise ValueError("training.exclude_highest_force_bins must be 0, 1, or 2.")
+    if exclude_highest_bins == 0:
+        return source_db_path
+
+    rows = list(ase.db.connect(source_db_path).select())
+    scored = _score_rows_by_force_marker(rows)
+    if len(scored) != len(rows):
+        raise ValueError(
+            "training.exclude_highest_force_bins requires force markers for every candidate "
+            f"structure, but found them for {len(scored)}/{len(rows)} rows in {source_db_path}. "
+            "Enable force checking during generation, or set "
+            "training.exclude_highest_force_bins to 0 to continue without force filtering."
+        )
+
+    bins = _split_scored_rows_into_bins(scored, n_bins)
+    if exclude_highest_bins >= len(bins):
+        raise ValueError(
+            f"Cannot remove {exclude_highest_bins} force bins from a database that produced "
+            f"only {len(bins)} non-empty bins."
+        )
+    excluded_ids = {row_id for chunk in bins[-exclude_highest_bins:] for _, row_id in chunk}
+    bin_by_id = {
+        row_id: bin_index
+        for bin_index, chunk in enumerate(bins)
+        for _, row_id in chunk
+    }
+
+    if os.path.exists(out_db_path):
+        os.remove(out_db_path)
+    dest = ase.db.connect(out_db_path)
+    for row in rows:
+        if row.id in excluded_ids:
+            continue
+        data = dict(row.data) if row.data else {}
+        data["force_filter_bin"] = int(bin_by_id[row.id])
+        data["force_filter_excluded_highest_bins"] = exclude_highest_bins
+        dest.write(row.toatoms(), data=data)
+
+    print(
+        f"[training] Force-domain filter: retained {dest.count()}/{len(rows)} structures "
+        f"after removing the highest {exclude_highest_bins}/{len(bins)} force bins."
+    )
+    return out_db_path
+
+
 def _split_scored_rows_into_bins(scored_rows, n_bins):
     """Split force-sorted rows into equal-count bins from easy to hard."""
     if not scored_rows:
@@ -671,6 +729,20 @@ def _ensure_fixed_test_set(
 
     if os.path.exists(test_labeled_db):
         existing = ase.db.connect(test_labeled_db).count()
+        excluded_force_bins = int(ft.get("exclude_highest_force_bins", 0))
+        if excluded_force_bins:
+            existing_rows = list(ase.db.connect(test_labeled_db).select())
+            filter_matches = all(
+                int((dict(row.data) if row.data else {}).get("force_filter_excluded_highest_bins", -1))
+                == excluded_force_bins
+                for row in existing_rows
+            )
+            if not filter_matches:
+                raise ValueError(
+                    "The existing fixed test set was created with a different force-domain filter. "
+                    "Start a fresh training dataset by removing the existing fixed test and train-pool "
+                    "artifacts before using training.exclude_highest_force_bins."
+                )
         if os.path.exists(test_extxyz):
             print(f"[training] Warining: Using existing fixed test set: {test_labeled_db} ({existing} structures). Test set creation skipped.")
         else:

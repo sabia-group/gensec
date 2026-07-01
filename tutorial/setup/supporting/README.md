@@ -10,3 +10,9 @@ These Python files define ASE calculators used by GenSec.
 
 GenSec imports these files from the path given by `supporting_files_folder` and
 `ase_parameters_file` in `parameters.json`.
+
+These files are examples, not portable calculator definitions. In particular,
+`aims_command.py` must point to a valid FHI-aims binary and species directory
+on the machine where the job runs. The example script reads `AIMS_BINARY` and
+`AIMS_SPECIES_DIR` from the environment when they are set, otherwise it falls
+back to the original cluster paths used for this calculation.

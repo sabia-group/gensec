@@ -432,6 +432,7 @@ PARAMETER_SCHEMA = {
                     "rmse_energy_target":      {"type": "float",  "mandatory": True, "description": "Convergence target for TEST energy RMSE (meV/atom). Required: no runtime fallback default."},
                     "rmse_force_target":       {"type": "float",  "mandatory": True, "description": "Convergence target for TEST force RMSE (meV/Å). Required: no runtime fallback default."},
                     "test_set_size":           {"type": "int",    "default": 0,                    "description": "Test set size (0 = skip)"},
+                    "exclude_highest_force_bins": {"type": "int", "default": 0,                    "description": "Remove 0, 1, or 2 highest force bins before creating both test and training sets"},
                     "mace_output_name":        {"type": "string", "default": "mlip-output",        "description": "MACE model output name prefix"},
                     "state_file":              {"type": "string", "default": "training_state.json", "description": "Loop state tracking file"},
                     "state_metric_decimals":   {"type": "int",    "default": 3,                    "description": "Decimal places stored for loop RMSE history"},

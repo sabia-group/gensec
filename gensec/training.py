@@ -15,6 +15,7 @@ from gensec.training_tools import (
     _ensure_fixed_test_set,
     _evaluate_model_on_labeled_db,
     _extract_fps_batch,
+    _filter_highest_force_bins,
     _find_newest_model_file,
     _fps_select_db,
     _load_loop_state,
@@ -249,6 +250,14 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
 
     ft = parameters["training"]
 
+    # MACE runs inside ``workdir``. Resolve dataset paths from the directory in
+    # which GenSec was started so relative paths do not silently change meaning.
+    train_xyz = os.path.abspath(train_xyz)
+    if valid_xyz:
+        valid_xyz = os.path.abspath(valid_xyz)
+    if test_xyz:
+        test_xyz = os.path.abspath(test_xyz)
+
     name = run_name or ft.get("mace_output_name", "mlip-output")
     user_args = ft.get("mace_args", {}) or {}
 
@@ -384,6 +393,11 @@ def run_phase2_relax_refine(parameters, fps_db_path):
 
     phase2_dir = os.path.abspath(ft.get("phase2_folder", "training_relax"))
     os.makedirs(phase2_dir, exist_ok=True)
+    fps_db_path = _filter_highest_force_bins(
+        fps_db_path,
+        ft.get("force_filtered_db", "db_force_filtered.db"),
+        ft.get("exclude_highest_force_bins", 0),
+    )
 
     state_path = ft.get("state_file", "training_state.json")
     if not os.path.exists(state_path):
@@ -549,6 +563,8 @@ def run_training_loop(parameters, fps_db_path):
     global_labeled_db = ft.get("global_labeled_db", "db_labeled_global.db")
     test_size = int(ft.get("test_set_size", 0))
     loop_use_external = bool(ft.get("loop_use_external_labeled_db", False))
+    exclude_force_bins = ft.get("exclude_highest_force_bins", 0)
+    filtered_db = ft.get("force_filtered_db", "db_force_filtered.db")
     fixed_test_info = None
     pool_db_path = fps_db_path
 
@@ -565,6 +581,10 @@ def run_training_loop(parameters, fps_db_path):
         if ft.get("fixed_test_extxyz"):
             print("[training] Warning: fixed_test_extxyz is ignored when loop_use_external_labeled_db=True; rebuilding from the external DB.")
 
+        external_labeled_db = _filter_highest_force_bins(
+            external_labeled_db, filtered_db, exclude_force_bins
+        )
+
         fixed_test_info = _ensure_fixed_test_set(
             parameters,
             fps_db_path,
@@ -578,6 +598,9 @@ def run_training_loop(parameters, fps_db_path):
     else:
         # Normal mode: create the fixed test set first, label it, and remove
         # those structures from the pool used for later training batches.
+        fps_db_path = _filter_highest_force_bins(
+            fps_db_path, filtered_db, exclude_force_bins
+        )
         if test_size > 0:
             fixed_test_info = _ensure_fixed_test_set(
                 parameters,
@@ -602,7 +625,7 @@ def run_training_loop(parameters, fps_db_path):
     round_index = state.get("round_index", 1)
 
     if loop_use_external:
-        pool_conn = ase.db.connect(external_labeled_db)
+        pool_conn = ase.db.connect(pool_db_path)
         total_pool = pool_conn.count()
         if total_pool == 0:
             raise ValueError(f"External labeled DB is empty: {external_labeled_db}")
@@ -800,20 +823,24 @@ def run_one_shot_training(parameters, fps_db_path):
     global_labeled_db = ft.get("global_labeled_db", "db_labeled_global.db")
     test_size = int(ft.get("test_set_size", 0))
     fixed_test_info = None
-    source_fps_db = fps_db_path
+    source_fps_db = _filter_highest_force_bins(
+        fps_db_path,
+        ft.get("force_filtered_db", "db_force_filtered.db"),
+        ft.get("exclude_highest_force_bins", 0),
+    )
 
     # In one-shot mode we can still carve out a fixed test set first, so the
     # training data does not include those structures.
     if test_size > 0:
         fixed_test_info = _ensure_fixed_test_set(
             parameters,
-            fps_db_path,
+            source_fps_db,
             test_size,
             ft,
             global_labeled_db,
             label_func=compute_labels_on_db,
         )
-        source_fps_db = fixed_test_info.get("train_pool_db", fps_db_path)
+        source_fps_db = fixed_test_info.get("train_pool_db", source_fps_db)
     elif ft.get("fixed_test_extxyz"):
         extxyz_path = ft["fixed_test_extxyz"]
         if not os.path.exists(extxyz_path):

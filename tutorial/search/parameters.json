@@ -142,6 +142,7 @@
     "ase_parameters_file": "aims_command.py",
     "k_density": 30.0,
     "test_set_size": 30,
+    "exclude_highest_force_bins": 0,
     "mace_output_name": "MeC",
     "mace_args": {
       "r_max": 5.0,
