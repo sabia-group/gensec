@@ -1,7 +1,7 @@
 """Use a trained MACE model as the GenSec ASE calculator.
 
 Set GENSEC_MACE_MODEL to an absolute model path before running search. If it is
-not set, this script expects latest.model in the current run directory.
+not set, this script expects latest.model one directory above this file.
 """
 
 import os
@@ -9,7 +9,8 @@ import os
 from mace.calculators import MACECalculator
 
 
-model_path = os.path.abspath(os.environ.get("GENSEC_MACE_MODEL", "latest.model"))
+default_model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "latest.model")
+model_path = os.path.abspath(os.environ.get("GENSEC_MACE_MODEL", default_model_path))
 if not os.path.exists(model_path):
     raise FileNotFoundError(
         f"Trained MACE model not found: {model_path}. "
