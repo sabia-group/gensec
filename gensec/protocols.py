@@ -34,7 +34,7 @@ class Protocol:
         """
         pass
 
-    def db_setup(name: str):
+    def db_setup(self, name: str):
         if not os.path.exists(".db"):
             _ = open(name + ".db", "w")
         if os.path.exists(name + ".db-journal"):
