@@ -91,93 +91,6 @@ def find_miminum_displacement(mol1: ase.Atoms, mol2: Optional[ase.Atoms] = None,
         return s_req_total  # Ensure positive displacement
     else:
         raise ValueError(f"Unknown version: {displacement_version}. Use 'full' or 'minimum'.")
-    
-    
-    # for i in range(n1):
-    #     for j in range(n2):
-    #         # Sum of vdW radii for the two atoms
-    #         R = radii1[i] + radii2[j]
-    #         # Difference vector between atom j in mol2 and atom i in mol1.
-    #         d_vec = pos2[j] - pos1[i]
-    #         D = np.dot(d_vec, d_vec)  # squared distance
-    #         B = np.dot(d_vec, u)
-    #         
-    #         # For this pair, the inequality is: s^2 + 2 B s + (D - R_ij^2) >= 0.
-    #         # Let f(s) = s^2 + 2B s + (D - R_ij**2)
-    #         #
-    #         # Because f(s) is quadratic (convex), its “allowed” s are in:
-    #         #    (-∞, s_lower] ∪ [s_upper, ∞)
-    #         # where s_lower = -B - sqrt(B^2 - (D - R_ij**2))
-    #         #       s_upper = -B + sqrt(B^2 - (D - R_ij**2))
-    #         #
-    #         # However, we only care about final s >= 0.
-    #         #
-    #         # Furthermore, if the final configuration for a given pair is already safe at s=0,
-    #         # we must check that if we force a displacement (due to another pair), we avoid
-    #         # an unsafe gap.
-    #         #
-    #         # For each pair we determine a candidate s as follows:
-    #         #
-    #         #   1. If f(0) >= 0 (i.e. D >= R_ij^2), then the pair is safe at zero displacement.
-    #         #      However, if the minimum of the distance function f_disp(s) = ||d_vec + s*u||
-    #         #      (which occurs at s_min = max(0, -B)) is below R_ij, then any displacement s > 0
-    #         #      must be at least s_upper.
-    #         #
-    #         #   2. If f(0) < 0, then we must at least move to s_upper.
-    #         if displacement_version == "full":
-    #             if D >= R**2:
-    #                 # s=0 is safe in the initial configuration.
-    #                 s_min = max(0.0, -B)   # location of the minimum distance along s>=0
-    #                 # Compute the distance at that point:
-    #                 fmin = np.sqrt(s_min**2 + 2 * B * s_min + D)
-    #                 if fmin >= R:
-    #                     # The pair stays safe if we do not move at all.
-    #                     candidate = 0.0
-    #                 else:
-    #                     # Even though s=0 is safe, if we were forced to translate,
-    #                     # to avoid falling into the danger zone the minimum safe s is:
-    #                     disc = B**2 - (D - R**2)
-    #                     candidate = -B + np.sqrt(disc)
-    #             else:
-    #                 # The pair is overlapping at s=0.
-    #                 disc = B**2 - (D - R**2)
-    #                 # Physically disc should be >= 0 (if not, something is off).
-    #                 candidate = -B + np.sqrt(disc)
-    #                 if candidate < 0:
-    #                     candidate = 0.0  # safeguard
-    #             
-    #             s_req_total = max(s_req_total, candidate) # Maximum working for all candidates.
-    #         
-    #         # Will probably lead to errors. Would need mic clash check with full cell =>  clashes introduce new complexity
-    #         
-    #         elif displacement_version == "minimum":
-    #             if - B**2 + D >= R**2:
-    #                 continue
-    #             else:
-    #                 intervals.append((-B - np.sqrt(B**2 - (D - R**2)), -B + np.sqrt(B**2 - (D - R**2))))
-    #         else:
-    #             raise ValueError(f"Unknown version: {displacement_version}. Use 'full' or 'minimum'.")
-    #         
-    # 
-    # if displacement_version == "minimum":    
-    #     intervals_sorted = sorted(intervals, key=lambda x: x[0])
-    #     merged = []
-    #     for start, end in intervals_sorted:
-    #         if not merged:
-    #             merged.append((start, end))
-    #         else:
-    #             _, prev_end = merged[-1]
-    #             if start <= prev_end:
-    #                 merged[-1][1] = max(prev_end, end)
-    #             else:
-    #                 merged.append((start, end))
-    #                 
-    #     for start, end in merged:
-    #         if s_req_total < start:
-    #             return s_req_total
-    #         s_req_total = max(s_req_total, end)    
-    # 
-    # return s_req_total + 1e-10
 
 
 def create_dimer(mol, vector=np.array([1, 0, 0]), vdw_array=vdw_radii, displacement_version="full"):
@@ -353,7 +266,7 @@ def Unit_cell_finder(mol,
     vdw_array = vdw_radii * seperation_factor
     
     # TODO: Investigate the performance of different methods. Currently we are only using basic grid search. 
-    # While thereis an adaptive implementation, it only really makes sense for a fixed first vector. 
+    # While there is an adaptive implementation, it only really makes sense for a fixed first vector. 
     # Alternatively one could again use random search. Sample the first vector uniformly in the range [0, pi]
     # and the scond one in the range first angle + constant + [0, pi/2]. One could then follow up with
     # an addaptive optimisation of the best candidate.

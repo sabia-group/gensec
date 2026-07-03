@@ -51,130 +51,6 @@ class Calculator:
         full_path = os.path.join(self.parent, folder, ase_file_name)
         self.calculator = load_source(ase_file_name, full_path).calculator
 
-
-    def finished(self, directory):
-        """Mark, that calculation finished successfully
-
-        Write file "finished" if the geometry optimiztion is finished
-
-        Arguments:
-            directory {str} -- Directory, where the calculation was carried out
-        """
-
-        f = open(os.path.join(directory, "finished"), "w")
-        f.write("Calculation was finished")
-        f.close()
-
-    def set_constrains(self, atoms, parameters):
-        """Setting the constrains for geometry optimization
-
-        For now only freezing of the atoms within
-        specified values of z-coordinate is implemented.
-
-        Args:
-            atoms {Atoms}: ASE Atoms  object
-            parameters {JSON} : Parameters from file
-        """
-        z = parameters["calculator"]["constraints"]["fix_atoms"]
-        c = FixAtoms(
-            indices=[atom.index for atom in atoms if (atom.position[2] <= z[-1]) and (atom.position[2] >= z[0])]
-        )
-        atoms.set_constraint(c)
-
-    def estimate_mu(self, structure, fixed_frame, parameters):
-        """Estimate scaling parameter mu for
-        Expoential preconditioner scheme.
-        For more implementation detail see Packwood et. al:
-        A universal preconditioner for simulating condensed phase materials,
-        J. Chem. Phys. 144, 164109 (2016).
-        https://aip.scitation.org/doi/full/10.1063/1.4947024
-
-        and
-
-        https://wiki.fysik.dtu.dk/ase/ase/optimize.html
-
-        First reads the parameters file and checks if the
-        estimation of mu is necessary. Then Estimates mu
-        with default parameters of r_cut=2*r_NN, where r_NN
-        is estimated nearest neighbour distance. Parameter
-        A=3.0 set to default value as was mentioned in the
-        paper.
-
-        Args:
-            structure {GenSec structure}: structure object
-            fixed_frame {GenSec fixed frame}: fixed frame object
-            parameters {JSON} : Parameters from file
-
-        Returns:
-            float: Scaling parameter mu
-        """
-        # Figure out for which atoms Exp is applicapble
-        precons_parameters = {
-            "mol": parameters["calculator"]["preconditioner"]["mol"]["precon"],
-            "fixed_frame": parameters["calculator"]["preconditioner"][
-                "fixed_frame"
-            ]["precon"],
-            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
-                "precon"
-            ],
-            "mol-fixed_frame": parameters["calculator"]["preconditioner"][
-                "mol-fixed_frame"
-            ]["precon"],
-        }
-        precons_parameters_init = {
-            "mol": parameters["calculator"]["preconditioner"]["mol"]["initial"],
-            "fixed_frame": parameters["calculator"]["preconditioner"][
-                "fixed_frame"
-            ]["initial"],
-            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
-                "initial"
-            ],
-            "mol-fixed_frame": parameters["calculator"]["preconditioner"][
-                "mol-fixed_frame"
-            ]["initial"],
-        }
-        precons_parameters_update = {
-            "mol": parameters["calculator"]["preconditioner"]["mol"]["update"],
-            "fixed_frame": parameters["calculator"]["preconditioner"][
-                "fixed_frame"
-            ]["update"],
-            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
-                "update"
-            ],
-            "mol-fixed_frame": parameters["calculator"]["preconditioner"][
-                "mol-fixed_frame"
-            ]["update"],
-        }
-        need_for_exp = False
-        for i in range(len(list(precons_parameters.values()))):
-            if list(precons_parameters.values())[i] == "Exp":
-                if (
-                    list(precons_parameters_init.values())[i]
-                    or list(precons_parameters_update.values())[i]
-                ):
-                    need_for_exp = True
-        mu = 1.0
-        if need_for_exp:
-            if len(structure.molecules) > 1:
-                a0 = structure.molecules[0].copy()
-                for i in range(1, len(structure.molecules)):
-                    a0 += structure.molecules[i]
-            else:
-                a0 = structure.molecules[0]
-            if hasattr(fixed_frame, "fixed_frame"):
-                all_atoms = a0 + fixed_frame.fixed_frame
-            else:
-                all_atoms = a0
-            atoms = all_atoms.copy()
-            atoms.set_calculator(self.calculator)
-            self.set_constrains(atoms, parameters)
-            r_NN = estimate_nearest_neighbour_distance(atoms)
-            try:
-                mu = Exp(r_cut=2.0 * r_NN, A=3.0).estimate_mu(atoms)[0]
-            except:
-                print("Something is wrong!")
-        return mu
-
     def simple_relax(self, init_atoms, parameters, directory):
         
         atoms = init_atoms.copy()
@@ -228,174 +104,36 @@ class Calculator:
             self.calculator.close()
         except:
             pass
+    
+    def finished(self, directory):
+        """Mark, that calculation finished successfully
 
-    def relax(self, structure, fixed_frame, parameters, directory):
-        """Perform geometry optimization with specified ASE
-        calculator.
+        Write file "finished" if the geometry optimiztion is finished
 
-        Merge the fixed frame and structure object into the
-        Atoms object that enters then the geometry optimization
-        routine.
-
-        Args:
-            structure {GenSec structure}: structure object
-            fixed_frame {GenSec fixed frame}: fixed frame object
-            parameters {JSON} : Parameters from file
+        Arguments:
             directory {str} -- Directory, where the calculation was carried out
         """
-        if len(structure.molecules) > 1:
-            a0 = structure.molecules[0].copy()
-            for i in range(1, len(structure.molecules)):
-                a0 += structure.molecules[i]
-        else:
-            a0 = structure.molecules[0]
 
-        if hasattr(fixed_frame, "fixed_frame"):
-            all_atoms = a0 + fixed_frame.fixed_frame
-        else:
-            all_atoms = a0
+        f = open(os.path.join(directory, "finished"), "w")
+        f.write("Calculation was finished")
+        f.close()
 
-        # Preconditioner part
-        name = parameters["name"]
-        atoms = all_atoms.copy()
-        self.set_constrains(atoms, parameters)
-        #atoms.set_calculator(self.calculator)
-        if parameters["calculator"]["preconditioner"]["rmsd_update"][
-            "activate"
-        ]:
-            rmsd_threshhold = parameters["calculator"]["preconditioner"][
-                "rmsd_update"
-            ]["value"]
-        else:
-            rmsd_threshhold = 100000000000
-        if not hasattr(structure, "mu"):
-            structure.mu = 1
-        if not hasattr(structure, "A"):
-            structure.A = 3
-        H0 = np.eye(3 * len(atoms)) * 70
-        H0_init = precon.preconditioned_hessian(
-            structure, fixed_frame, parameters, atoms, H0, task="initial"
+    def set_constrains(self, atoms, parameters):
+        """Setting the constrains for geometry optimization
+
+        For now only freezing of the atoms within
+        specified values of z-coordinate is implemented.
+
+        Args:
+            atoms {Atoms}: ASE Atoms  object
+            parameters {JSON} : Parameters from file
+        """
+        z = parameters["calculator"]["constraints"]["fix_atoms"]
+        c = FixAtoms(
+            indices=[atom.index for atom in atoms if (atom.position[2] <= z[-1]) and (atom.position[2] >= z[0])]
         )
-        if parameters["calculator"]["algorithm"] == "bfgs":
-            opt = BFGS_mod(
-                atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
-                maxstep=0.004,
-                initial=a0,
-                molindixes=list(range(len(a0))),
-                rmsd_dev=rmsd_threshhold,
-                structure=structure,
-                fixed_frame=fixed_frame,
-                parameters=parameters,
-                H0=H0_init,
-                mu=structure.mu,
-                A=structure.A,
-                logfile=os.path.join(directory, "logfile.log"),
-                restart=os.path.join(directory, "qn.pckl"),
-            )
-        if parameters["calculator"]["algorithm"] == "bfgs_linesearch":
-            opt = BFGSLineSearch_mod(
-                atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
-                initial=a0,
-                molindixes=list(range(len(a0))),
-                rmsd_dev=rmsd_threshhold,
-                maxstep=0.2,
-                structure=structure,
-                fixed_frame=fixed_frame,
-                parameters=parameters,
-                H0=H0_init,
-                mu=structure.mu,
-                A=structure.A,
-                logfile=os.path.join(directory, "logfile.log"),
-                restart=os.path.join(directory, "qn.pckl"),
-                c1=0.23,
-                c2=0.46,
-                alpha=1.0,
-                stpmax=50.0,
-                force_consistent=True,
-            )
-        if parameters["calculator"]["algorithm"] == "lbfgs":
-            opt = LBFGS_Linesearch_mod(
-                atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
-                initial=a0,
-                molindixes=list(range(len(a0))),
-                rmsd_dev=rmsd_threshhold,
-                maxstep=0.2,
-                structure=structure,
-                fixed_frame=fixed_frame,
-                parameters=parameters,
-                H0_init=H0_init,
-                mu=structure.mu,
-                A=structure.A,
-                logfile=os.path.join(directory, "logfile.log"),
-                restart=os.path.join(directory, "qn.pckl"),
-                force_consistent=False,
-            )
-        if parameters["calculator"]["algorithm"] == "trm_nocedal":
-            opt = TRM_BFGS(
-                atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
-                maxstep=0.2,
-                initial=a0,
-                molindixes=list(range(len(a0))),
-                rmsd_dev=rmsd_threshhold,
-                structure=structure,
-                fixed_frame=fixed_frame,
-                parameters=parameters,
-                H0=H0_init,
-                mu=structure.mu,
-                A=structure.A,
-                logfile=os.path.join(directory, "logfile.log"),
-                restart=os.path.join(directory, "qn.pckl"),
-            )
-
-        if parameters["calculator"]["algorithm"] == "bfgs_trm":
-            opt = TRM_BFGS_IPI(
-                atoms,
-                trajectory=os.path.join(
-                    directory, "trajectory_{}.traj".format(name)
-                ),
-                maxstep=0.2,
-                initial=a0,
-                molindixes=list(range(len(a0))),
-                rmsd_dev=rmsd_threshhold,
-                structure=structure,
-                fixed_frame=fixed_frame,
-                parameters=parameters,
-                H0=H0_init,
-                mu=structure.mu,
-                A=structure.A,
-                logfile=os.path.join(directory, "logfile.log"),
-                restart=os.path.join(directory, "qn.pckl"),
-            )
-
-        folder = parameters["calculator"]["supporting_files_folder"]
-        ase_file_name = parameters["calculator"]["ase_parameters_file"]
-        full_path = os.path.join(self.parent, folder, ase_file_name)
-        self.calculator = load_source(ase_file_name, full_path).calculator
-        atoms.set_calculator(self.calculator)
-        opt.run(fmax=parameters["calculator"]["fmax"], steps=3000)
-        write(
-            os.path.join(directory, "final_configuration_{}.in".format(name)),
-            atoms,
-            format="aims",
-        )
-
-        try:
-            self.calculator.close()
-        except:
-            pass
-
+        atoms.set_constraint(c)
+        
     def finish_relaxation(self, structure, fixed_frame, parameters, calculator):
         """Finishes unfinished calculation
 
@@ -652,3 +390,270 @@ class Calculator:
                     calculator.close()
                 except:
                     pass
+                
+
+    # TODO: Everything below is old code and can go
+    def estimate_mu(self, structure, fixed_frame, parameters):
+        """Estimate scaling parameter mu for
+        Expoential preconditioner scheme.
+        For more implementation detail see Packwood et. al:
+        A universal preconditioner for simulating condensed phase materials,
+        J. Chem. Phys. 144, 164109 (2016).
+        https://aip.scitation.org/doi/full/10.1063/1.4947024
+
+        and
+
+        https://wiki.fysik.dtu.dk/ase/ase/optimize.html
+
+        First reads the parameters file and checks if the
+        estimation of mu is necessary. Then Estimates mu
+        with default parameters of r_cut=2*r_NN, where r_NN
+        is estimated nearest neighbour distance. Parameter
+        A=3.0 set to default value as was mentioned in the
+        paper.
+
+        Args:
+            structure {GenSec structure}: structure object
+            fixed_frame {GenSec fixed frame}: fixed frame object
+            parameters {JSON} : Parameters from file
+
+        Returns:
+            float: Scaling parameter mu
+        """
+        # Figure out for which atoms Exp is applicapble
+        precons_parameters = {
+            "mol": parameters["calculator"]["preconditioner"]["mol"]["precon"],
+            "fixed_frame": parameters["calculator"]["preconditioner"][
+                "fixed_frame"
+            ]["precon"],
+            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
+                "precon"
+            ],
+            "mol-fixed_frame": parameters["calculator"]["preconditioner"][
+                "mol-fixed_frame"
+            ]["precon"],
+        }
+        precons_parameters_init = {
+            "mol": parameters["calculator"]["preconditioner"]["mol"]["initial"],
+            "fixed_frame": parameters["calculator"]["preconditioner"][
+                "fixed_frame"
+            ]["initial"],
+            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
+                "initial"
+            ],
+            "mol-fixed_frame": parameters["calculator"]["preconditioner"][
+                "mol-fixed_frame"
+            ]["initial"],
+        }
+        precons_parameters_update = {
+            "mol": parameters["calculator"]["preconditioner"]["mol"]["update"],
+            "fixed_frame": parameters["calculator"]["preconditioner"][
+                "fixed_frame"
+            ]["update"],
+            "mol-mol": parameters["calculator"]["preconditioner"]["mol-mol"][
+                "update"
+            ],
+            "mol-fixed_frame": parameters["calculator"]["preconditioner"][
+                "mol-fixed_frame"
+            ]["update"],
+        }
+        need_for_exp = False
+        for i in range(len(list(precons_parameters.values()))):
+            if list(precons_parameters.values())[i] == "Exp":
+                if (
+                    list(precons_parameters_init.values())[i]
+                    or list(precons_parameters_update.values())[i]
+                ):
+                    need_for_exp = True
+        mu = 1.0
+        if need_for_exp:
+            if len(structure.molecules) > 1:
+                a0 = structure.molecules[0].copy()
+                for i in range(1, len(structure.molecules)):
+                    a0 += structure.molecules[i]
+            else:
+                a0 = structure.molecules[0]
+            if hasattr(fixed_frame, "fixed_frame"):
+                all_atoms = a0 + fixed_frame.fixed_frame
+            else:
+                all_atoms = a0
+            atoms = all_atoms.copy()
+            atoms.set_calculator(self.calculator)
+            self.set_constrains(atoms, parameters)
+            r_NN = estimate_nearest_neighbour_distance(atoms)
+            try:
+                mu = Exp(r_cut=2.0 * r_NN, A=3.0).estimate_mu(atoms)[0]
+            except:
+                print("Something is wrong!")
+        return mu
+
+    
+
+    def relax(self, structure, fixed_frame, parameters, directory):
+        """Perform geometry optimization with specified ASE
+        calculator.
+
+        Merge the fixed frame and structure object into the
+        Atoms object that enters then the geometry optimization
+        routine.
+
+        Args:
+            structure {GenSec structure}: structure object
+            fixed_frame {GenSec fixed frame}: fixed frame object
+            parameters {JSON} : Parameters from file
+            directory {str} -- Directory, where the calculation was carried out
+        """
+        if len(structure.molecules) > 1:
+            a0 = structure.molecules[0].copy()
+            for i in range(1, len(structure.molecules)):
+                a0 += structure.molecules[i]
+        else:
+            a0 = structure.molecules[0]
+
+        if hasattr(fixed_frame, "fixed_frame"):
+            all_atoms = a0 + fixed_frame.fixed_frame
+        else:
+            all_atoms = a0
+
+        # Preconditioner part
+        name = parameters["name"]
+        atoms = all_atoms.copy()
+        self.set_constrains(atoms, parameters)
+        #atoms.set_calculator(self.calculator)
+        if parameters["calculator"]["preconditioner"]["rmsd_update"][
+            "activate"
+        ]:
+            rmsd_threshhold = parameters["calculator"]["preconditioner"][
+                "rmsd_update"
+            ]["value"]
+        else:
+            rmsd_threshhold = 100000000000
+        if not hasattr(structure, "mu"):
+            structure.mu = 1
+        if not hasattr(structure, "A"):
+            structure.A = 3
+        H0 = np.eye(3 * len(atoms)) * 70
+        H0_init = precon.preconditioned_hessian(
+            structure, fixed_frame, parameters, atoms, H0, task="initial"
+        )
+        if parameters["calculator"]["algorithm"] == "bfgs":
+            opt = BFGS_mod(
+                atoms,
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
+                maxstep=0.004,
+                initial=a0,
+                molindixes=list(range(len(a0))),
+                rmsd_dev=rmsd_threshhold,
+                structure=structure,
+                fixed_frame=fixed_frame,
+                parameters=parameters,
+                H0=H0_init,
+                mu=structure.mu,
+                A=structure.A,
+                logfile=os.path.join(directory, "logfile.log"),
+                restart=os.path.join(directory, "qn.pckl"),
+            )
+        if parameters["calculator"]["algorithm"] == "bfgs_linesearch":
+            opt = BFGSLineSearch_mod(
+                atoms,
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
+                initial=a0,
+                molindixes=list(range(len(a0))),
+                rmsd_dev=rmsd_threshhold,
+                maxstep=0.2,
+                structure=structure,
+                fixed_frame=fixed_frame,
+                parameters=parameters,
+                H0=H0_init,
+                mu=structure.mu,
+                A=structure.A,
+                logfile=os.path.join(directory, "logfile.log"),
+                restart=os.path.join(directory, "qn.pckl"),
+                c1=0.23,
+                c2=0.46,
+                alpha=1.0,
+                stpmax=50.0,
+                force_consistent=True,
+            )
+        if parameters["calculator"]["algorithm"] == "lbfgs":
+            opt = LBFGS_Linesearch_mod(
+                atoms,
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
+                initial=a0,
+                molindixes=list(range(len(a0))),
+                rmsd_dev=rmsd_threshhold,
+                maxstep=0.2,
+                structure=structure,
+                fixed_frame=fixed_frame,
+                parameters=parameters,
+                H0_init=H0_init,
+                mu=structure.mu,
+                A=structure.A,
+                logfile=os.path.join(directory, "logfile.log"),
+                restart=os.path.join(directory, "qn.pckl"),
+                force_consistent=False,
+            )
+        if parameters["calculator"]["algorithm"] == "trm_nocedal":
+            opt = TRM_BFGS(
+                atoms,
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
+                maxstep=0.2,
+                initial=a0,
+                molindixes=list(range(len(a0))),
+                rmsd_dev=rmsd_threshhold,
+                structure=structure,
+                fixed_frame=fixed_frame,
+                parameters=parameters,
+                H0=H0_init,
+                mu=structure.mu,
+                A=structure.A,
+                logfile=os.path.join(directory, "logfile.log"),
+                restart=os.path.join(directory, "qn.pckl"),
+            )
+
+        if parameters["calculator"]["algorithm"] == "bfgs_trm":
+            opt = TRM_BFGS_IPI(
+                atoms,
+                trajectory=os.path.join(
+                    directory, "trajectory_{}.traj".format(name)
+                ),
+                maxstep=0.2,
+                initial=a0,
+                molindixes=list(range(len(a0))),
+                rmsd_dev=rmsd_threshhold,
+                structure=structure,
+                fixed_frame=fixed_frame,
+                parameters=parameters,
+                H0=H0_init,
+                mu=structure.mu,
+                A=structure.A,
+                logfile=os.path.join(directory, "logfile.log"),
+                restart=os.path.join(directory, "qn.pckl"),
+            )
+
+        folder = parameters["calculator"]["supporting_files_folder"]
+        ase_file_name = parameters["calculator"]["ase_parameters_file"]
+        full_path = os.path.join(self.parent, folder, ase_file_name)
+        self.calculator = load_source(ase_file_name, full_path).calculator
+        atoms.set_calculator(self.calculator)
+        opt.run(fmax=parameters["calculator"]["fmax"], steps=3000)
+        write(
+            os.path.join(directory, "final_configuration_{}.in".format(name)),
+            atoms,
+            format="aims",
+        )
+
+        try:
+            self.calculator.close()
+        except:
+            pass
+
+    

@@ -120,23 +120,6 @@ class Structure:
                 self.list_of_torsions = parameters["configuration"]["torsions"][
                     "list_of_tosrions"
                 ]
-        
-        
-        # TODO: delte comments, keep out of master version. Instead use legacy branch or leave in old versions
-        #if parameters["configuration"]["adsorption_surface"]["activate"]:
-            #self.adsorption_surface = True
-            #self.adsorption_surface_range = parameters["configuration"][
-                #"adsorption_surface"
-            #]["range"]
-            #self.adsorption_surface_Z = parameters["configuration"][
-                #"adsorption_surface"
-            #]["surface"]
-            #self.adsorption_surface_mols = parameters["configuration"][
-                #"adsorption_surface"
-            #]["molecules"]
-        # if len(self.cycles) > 0:
-        # for i in range(len(self.cycles)):
-        # self.cycles[i] = make_canonical_pyranosering(self.atoms, self.cycles[i])
 
     def create_configuration(self, parameters, success=None):
         """
@@ -364,12 +347,10 @@ class Structure:
 
         coms, c = make_com(self, parameters, label=0)
         
-        if not any(
-            parameters["configuration"][i]["activate"]
-            for i in parameters["configuration"]
-        ):
+        if not any(parameters["configuration"][i]["activate"] for i in parameters["configuration"]):
             print("Nothing to sample")
             sys.exit(0)
+            
         else:
             if parameters["configuration"]["torsions"]["activate"]:
                 configuration = np.hstack((torsions, quaternion, coms))
