@@ -4,7 +4,6 @@ import ase.db
 from featomic import SoapPowerSpectrum
 import metatensor
 from skmatter import sample_selection
-from gensec.protocols import Protocol
 
 
 def run_fps_selection(
@@ -19,7 +18,8 @@ def run_fps_selection(
 
     selected_indices = select_structures_fps(atoms_list, n_select)
 
-    Protocol.db_setup("db_generated_fps") #MR: I think this is the proper way now, but Paolo needs to check if it runs
+    if os.path.exists(output_db_path):
+        os.remove(output_db_path)
     db_generated_fps = ase.db.connect(output_db_path)
     for i in selected_indices:
         db_generated_fps.write(atoms_list[i])

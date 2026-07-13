@@ -266,7 +266,7 @@ class KeyValueTableEditor(QWidget):
                             elif val_text.startswith('[') or val_text.startswith('{'):
                                 try:
                                     val = json.loads(val_text)
-                                except:
+                                except Exception:
                                     val = val_text
                             else:
                                 val = val_text
@@ -508,7 +508,7 @@ class SimpleFieldWidget(QWidget):
                 return []
             try:
                 return json.loads(text)
-            except:
+            except Exception:
                 return [x.strip() for x in text.split(",")]
         return None
     
