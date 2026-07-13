@@ -4,7 +4,7 @@
 # You can set these variables from the command line, and also
 # from the environment for the first two.
 SPHINXOPTS    ?=
-SPHINXBUILD   ?= /usr/bin/python3 -c "import sys,sphinx;sys.exit(sphinx.main(sys.argv))"
+SPHINXBUILD   ?= python3 -m sphinx
 SOURCEDIR     = source
 BUILDDIR      = build
 
@@ -20,5 +20,5 @@ help:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 github:
-	@make html
+	@$(MAKE) html
 	@cp -a ./build/html/. .
