@@ -20,6 +20,8 @@ It contains:
 Run this from inside this folder, using the usual GenSec command for the
 project. The search results are written to `db_relaxed.db`,
 `db_trajectories.db`, and the `search_relaxations/` directory.
+The input uses `success: "all"`, so every row in `db_generated_visual.db` is
+relaxed. Use an integer instead to stop after that many relaxed structures.
 
 On the example cluster, submit it with:
 

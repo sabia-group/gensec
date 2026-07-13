@@ -40,7 +40,7 @@ python tools/launch_gui.py examples/fine-tune/parameters.json
 
 ### ❓ Built-in Help System
 - `?` button on every field with descriptions
-- `*` indicator for mandatory fields
+- Schema descriptions mark which fields are mandatory
 - Default value shown for reference
 - Context-specific hints
 
@@ -105,5 +105,5 @@ pip install PyQt5
 2. **📖 Browse** sections - click arrows to expand/collapse
 3. **✏️ Edit** parameters with type-appropriate widgets
 4. **❓ Get Help** - click `?` button for any field
-5. **👀 Review** mandatory fields (`*`) and defaults
+5. **👀 Review** mandatory field descriptions and defaults
 6. **💾 Save** changes back to JSON

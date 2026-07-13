@@ -24,6 +24,13 @@ import time
 # TODO: There might be a potential for speedups in the SC and UC finder by replacing loops with numpy operations and larger numpy arrays.
 
 
+def _db_has_trajectory(database, trajectory_id):
+    """Return True when a search DB already contains this generated row id."""
+    if trajectory_id is None:
+        return False
+    return any(database.select(trajectory=trajectory_id, limit=1))
+
+
 
 class Protocol:
 
@@ -251,15 +258,16 @@ class Protocol:
                     # print("Trials made", self.trials)
                     self.trials += 1
         
+        training_source_db = "db_generated_visual.db"
+
         if parameters["fps_selection"]["activate"] is True:
             from gensec.fps_selection import run_fps_selection
 
-            run_fps_selection(parameters)
-            
-        
+            training_source_db = run_fps_selection(parameters)
+
         if "training" in parameters and parameters["training"].get("activate", False):
-            print("training.activate True -> running training pipeline") 
-            run_training_pipeline(parameters, "db_generated_fps.db")
+            print("training.activate True -> running training pipeline")
+            run_training_pipeline(parameters, training_source_db)
 
 
         if parameters["protocol"]["search"]["activate"] is True:
@@ -304,11 +312,23 @@ class Protocol:
             db_generated_visual = ase.db.connect("db_generated_visual.db")
 
             db_trajectories = ase.db.connect("db_trajectories.db")
+            generated_count = db_generated_visual.count()
+            if generated_count == 0:
+                raise ValueError("No structures in the database. Please generate some first.")
+
+            success_target = parameters["success"]
+            if isinstance(success_target, str):
+                if success_target.lower() != "all":
+                    raise ValueError("Search success must be an integer or 'all'.")
+                success_target = generated_count
+            else:
+                success_target = int(success_target)
 
             name = parameters["name"]
 
             self.success = db_relaxed.count()
             print("Relaxed structures", db_relaxed.count())
+            print("Search target structures", success_target)
             structure = Structure(parameters)
             fixed_frame = Fixed_frame(parameters)
             dirs = Directories(parameters)
@@ -324,121 +344,73 @@ class Protocol:
                 structure, fixed_frame, parameters, calculator
             )
 
-            while self.success < parameters["success"]:
+            while self.success < success_target:
                 self.success = db_relaxed.count()
-                # Take structure from database of generated structures
-                # TODO: If you want to generate on the fly, chagnge so that it doesnt delete the database in the meantime
-                if db_generated_visual.count() == 0:
-                    raise ValueError("No structures in the database. Please generate some first.")
-                    
-                    #self.trials = 0
-                    #while self.trials < parameters["trials"]:
-                    #    configuration, conf = structure.create_configuration(
-                    #        parameters
-                    #    )
-                    #    # Apply the configuration to structure
-                    #    structure.apply_conf(conf)
-                    #    # Check if that structure is sensible
-                    #    if parameters["protocol"]["check_db"]:
-                    #        if all_right(structure, fixed_frame):
-                    #            # Check if it is in database
-                    #            if not structure.find_in_database(
-                    #                conf, db_relaxed, parameters
-                    #            ):
-                    #                if not structure.find_in_database(
-                    #                    conf, db_trajectories, parameters
-                    #                ):
-                    #                    #if hasattr(self, "fixed_frame"):
-                    #                    db_generated_visual.write(
-                    #                        structure.atoms_object_visual(
-                    #                            fixed_frame
-                    #                        ),
-                    #                        **conf
-                    #                    )
-                    #                    print("Structure added to generated")
-                    #                    break
-                    #                else:
-                    #                    self.trials += 1
-                    #                    print("Found in database")
-#
-                    #            else:
-                    #                self.trials += 1
-                    #                print("Found in database")
-                    #        else:
-                    #            self.trials += 1
-                    #            print("Trials made", self.trials)
-                    #    else:
-                    #        db_generated.write(structure.atoms_object(), **conf)
-#
-                    #        #if hasattr(self, "fixed_frame"):
-                    #        db_generated_visual.write(
-                    #            structure.atoms_object_visual(fixed_frame),
-                    #            **conf
-                    #        )
-                    #        self.trials = 0
-                    #        self.success = db_generated.count()
-                else:
-                    for num, row in enumerate(db_generated_visual.select()):
-                        if num < self.success:
+                made_progress = False
+                skipped_existing = 0
+                for num, row in enumerate(db_generated_visual.select()):
+                    if num < self.success:
+                        continue
+                    if self.success >= success_target:
+                        break
+                    traj_id = row.unique_id
+                    dirs.dir_num = row.id
+                    # del db_generated[row.id]  # Why would we delete the row? Keeping the database should be better
+                    if parameters["protocol"]["check_db"]:
+                        if _db_has_trajectory(db_relaxed, traj_id) or _db_has_trajectory(db_trajectories, traj_id):
+                            skipped_existing += 1
                             continue
-                        if self.success >= parameters["success"]:
-                            break
-                        traj_id = row.unique_id
-                        # Extract the configuration from the row
-                        conf = row.key_value_pairs
-                        # conf = {key: row[key] for key in conf_keys}
-                        print("added line")
-                        print(row.key_value_pairs)
-                        print("added line")
-                        #structure.apply_conf(conf)
-                        dirs.dir_num = row.id
-                        # del db_generated[row.id]  # Why would we delete the row? Keeping the database should be better
-                        if parameters["protocol"]["check_db"]:
-                            if structure.find_in_database(conf, db_relaxed, parameters) or structure.find_in_database(conf, db_trajectories, parameters):
-                                print("Found in database")
-                                continue
-                    
-                        print("This is row ID that is taken for calculation",row.id,)
-                        row_atoms = row.toatoms().copy()
-                        dirs.create_directory(parameters)
-                        dirs.save_to_directory(row_atoms,parameters)
-                        calculator.simple_relax(row_atoms, parameters, dirs.current_dir(parameters))           #legacy: calculator.relax(structure, fixed_frame,parameters,dirs.current_dir(parameters))
-                        
-                        calculator.finished(dirs.current_dir(parameters))
-                        # Find the final trajectory
-                        traj = Trajectory(
-                            os.path.join(
-                                dirs.current_dir(parameters),
-                                "trajectory_{}.traj".format(name)
-                            )
+
+                    print("Relaxing generated row", row.id)
+                    row_atoms = row.toatoms().copy()
+                    dirs.create_directory(parameters)
+                    dirs.save_to_directory(row_atoms,parameters)
+                    calculator.simple_relax(row_atoms, parameters, dirs.current_dir(parameters))           #legacy: calculator.relax(structure, fixed_frame,parameters,dirs.current_dir(parameters))
+
+                    calculator.finished(dirs.current_dir(parameters))
+                    # Find the final trajectory
+                    traj = Trajectory(
+                        os.path.join(
+                            dirs.current_dir(parameters),
+                            "trajectory_{}.traj".format(name)
                         )
-                        # TODO: The saving of entire trajectories this way is VERY SLOW.
-                        # Rethink if we need every step in the database
-                        print("Structure relaxed")
-                        # f_max = 10000
-                        e_min = 100000
-                        for i, step in enumerate(traj):
-                            full_conf = structure.get_configuration(step)
-                            db_trajectories.write(
-                                step, **full_conf, trajectory=traj_id
-                            )
-                            # f_max_temp = (step._calc.results['forces'] ** 2).sum(axis=1).max()
-                            # if f_max_temp < f_max:
-                            #     f_max = f_max_temp
-                            #     arg_fmax = i
-                            e_min_temp = step._calc.results['energy']
-                            if e_min_temp < e_min:
-                                e_min = e_min_temp
-                                arg_emin = i
-                        
-                        full_conf = structure.get_configuration(traj[arg_emin])
-                        db_relaxed.write(
-                            traj[arg_emin], **full_conf, trajectory=traj_id, step=arg_emin
+                    )
+                    # TODO: The saving of entire trajectories this way is VERY SLOW.
+                    # Rethink if we need every step in the database
+                    print("Structure relaxed")
+                    # f_max = 10000
+                    e_min = 100000
+                    for i, step in enumerate(traj):
+                        full_conf = structure.get_configuration(step)
+                        db_trajectories.write(
+                            step, **full_conf, trajectory=traj_id
                         )
-                        # full_conf = structure.get_configuration(traj[arg_fmax])
-                        # db_relaxed.write(
-                        #     traj[arg_fmax], **full_conf, trajectory=traj_id, step=arg_fmax
-                        # )
-                        self.success = db_relaxed.count()
-                        #calculator.close()
-                        #break
+                        # f_max_temp = (step._calc.results['forces'] ** 2).sum(axis=1).max()
+                        # if f_max_temp < f_max:
+                        #     f_max = f_max_temp
+                        #     arg_fmax = i
+                        e_min_temp = step._calc.results['energy']
+                        if e_min_temp < e_min:
+                            e_min = e_min_temp
+                            arg_emin = i
+
+                    full_conf = structure.get_configuration(traj[arg_emin])
+                    db_relaxed.write(
+                        traj[arg_emin], **full_conf, trajectory=traj_id, step=arg_emin
+                    )
+                    # full_conf = structure.get_configuration(traj[arg_fmax])
+                    # db_relaxed.write(
+                    #     traj[arg_fmax], **full_conf, trajectory=traj_id, step=arg_fmax
+                    # )
+                    self.success = db_relaxed.count()
+                    made_progress = True
+                    #calculator.close()
+                    #break
+
+                    if not made_progress and self.success < success_target:
+                        raise RuntimeError(
+                            "Search could not make progress: no new generated structures were relaxed. "
+                            f"Relaxed={self.success}, target={success_target}, "
+                            f"skipped_existing={skipped_existing}, generated={db_generated_visual.count()}. "
+                            "Lower `success`, add more generated structures, or inspect existing search DBs."
+                        )

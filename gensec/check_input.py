@@ -214,6 +214,13 @@ def Check_input(parameters):
         
     if "success" not in parameters:
         parameters["success"] = 1500
+    elif isinstance(parameters["success"], str):
+        if parameters["success"].lower() != "all":
+            raise ValueError("success must be an integer or 'all' for search-only runs.")
+        generate_settings = parameters["protocol"].get("generate", {})
+        generate_active = generate_settings.get("activate", False) if isinstance(generate_settings, dict) else bool(generate_settings)
+        if generate_active:
+            raise ValueError("success='all' can only be used for search from an existing database; generation needs an integer success target.")
         
     if "name" not in parameters:
         parameters["name"] = "Unnamed"

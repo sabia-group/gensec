@@ -365,6 +365,48 @@ def run_mace_training(parameters, train_xyz, valid_xyz=None, test_xyz=None, work
     }
 
 
+def _phase2_test_db_paths(ft):
+    """Return the fixed test DBs used to judge phase-2, when they exist."""
+    full_db = ft.get("test_set_db", "db_labeled_test.db")
+    easy_db = ft.get("test_set_easy_db", "db_labeled_test_easy.db")
+
+    full_db = os.path.abspath(full_db) if full_db and os.path.exists(full_db) else None
+    easy_db = os.path.abspath(easy_db) if easy_db and os.path.exists(easy_db) else None
+    return full_db, easy_db
+
+
+def _phase2_rmse_summary(parameters, model_path):
+    """Evaluate a phase-2 model on the same fixed test DBs as phase 1."""
+    ft = parameters["training"]
+    full_db, easy_db = _phase2_test_db_paths(ft)
+    if not full_db:
+        print("[training] Warning: no fixed test DB found; phase-2 RMSE not computed.")
+        return None, None
+
+    metric_decimals = int(ft.get("state_metric_decimals", 3))
+    test_metrics = _evaluate_model_on_labeled_db(parameters, model_path, full_db)
+    easy_metrics = None
+    if easy_db:
+        easy_metrics = _evaluate_model_on_labeled_db(parameters, model_path, easy_db)
+
+    print(
+        "[training] Phase-2 TEST RMSE: "
+        f"energy={test_metrics['energy_rmse_mev_per_atom']:.3f} meV/atom, "
+        f"force={test_metrics['force_rmse_mev_per_a']:.3f} meV/A"
+    )
+    if easy_metrics:
+        print(
+            "[training] Phase-2 EASY TEST RMSE: "
+            f"energy={easy_metrics['energy_rmse_mev_per_atom']:.3f} meV/atom, "
+            f"force={easy_metrics['force_rmse_mev_per_a']:.3f} meV/A"
+        )
+
+    return (
+        _compact_eval_metrics(test_metrics, decimals=metric_decimals),
+        _compact_eval_metrics(easy_metrics, decimals=metric_decimals),
+    )
+
+
 def run_phase2_relax_refine(parameters, fps_db_path):
     """Run the optional phase-2 model-guided refinement step.
 
@@ -508,6 +550,8 @@ def run_phase2_relax_refine(parameters, fps_db_path):
     )
 
     phase2_model_src = _find_newest_model_file(phase2_dir)
+    phase2_latest_model = None
+    phase2_final_model = None
     if phase2_model_src:
         phase2_latest_model = os.path.abspath("latest.model")
         shutil.copy2(phase2_model_src, phase2_latest_model)
@@ -515,6 +559,10 @@ def run_phase2_relax_refine(parameters, fps_db_path):
         phase2_final_model = os.path.abspath("final.model")
         shutil.copy2(phase2_model_src, phase2_final_model)
         print(f"[training] Saved final model after phase-2: {phase2_final_model}")
+
+    test_rmse = easy_test_rmse = None
+    if phase2_model_src:
+        test_rmse, easy_test_rmse = _phase2_rmse_summary(parameters, phase2_model_src)
 
     state["phase2"] = {
         "status": "completed",
@@ -526,7 +574,15 @@ def run_phase2_relax_refine(parameters, fps_db_path):
         "low_energy_fps_label_db": lowe_fps_label_db,
         "augmented_db": augmented_db,
         "phase2_model_input": model_path,
-        "phase2_training": phase2_result,
+        "final_model": phase2_final_model,
+        "latest_model": phase2_latest_model,
+        "test_rmse": test_rmse,
+        "easy_test_rmse": easy_test_rmse,
+        "phase2_training": {
+            "run_name": phase2_result["run_name"],
+            "workdir": phase2_result["workdir"],
+            "log_dir": phase2_result["log_dir"],
+        },
     }
     _save_loop_state(state_path, state)
 

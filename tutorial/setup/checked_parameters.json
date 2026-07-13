@@ -32,8 +32,7 @@
         },
         "max_atoms": 110,
         "max_area_diff": 0.1,
-        "z_cell_length": 100,
-        "Z_cell_length": 100
+        "z_cell_length": 100
     },
     "unit_cell_finder": {
         "min_angle": 20,
@@ -146,7 +145,7 @@
         "ase_parameters_file": "aims_command.py",
         "k_density": 30.0,
         "test_set_size": 30,
-        "exclude_highest_force_bins": 0,
+        "exclude_highest_force_bins": 2,
         "mace_output_name": "MeC",
         "mace_args": {
             "r_max": 5.0,

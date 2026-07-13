@@ -744,7 +744,7 @@ def _ensure_fixed_test_set(
                     "artifacts before using training.exclude_highest_force_bins."
                 )
         if os.path.exists(test_extxyz):
-            print(f"[training] Warining: Using existing fixed test set: {test_labeled_db} ({existing} structures). Test set creation skipped.")
+            print(f"[training] Warning: Using existing fixed test set: {test_labeled_db} ({existing} structures). Test set creation skipped.")
         else:
             print(f"[training] Rebuilding missing test extxyz from existing labeled test DB: {test_labeled_db} ({existing} structures).")
             _write_extxyz_from_db(test_labeled_db, test_extxyz)

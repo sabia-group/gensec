@@ -62,10 +62,10 @@ PARAMETER_SCHEMA = {
                 "description": "Maximum consecutive failed placement attempts; this counter resets to 0 after each successfully generated structure",
             },
             "success": {
-                "type": "int",
+                "type": "int_or_all",
                 "default": 1500,
                 "mandatory": False,
-                "description": "Target successful structures to generate",
+                "description": "Target successful structures. Use an integer for generation/search, or 'all' for search-only relaxation of every generated DB row.",
             },
             "number_of_replicas": {
                 "type": "int",

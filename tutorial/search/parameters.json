@@ -1,7 +1,7 @@
 {
   "name": "MePTCDI_graphene_trained_search",
   "trials": 0,
-  "success": 50,
+  "success": "all",
   "number_of_replicas": 1,
   "geometry": {
     "filename": "MePTCDI.in",
@@ -142,7 +142,7 @@
     "ase_parameters_file": "aims_command.py",
     "k_density": 30.0,
     "test_set_size": 30,
-    "exclude_highest_force_bins": 0,
+    "exclude_highest_force_bins": 2,
     "mace_output_name": "MeC",
     "mace_args": {
       "r_max": 5.0,

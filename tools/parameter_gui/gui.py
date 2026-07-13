@@ -439,6 +439,13 @@ class SimpleFieldWidget(QWidget):
             if isinstance(default, int):
                 widget.setText(str(default))
             return widget
+
+        elif self.field_type == "int_or_all":
+            widget = QLineEdit()
+            widget.setPlaceholderText("Integer or all")
+            if isinstance(default, (int, str)):
+                widget.setText(str(default))
+            return widget
         
         elif self.field_type == "float":
             widget = QLineEdit()
@@ -475,6 +482,16 @@ class SimpleFieldWidget(QWidget):
                 return int(text)
             except ValueError:
                 return None
+        elif self.field_type == "int_or_all":
+            text = self.value_widget.text().strip()
+            if not text:
+                return None
+            if text.lower() == "all":
+                return "all"
+            try:
+                return int(text)
+            except ValueError:
+                return None
         elif self.field_type == "float":
             text = self.value_widget.text().strip()
             if not text:
@@ -504,6 +521,11 @@ class SimpleFieldWidget(QWidget):
             self.value_widget.setText(str(value))
         elif self.field_type == "int":
             self.value_widget.setText(str(int(value)))
+        elif self.field_type == "int_or_all":
+            if isinstance(value, str) and value.lower() == "all":
+                self.value_widget.setText("all")
+            else:
+                self.value_widget.setText(str(int(value)))
         elif self.field_type == "float":
             self.value_widget.setText(str(float(value)))
         elif self.field_type == "bool":
