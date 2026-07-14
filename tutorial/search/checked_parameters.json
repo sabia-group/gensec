@@ -128,12 +128,12 @@
         "ase_parameters_file": "trained_model_command.py",
         "algorithm": "FIRE",
         "optimize": "generate",
-        "steps": 200,
-        "fmax": 0.02,
+        "steps": 3000,
+        "fmax": 0.01,
         "constraints": {
             "fix_atoms": [
-                -10,
-                -9
+                -0.1,
+                0.1
             ]
         }
     },

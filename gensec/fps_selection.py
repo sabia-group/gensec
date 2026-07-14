@@ -11,6 +11,14 @@ def run_fps_selection(
     source_db_path="db_generated_visual.db",
     output_db_path="db_generated_fps.db",
 ):
+    source_abs = os.path.abspath(source_db_path)
+    output_abs = os.path.abspath(output_db_path)
+    if source_abs == output_abs:
+        raise ValueError(
+            "FPS source and output databases must be different files: "
+            f"{source_db_path}"
+        )
+
     print("Running FPS selection on generated structures...")
     db_generated_visual = ase.db.connect(source_db_path)
     atoms_list = [row.toatoms() for row in db_generated_visual.select()]
