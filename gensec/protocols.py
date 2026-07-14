@@ -295,12 +295,10 @@ class Protocol:
                 skipped_existing = 0
 
                 for num, row in enumerate(db_generated_visual.select()):
-                    if num < self.success:
-                        continue
                     if self.success >= success_target:
                         break
 
-                    traj_id = row.unique_id
+                    traj_id = row.unique_id if row.unique_id is not None else str(row.id)
                     dirs.dir_num = row.id
 
                     if parameters["protocol"]["check_db"]:
@@ -318,7 +316,7 @@ class Protocol:
                     traj = Trajectory(os.path.join(dirs.current_dir(parameters), "trajectory_{}.traj".format(name)))
                     print("Structure relaxed")
 
-                    if parameters.get("save_trajectories", True):
+                    if parameters.get("save_trajectories", False):
                         e_min = 100000
                         for i, step in enumerate(traj):
                             full_conf = structure.get_configuration(step)
