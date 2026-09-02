@@ -243,7 +243,8 @@ class Protocol:
 
         training_source_db = "db_generated_visual.db"
 
-        if parameters["fps_selection"]["activate"] is True:
+        fps_selection = parameters.get("fps_selection", {})
+        if _is_active_config(fps_selection.get("activate", False)):
             from gensec.fps_selection import run_fps_selection
 
             training_source_db = run_fps_selection(parameters)
@@ -285,69 +286,73 @@ class Protocol:
             fixed_frame = Fixed_frame(parameters)
             dirs = Directories(parameters)
             calculator = Calculator(parameters)
-            if not os.path.exists(parameters["protocol"]["search"]["folder"]):
-                os.mkdir(parameters["protocol"]["search"]["folder"])
+            search_folder = parameters["protocol"]["search"]["folder"]
+            original_cwd = os.getcwd()
+            if not os.path.exists(search_folder):
+                os.mkdir(search_folder)
             # Perform optimizations in the folder specified in parameters file
             print("Changing Directory!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            os.chdir(parameters["protocol"]["search"]["folder"])
+            os.chdir(search_folder)
+            try:
+                # Finish unfinished calculations
+                calculator.finish_relaxation(
+                    structure, fixed_frame, parameters, calculator
+                )
 
-            # Finish unfinished calculations
-            calculator.finish_relaxation(
-                structure, fixed_frame, parameters, calculator
-            )
-
-            while self.success < success_target:
-                self.success = db_relaxed.count()
-                made_progress = False
-                skipped_existing = 0
-
-                for num, row in enumerate(db_generated_visual.select()):
-                    if self.success >= success_target:
-                        break
-
-                    traj_id = row.unique_id if row.unique_id is not None else str(row.id)
-                    dirs.dir_num = row.id
-
-                    if parameters["protocol"]["check_db"]:
-                        if _db_has_trajectory(db_relaxed, traj_id) or _db_has_trajectory(db_trajectories, traj_id):
-                            skipped_existing += 1
-                            continue
-
-                    print("Relaxing generated row", row.id)
-                    row_atoms = row.toatoms().copy()
-                    dirs.create_directory(parameters)
-                    dirs.save_to_directory(row_atoms, parameters)
-                    calculator.simple_relax(row_atoms, parameters, dirs.current_dir(parameters))
-
-                    calculator.finished(dirs.current_dir(parameters))
-                    traj = Trajectory(os.path.join(dirs.current_dir(parameters), "trajectory_{}.traj".format(name)))
-                    print("Structure relaxed")
-
-                    if parameters.get("save_trajectories", False):
-                        e_min = 100000
-                        for i, step in enumerate(traj):
-                            full_conf = structure.get_configuration(step)
-                            db_trajectories.write(step, **full_conf, trajectory=traj_id)
-                            e_min_temp = step._calc.results["energy"]
-                            if e_min_temp < e_min:
-                                e_min = e_min_temp
-                                arg_emin = i
-                    else:
-                        energies = [step._calc.results["energy"] for step in traj]
-                        arg_emin = int(np.argmin(energies))
-
-                    full_conf = structure.get_configuration(traj[arg_emin])
-                    db_relaxed.write(traj[arg_emin], **full_conf, trajectory=traj_id, step=arg_emin)
-
+                while self.success < success_target:
                     self.success = db_relaxed.count()
-                    made_progress = True
+                    made_progress = False
+                    skipped_existing = 0
 
-                if not made_progress and self.success < success_target:
-                    raise RuntimeError(
-                        "Search could not make progress: no new generated structures were relaxed. "
-                        f"Relaxed={self.success}, target={success_target}, "
-                        f"skipped_existing={skipped_existing}, generated={db_generated_visual.count()}. "
-                        "Lower `success`, add more generated structures, or inspect existing search DBs."
-                    )
+                    for num, row in enumerate(db_generated_visual.select()):
+                        if self.success >= success_target:
+                            break
+
+                        traj_id = row.unique_id if row.unique_id is not None else str(row.id)
+                        dirs.dir_num = row.id
+
+                        if parameters["protocol"]["check_db"]:
+                            if _db_has_trajectory(db_relaxed, traj_id) or _db_has_trajectory(db_trajectories, traj_id):
+                                skipped_existing += 1
+                                continue
+
+                        print("Relaxing generated row", row.id)
+                        row_atoms = row.toatoms().copy()
+                        dirs.create_directory(parameters)
+                        dirs.save_to_directory(row_atoms, parameters)
+                        calculator.simple_relax(row_atoms, parameters, dirs.current_dir(parameters))
+
+                        calculator.finished(dirs.current_dir(parameters))
+                        traj = Trajectory(os.path.join(dirs.current_dir(parameters), "trajectory_{}.traj".format(name)))
+                        print("Structure relaxed")
+
+                        if parameters.get("save_trajectories", False):
+                            e_min = 100000
+                            for i, step in enumerate(traj):
+                                full_conf = structure.get_configuration(step)
+                                db_trajectories.write(step, **full_conf, trajectory=traj_id)
+                                e_min_temp = step._calc.results["energy"]
+                                if e_min_temp < e_min:
+                                    e_min = e_min_temp
+                                    arg_emin = i
+                        else:
+                            energies = [step._calc.results["energy"] for step in traj]
+                            arg_emin = int(np.argmin(energies))
+
+                        full_conf = structure.get_configuration(traj[arg_emin])
+                        db_relaxed.write(traj[arg_emin], **full_conf, trajectory=traj_id, step=arg_emin)
+
+                        self.success = db_relaxed.count()
+                        made_progress = True
+
+                    if not made_progress and self.success < success_target:
+                        raise RuntimeError(
+                            "Search could not make progress: no new generated structures were relaxed. "
+                            f"Relaxed={self.success}, target={success_target}, "
+                            f"skipped_existing={skipped_existing}, generated={db_generated_visual.count()}. "
+                            "Lower `success`, add more generated structures, or inspect existing search DBs."
+                        )
+            finally:
+                os.chdir(original_cwd)
 
             print("Finished relaxations.")
