@@ -9,7 +9,7 @@ from gensec.structure import Structure, Fixed_frame
 from gensec.modules import all_right, merge_together, run_with_timeout_decorator, return_inf
 from gensec.outputs import Directories
 from gensec.relaxation import Calculator
-from gensec.check_input import Check_input
+from gensec.check_input import Check_input, _is_active
 from gensec.supercell_finder import Supercell_finder
 from gensec.training import run_training_pipeline
 from ase.io.trajectory import Trajectory
@@ -19,6 +19,11 @@ from gensec.unit_cell_finder import Unit_cell_finder, gen_base_sheet
 # TODO: Add a permanent log containing at least all print outputs
 
 # TODO: There might be a potential for speedups in the SC and UC finder by replacing loops with numpy operations and larger numpy arrays.
+
+
+def _is_active_config(value):
+    """Compatibility helper for legacy bool flags and dict-style activate flags."""
+    return _is_active(value)
 
 
 def _db_has_trajectory(database, trajectory_id):
@@ -70,8 +75,10 @@ class Protocol:
             parameters (TYPE): Description
         """
         parameters = Check_input(parameters)
+        generate_active = _is_active_config(parameters.get("protocol", {}).get("generate", False))
+        search_active = _is_active_config(parameters.get("protocol", {}).get("search", False))
 
-        if parameters["protocol"]["generate"]["activate"] is True:
+        if generate_active:
             # connect to the database and start creating structures there
             print("Start generating of the structures")
 
@@ -246,7 +253,7 @@ class Protocol:
             run_training_pipeline(parameters, training_source_db)
 
 
-        if parameters["protocol"]["search"]["activate"] is True:
+        if search_active:
 
             self.db_setup("db_relaxed")
             db_relaxed = ase.db.connect("db_relaxed.db")
