@@ -128,7 +128,7 @@
     "steps": 3000,
     "fmax": 0.01,
     "constraints": {
-      "fix_atoms": [
+      "fix_atoms_z_range": [
         -0.1,
         0.1
       ]

@@ -155,18 +155,32 @@ def _relax_db_with_model(parameters, source_db_path, model_path, out_db_path, fm
         os.remove(out_db_path)
     out = ase.db.connect(out_db_path)
 
-    fix_atoms = (
-        parameters.get("calculator", {})
-        .get("constraints", {})
-        .get("fix_atoms", [])
-    )
+    constraints = parameters.get("calculator", {}).get("constraints", {})
+    fix_atoms = constraints.get("fix_atoms", [])
+    fix_atoms_z_range = constraints.get("fix_atoms_z_range")
 
     written = 0
     skipped = 0
     for row in src.select():
         atoms = row.toatoms()
-        if fix_atoms:
-            atoms.set_constraint(FixAtoms(indices=list(fix_atoms)))
+        if fix_atoms or fix_atoms_z_range:
+            values = list(fix_atoms) if fix_atoms else []
+            z_values = list(fix_atoms_z_range) if fix_atoms_z_range is not None else []
+            if values and all(isinstance(v, (int, np.integer)) for v in values):
+                indices = [int(v) for v in values]
+            elif values and len(values) == 2 and all(isinstance(v, (int, float, np.integer, np.floating)) for v in values):
+                z_min, z_max = sorted(values)
+                indices = [atom.index for atom in atoms if z_min <= atom.position[2] <= z_max]
+            elif z_values:
+                if len(z_values) != 2:
+                    raise ValueError("calculator.constraints.fix_atoms_z_range must contain exactly two values: [z_min, z_max].")
+                z_min, z_max = sorted(z_values)
+                indices = [atom.index for atom in atoms if z_min <= atom.position[2] <= z_max]
+            else:
+                indices = []
+            if values and z_values:
+                indices = sorted(set(indices) | set([atom.index for atom in atoms if z_min <= atom.position[2] <= z_max]))
+            atoms.set_constraint(FixAtoms(indices=indices))
         atoms.calc = calc
 
         try:

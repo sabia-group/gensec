@@ -21,6 +21,41 @@ from ase.io.trajectory import Trajectory
 import importlib.util
 import importlib.machinery
 
+
+def _resolve_fix_atoms(atoms, fix_atoms=None, fix_atoms_z_range=None):
+    """Return indices for either explicit atom constraints or a z-range constraint.
+
+    Preferred API:
+      - fix_atoms: list[int]
+      - fix_atoms_z_range: [z_min, z_max]
+    Legacy compatibility: a 2-value fix_atoms list is treated as a z-range.
+    """
+    indices = []
+    if fix_atoms is not None:
+        values = list(fix_atoms)
+        if all(isinstance(v, (int, np.integer)) for v in values):
+            indices = [int(v) for v in values]
+        elif len(values) == 2 and all(isinstance(v, (int, float, np.floating, np.integer)) for v in values):
+            z_min, z_max = sorted(values)
+            indices = [atom.index for atom in atoms if z_min <= atom.position[2] <= z_max]
+        else:
+            raise ValueError(
+                "calculator.constraints.fix_atoms must be a list of integer atom indices or a legacy z-range [z_min, z_max]."
+            )
+
+    if fix_atoms_z_range is not None:
+        z_values = list(fix_atoms_z_range)
+        if len(z_values) != 2:
+            raise ValueError("calculator.constraints.fix_atoms_z_range must contain exactly two values: [z_min, z_max].")
+        z_min, z_max = sorted(z_values)
+        z_indices = [atom.index for atom in atoms if z_min <= atom.position[2] <= z_max]
+        if indices:
+            return sorted(set(indices) | set(z_indices))
+        return z_indices
+
+    return indices
+
+
 def load_source(modname, filename):
     loader = importlib.machinery.SourceFileLoader(modname, filename)
     spec = importlib.util.spec_from_file_location(modname, filename, loader=loader)
@@ -56,10 +91,10 @@ class Calculator:
         atoms = init_atoms.copy()
         
         if "constraints" in parameters["calculator"]:
-            z = parameters["calculator"]["constraints"]["fix_atoms"]
-            c = FixAtoms(
-                indices=[atom.index for atom in atoms if (atom.position[2] <= z[-1]) and (atom.position[2] >= z[0])]
-            )
+            constraints = parameters["calculator"]["constraints"]
+            fix_atoms = constraints.get("fix_atoms")
+            fix_atoms_z_range = constraints.get("fix_atoms_z_range")
+            c = FixAtoms(indices=_resolve_fix_atoms(atoms, fix_atoms=fix_atoms, fix_atoms_z_range=fix_atoms_z_range))
             atoms.set_constraint(c)
         
         name = parameters["name"]
@@ -128,10 +163,10 @@ class Calculator:
             atoms {Atoms}: ASE Atoms  object
             parameters {JSON} : Parameters from file
         """
-        z = parameters["calculator"]["constraints"]["fix_atoms"]
-        c = FixAtoms(
-            indices=[atom.index for atom in atoms if (atom.position[2] <= z[-1]) and (atom.position[2] >= z[0])]
-        )
+        constraints = parameters["calculator"]["constraints"]
+        fix_atoms = constraints.get("fix_atoms")
+        fix_atoms_z_range = constraints.get("fix_atoms_z_range")
+        c = FixAtoms(indices=_resolve_fix_atoms(atoms, fix_atoms=fix_atoms, fix_atoms_z_range=fix_atoms_z_range))
         atoms.set_constraint(c)
         
     def finish_relaxation(self, structure, fixed_frame, parameters, calculator):

@@ -358,7 +358,8 @@ PARAMETER_SCHEMA = {
                         "label": "Atomic Constraints",
                         "default": {"fix_atoms": []},
                         "subfields": {
-                            "fix_atoms": {"type": "list", "default": [], "description": "Atom indices to fix (e.g. [-10, -9] = last two)"},
+                            "fix_atoms": {"type": "list", "default": [], "description": "Explicit atom indices to fix (e.g. [29, 32])."},
+                            "fix_atoms_z_range": {"type": "list", "default": [], "description": "Optional z-range [z_min, z_max] for freezing atoms within a slab slice (e.g. [-0.1, 0.1])."},
                         },
                     },
                     "preconditioner": {
