@@ -28,12 +28,15 @@ gensec.defaults module
     :undoc-members:
     :show-inheritance:
 
-gensec.fine_tune module
------------------------
+gensec.training module
+----------------------
 
-Utilities for reference labeling and optional MACE fine-tuning.
+This branch uses the training pipeline in ``gensec.training`` to train ML potentials
+from scratch. The protocol entry point is ``run_training_pipeline`` (triggered when
+``training.activate`` is true), which handles labeling, dataset preparation, and MACE
+training in one-shot or iterative loop mode.
 
-.. automodule:: gensec.fine_tune
+.. automodule:: gensec.training
     :members:
     :undoc-members:
     :show-inheritance:

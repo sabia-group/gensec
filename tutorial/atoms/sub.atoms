@@ -1,0 +1,21 @@
+#!/bin/bash -l
+
+#SBATCH --nodes=1
+#SBATCH --partition=p.ada
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=00:10:00
+#SBATCH -o job.out
+#SBATCH -e job.err
+
+module purge
+conda activate mace_nn
+module load cuda/11.6
+module load cudnn/8.8.1 gcc/11 impi/2021.3
+
+export PYTHONPATH="/u/lazerpo/conda-envs/mace_nn/lib/python3.9/site-packages:${PYTHONPATH}"
+
+# If you don't already set these in your environment, uncomment and set:
+# export AIMS_SPECIES_DIR="/u/lazerpo/FHIaims/species_defaults/defaults_2020/light"
+# export AIMS_BINARY="/u/lazerpo/FHIaims/bin/aims.master.mpi.x"
+
+python3 atomic_energies.py

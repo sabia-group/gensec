@@ -1,0 +1,7 @@
+dict(compute_forces=True,
+     k_grid=[5, 11, 1],
+     relativistic='atomic_zora scalar',
+     sc_iter_limit=100,
+     species_dir='/u/lazerpo/FHIaims/species_defaults/defaults_2020/light',
+     spin='none',
+     xc='pbe')

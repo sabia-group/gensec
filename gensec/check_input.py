@@ -3,6 +3,18 @@ import json
 
 # TODO: Reduce parameters to minimum necessary. If some parameter excludes using another, it could be deleted. For example orientations
 
+
+def _is_active(value):
+    """Return whether a config value indicates an active feature.
+
+    The project accepts both the newer dictionary style, e.g.
+    {"activate": True}, and the legacy boolean style (True/False).
+    """
+    if isinstance(value, dict):
+        return bool(value.get("activate", False))
+    return bool(value)
+
+
 def Check_input(parameters):
     '''
     Purposes:  
@@ -16,11 +28,15 @@ def Check_input(parameters):
     '''
     if "protocol" not in parameters:
         raise ValueError("No protocol in input file. Please define if you want to generate and/or search.")
-    else:
-        if parameters["protocol"]["generate"] is False and parameters["protocol"]["search"] is False:
-            raise ValueError("Both generate and search are set to False. Please set one to True.")
-    if "check_db" not in parameters["protocol"]:
-        parameters["protocol"]["check_db"] = False
+
+    protocol = parameters["protocol"]
+    generate_active = _is_active(protocol.get("generate", False))
+    search_active = _is_active(protocol.get("search", False))
+    if not generate_active and not search_active:
+        raise ValueError("Both generate and search are set to False. Please set one to True.")
+
+    if "check_db" not in protocol:
+        protocol["check_db"] = False
     
     if "geometry" not in parameters or "filename" not in parameters["geometry"]:
         raise ValueError("No geometry file given in input. Please add file and format.")
@@ -38,7 +54,7 @@ def Check_input(parameters):
     else:
         if "adsorption" not in parameters["configuration"]:
             parameters["configuration"]["adsorption"] = {"activate": False}
-        elif parameters["configuration"]["adsorption"]["activate"] is True:
+        elif _is_active(parameters["configuration"]["adsorption"].get("activate", False)):
             if "method" not in parameters["configuration"]["adsorption"]:
                 parameters["configuration"]["adsorption"]["method"] = "surface"
                 print("No method for adsorption given. Set to default value 'surface'.")
@@ -67,7 +83,7 @@ def Check_input(parameters):
         if "coms" not in parameters["configuration"]:
             parameters["configuration"]["coms"] = {"activate": False}
             # TODO: Discuss defaults 
-        elif parameters["configuration"]["coms"]["activate"] is True:
+        elif _is_active(parameters["configuration"]["coms"].get("activate", False)):
             if "z_values" not in parameters["configuration"]["coms"]:
                 parameters["configuration"]["coms"]["z_values"] = "identical"
             
@@ -85,7 +101,7 @@ def Check_input(parameters):
         parameters["configuration"]["check_forces"] = {"activate" : False}
     elif "activate" not in parameters["configuration"]["check_forces"]:
         parameters["configuration"]["check_forces"]["activate"] = False
-    elif parameters["configuration"]["check_forces"]["activate"] is True:
+    elif _is_active(parameters["configuration"]["check_forces"].get("activate", False)):
         if "max_force" not in parameters["configuration"]["check_forces"]:
             parameters["configuration"]["check_forces"]["max_force"] = 0.02
             print("No max force given. Set to default value 0.02 eV/A.")
@@ -96,22 +112,26 @@ def Check_input(parameters):
     
     if "fixed_frame" not in parameters:
         parameters["fixed_frame"] = {"activate" : False}
-    elif parameters["fixed_frame"] is True:
-        if "filename" not in parameters["fixed_frame"]:
-            raise ValueError("Fixed frame is activated but no filename is given. Please also remember to add the format.")
-        if "is_unit_cell" not in parameters["fixed_frame"]:
-            parameters["fixed_frame"]["is_unit_cell"] = False
+    else:
+        fixed_frame = parameters["fixed_frame"]
+        if _is_active(fixed_frame):
+            fixed_frame = fixed_frame if isinstance(fixed_frame, dict) else {"activate": True}
+            if "filename" not in fixed_frame:
+                raise ValueError("Fixed frame is activated but no filename is given. Please also remember to add the format.")
+            if "is_unit_cell" not in fixed_frame:
+                fixed_frame["is_unit_cell"] = False
+            parameters["fixed_frame"] = fixed_frame
     
     if "mic" not in parameters:
         parameters["mic"] = {"activate" : False}
     else:
-        if parameters["mic"]["activate"] is True:
+        if _is_active(parameters["mic"].get("activate", False)):
             if "pbe" not in parameters["mic"]:
                 raise ValueError("Mic is activated but no pbe is given. Please add pbe.")   # TODO: check if cell is in fixed frame and set as pbe
     
     if "supercell_finder" not in parameters:
         parameters["supercell_finder"] = {"activate" : False}
-    elif parameters["supercell_finder"]["activate"] is True:
+    elif _is_active(parameters["supercell_finder"].get("activate", False)):
         if "unit_cell_method" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["unit_cell_method"] = "find"
         if "z_cell_length" not in parameters["supercell_finder"]:
@@ -158,7 +178,7 @@ def Check_input(parameters):
                     "first_n_steps": 10,
                     "first_select_method" : "area"
                 }
-            elif parameters["unit_cell_finder"]["scan_first"]["activate"] is True:
+            elif _is_active(parameters["unit_cell_finder"]["scan_first"].get("activate", False)):
                 if "first_min_angle" not in parameters["unit_cell_finder"]["scan_first"]:
                     parameters["unit_cell_finder"]["scan_first"]["first_min_angle"] = 0
                 if "first_max_angle" not in parameters["unit_cell_finder"]["scan_first"]:
@@ -175,7 +195,7 @@ def Check_input(parameters):
                     "tolerance": 1e-4,
                     "max_iterations": 10
                 }
-            elif parameters["unit_cell_finder"]["adaptive"]["activate"] is True:
+            elif _is_active(parameters["unit_cell_finder"]["adaptive"].get("activate", False)):
                 if "n_points" not in parameters["unit_cell_finder"]["adaptive"]:
                     parameters["unit_cell_finder"]["adaptive"]["n_points"] = 5
                 if "tolerance" not in parameters["unit_cell_finder"]["adaptive"]:
@@ -185,6 +205,8 @@ def Check_input(parameters):
         
         if "max_area_diff" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["max_area_diff"] = 0.1
+        if "z_cell_length" not in parameters["supercell_finder"]:
+            parameters["supercell_finder"]["z_cell_length"] = 100
         if "m_range" not in parameters["supercell_finder"]:
             parameters["supercell_finder"]["m_range"] = {
                 "type": "max",
@@ -219,12 +241,19 @@ def Check_input(parameters):
         
     if "success" not in parameters:
         parameters["success"] = 1500
+    elif isinstance(parameters["success"], str):
+        if parameters["success"].lower() != "all":
+            raise ValueError("success must be an integer or 'all' for search-only runs.")
+        generate_settings = parameters["protocol"].get("generate", {})
+        generate_active = generate_settings.get("activate", False) if isinstance(generate_settings, dict) else bool(generate_settings)
+        if generate_active:
+            raise ValueError("success='all' can only be used for search from an existing database; generation needs an integer success target.")
         
     if "name" not in parameters:
         parameters["name"] = "Unnamed"
         print("No name given. Set to default value 'Unnamed'.")
         
-    if parameters["protocol"]["search"]["activate"] is True and "save_trajectories" not in parameters:
+    if _is_active(protocol.get("search", False)) and "save_trajectories" not in parameters:
         parameters["save_trajectories"] = False # Saving trajectories takes a long time and brings little to no value
         print("Trajectories will not be saved. If you intend to save them, please set 'save_trajectories' to True")
     
