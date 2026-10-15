@@ -126,8 +126,8 @@ def Check_input(parameters):
         parameters["mic"] = {"activate" : False}
     else:
         if _is_active(parameters["mic"].get("activate", False)):
-            if "pbe" not in parameters["mic"]:
-                raise ValueError("Mic is activated but no pbe is given. Please add pbe.")   # TODO: check if cell is in fixed frame and set as pbe
+            if "pbc" not in parameters["mic"]:
+                raise ValueError("Mic is activated but no pbc is given. Please add pbc.")   # TODO: check if cell is in fixed frame and set as pbc
     
     if "supercell_finder" not in parameters:
         parameters["supercell_finder"] = {"activate" : False}
